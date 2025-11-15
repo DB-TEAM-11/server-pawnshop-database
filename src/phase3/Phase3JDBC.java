@@ -196,7 +196,7 @@ public class Phase3JDBC {
 	public static void bring_recent_game(Connection conn, PreparedStatement stmt) {
 		
 	}
-	
+		
 	public static void game_start(Connection conn, PreparedStatement stmt) {
 		String sql = "";
 		int GAME_SESSION_KEY = -1;
@@ -287,9 +287,29 @@ public class Phase3JDBC {
 			System.out.println("진열장 진열 가능 갯수(최대 8개): " + UNLOCKED_SHOWCASE_COUNT);
 			System.out.println("닉네임: " + NICKNAME);
 			System.out.println("가게명: " + SHOP_NAME);
-	
+			
+			
+			
+			if (DAY_COUNT % 7 == 0) {
+				// event
+			} 
+			
+			sql = "select * from (select * from CUSTOMER_CATALOG order by DBMS_RANDOM.VALUE) * rownum <= 2";
+			try {
+				stmt = conn.prepareStatement(sql);
+				ResultSet rs = stmt.executeQuery();
+					
+				while(true) {
+					
+				}
+				
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+			
 		}
-
+		
+		
 	}
 	
 	

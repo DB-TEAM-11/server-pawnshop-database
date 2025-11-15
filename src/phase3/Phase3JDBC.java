@@ -7,8 +7,16 @@ import java.util.Scanner;
 import java.util.regex.Pattern;
 
 
+
 public class Phase3JDBC {
-	public static final String URL = "jdbc:oracle:thin:@localhost:1521:orcl";
+    private static Scanner scan = new Scanner(System.in); // 어차피 계속 쓸 건데 전역으로 하자
+    public enum GamePanel{
+        Login,
+        InLogin,
+        InGame
+    }
+
+	public static final String URL = "jdbc:oracle:thin:@localhost:1523:orcl";
 	public static final String USER_GAME = "MYGAME";
 	public static final String USER_PASSWD = "GAME1234";
 	
@@ -38,166 +46,275 @@ public class Phase3JDBC {
 	static String session_finish = "세선 완료";
 	static String session_token = "";
 
+	public static void main(String[] args) {
+        /* DB용 변수 선언 */
+        Connection conn = null;
+		PreparedStatement stmt = null;
 	
-	public static String findDuplicateID (Connection conn, String playerId) throws SQLException {
-		String sql = "select P.PLAYER_ID from PLAYER P where P.PLAYER_ID = ?";
-		
-		try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-			stmt.setString(1, playerId);
-			
-			try (ResultSet rs = stmt.executeQuery()) {
-				if (rs.getRow() != 0) {
-					return rs.getString(1);
-				} else {
-					return "null";
-				}
-			}
+        /* DB 연결 파트 */
+		// Load a JDBC driver for Oracle DBMS
+		try {
+			Class.forName("oracle.jdbc.driver.OracleDriver");
+		} catch(ClassNotFoundException e) {
+			System.err.println("error = " + e.getMessage());
+			System.exit(1);
 		}
-	}
-	
-	public static String findDuplicatePW (Connection conn, String playerId, String hashedPw) throws SQLException {
-		String sql = "select P.HASHED_PW from PLAYER P where P.PLAYER_ID = ?";
-		
-		try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-			stmt.setString(1, playerId);
-			
-			try (ResultSet rs = stmt.executeQuery()) {
-				if (rs.next() && rs.getString(1) == hashedPw) {
-					return "exist pw";
-				} else {
-					return "null";
-				}
-			}
+		try {
+			conn = DriverManager.getConnection(URL, USER_GAME, USER_PASSWD);
+		} catch (SQLException ex) {
+			ex.printStackTrace();
+			System.err.println("Cannot get a connection: " + ex.getLocalizedMessage());
+			System.err.println("Cannot get a connection: " + ex.getMessage());
+			System.exit(1);
 		}
+
+        /*
+         * 프로그램 시작
+         * GamePanel == 패널 구분용 enum.
+         * GamePanel.Login   : 로그인/회원가입 창
+         * GamePanel.InLogin : 로그인 이후 창
+         * GamePanel.InGame  : 게임 내 창
+         */
+        GamePanel currentPanel = GamePanel.Login; // 초기 패널은 로그인/회원가입 창
+        while(true){
+            if(currentPanel == GamePanel.Login){
+                currentPanel = sign(conn, stmt); // 다음으로 이동할 패널을 반환 받음
+            }
+            else if(currentPanel == GamePanel.InLogin){
+                currentPanel = GotoInLoginPanel(conn,stmt); // 다음으로 이동할 패널을 반환 받음
+            }
+            else if(currentPanel == GamePanel.InGame){
+                currentPanel = GotoInGamePanel(conn, stmt); // 다음으로 이동할 패널을 반환 받음
+            }
+        }
 	}
-	
-	public static void sign(Connection conn, PreparedStatement stmt) {
+
+
+	public static GamePanel sign(Connection conn, PreparedStatement stmt) {
 		String sql = "";
 		Encrypt encrypt = new Encrypt();
-		
-		try {			
-			Scanner scan = new Scanner(System.in);
-			Timestamp timestamp;			
-			
-			if (session_token == "") {
-				System.out.println("반갑습니다! 게임을 시작하려면 " + signin + " 혹은 " + signup + "을 하십시오.");
-				System.out.println("1: " + signin);
-				System.out.println("2: " + signup);
-				int signin_or_up = -1;
-				boolean zero_to_one = true;
-				
-				while(zero_to_one) {
-					signin_or_up = scan.nextInt();
-					
-					System.out.println();
-					switch (signin_or_up) {
-						case 1: System.out.println("[" + signin + "]");
-							zero_to_one = false;
-							break;
-						case 2: System.out.println("[" + signup + "]");
-							zero_to_one = false;
-							break;
-						default: System.out.println("1(" + signin + ") 또는 2(" + signup + ") 중에 입력해주세요.");
-							break;
-					}
-				}
-				
-				String playerId = "";
-				String password = ""; 
-				boolean session = false;
-				
-				
-				do {
-					while(true) {
-						System.out.print("아이디(30자 이하 영문): ");
-						playerId = scan.next();
-				
-						if (playerId.length() <= 30 && Pattern.matches("[a-zA-Z]+", playerId)) {
-							if (!"null".equals(findDuplicateID(conn, playerId))) {
-								System.out.println("이미 존재하는 아이디가 있습니다.");
-							} else {
-								break;
-							}
-						} else {
-							System.out.println("아이디는 30자 이하 영문이어야 합니다.");
-							System.out.println();
-						}
-					}
-					
-					System.out.print("비밀번호: ");
-					password = scan.next();
-										
-					switch (signin_or_up) {
-						case 1: sql = "Select p.HASHED_PW, p.SESSION_TOKEN from PLAYER P where p.PLAYER_ID = ?";
-							stmt = conn.prepareStatement(sql);
-							stmt.setString(1, playerId);							
-							
-							try (ResultSet rs = stmt.executeQuery()) {
-								if (rs.next()) {
-									String result = rs.getString(1);
-									String[] hashedpw_salt = result.split(";");
-									String cmp_pw = encrypt.getEncrypt(password, hashedpw_salt[1]);
-									
-									if (hashedpw_salt[0].equals(cmp_pw)) {
-										System.out.println("로그인에 성공하였습니다.");
-										session_token = rs.getString(2);
-										session = true;
-									} else {
-										System.out.println("존재하지 않는 계정입니다.");
-										System.out.println();		
-									}
-								} else {
-									System.out.println("존재하지 않는 계정입니다.");
-									System.out.println();
-								}
-							}
-							break;
-							
-						case 2:	sql = "insert into PLAYER (PLAYER_ID , HASHED_PW , SESSION_TOKEN , LAST_ACTIVITY) values(?, ?, ?, ?)";
-							String hashed_pw = encrypt.hashedpw_with_salt(password);
-							while(!"null".equals(findDuplicatePW(conn, playerId, hashed_pw))) {
-								hashed_pw = encrypt.hashedpw_with_salt(password);
-							}
-							stmt = conn.prepareStatement(sql);
-							
-							stmt.setString(1, playerId);
-							stmt.setString(2, hashed_pw);
-							
-							SecureRandom random = new SecureRandom();
-							byte[] bytes = new byte[48]; // Base64 인코딩 시 64글자
-							random.nextBytes(bytes);
 
-							session_token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-							stmt.setString(3, session_token);
-							
-							timestamp = new Timestamp(System.currentTimeMillis());
-							stmt.setTimestamp(4, timestamp);
-							
-							try {
-								stmt.executeUpdate();
-								System.out.println("회원가입에 성공하였습니다. 로그인 기능으로 이동합니다.");
-							} catch(SQLException e) {
-								System.err.println("error = " + e.getMessage());
-								System.exit(1);
-							}
-							signin_or_up = 1;
-							System.out.println();
-							System.out.println("[" + signin + "]");
-							break;
-					}
-				} while(session == false);
-			}			 
+        int signin_or_up = -1; // 로그인/회원가입 입력 저장 변수
+		try{ // 나갈 때 자동 close. try-with-resources 키워드 검색
+			Timestamp timestamp;
+            while(true){
+                /* 로그인/회원가입 창 */
+                System.out.println("반갑습니다! 게임을 시작하려면 " + signin + " 혹은 " + signup + "을 하십시오.");
+                System.out.println("0: " + "게임 종료"); // 게임 종료
+                System.out.println("1: " + signin);
+                System.out.println("2: " + signup);
+
+                System.out.print("입력: ");
+                signin_or_up = scan.nextInt(); // 사용자 입력 받기
+                if(signin_or_up == 0){
+                    System.out.println("프로그램을 종료합니다.");
+                    System.exit(signin_or_up);
+                }
+                else if(signin_or_up ==1){ // 로그인 시도
+                    System.out.println("[" + signin + "]"); // [로그인]
+                    while(true){
+                        String playerId = "";
+                        String password = ""; 
+
+                        System.out.print("아이디(30자 이하 영문. q를 눌러 취소): ");
+                        playerId = scan.next();
+                        if(playerId.equals("q")) {
+                            break; // q를 눌러 취소
+                        }
+                        else if(!(playerId.length() <= 30) || !(Pattern.matches("[a-zA-Z]+", playerId))){
+                            System.out.println("아이디는 30자 이하 영문이어야 합니다.\n");
+                            break; // 아이디 입력 실패
+                        }
+                        /* 아이디 정상 입력 -> 패스워드 입력 받기 */
+                        else{
+                            System.out.print("비밀번호: ");
+                            password = scan.next();
+
+                            /* 아이디/패스워드 유효성 검사 */
+                            sql = "Select p.HASHED_PW, p.SESSION_TOKEN from PLAYER P where p.PLAYER_ID = ?";
+                            stmt = conn.prepareStatement(sql);
+                            stmt.setString(1, playerId);							
+                            
+                            try (ResultSet rs = stmt.executeQuery()) {
+                                if (rs.next()) {
+                                    String result = rs.getString(1);
+                                    String[] hashedpw_salt = result.split(";");
+                                    String cmp_pw = encrypt.getEncrypt(password, hashedpw_salt[1]);
+                                    
+                                    if (hashedpw_salt[0].equals(cmp_pw)) {
+                                        System.out.println("로그인에 성공하였습니다.");
+                                        session_token = rs.getString(2);
+                                        return GamePanel.InLogin; // 로그인 성공 -> 로그인 이후 창으로 이동합니다.
+                                    } else {
+                                        System.out.println("존재하지 않는 계정입니다.\n");
+                                        break;
+                                    }
+                                } else {
+                                    System.out.println("존재하지 않는 계정입니다.\n");
+                                    break;
+                                }
+                            }
+                            catch(SQLException e) {
+                                System.err.println("error = " + e.getMessage());
+                                System.exit(1);
+                            }
+                        }
+                    }
+                }
+                else if(signin_or_up == 2){ // 회원가입 시도
+                    System.out.println("[" + signup + "]"); // [회원가입]
+                    while(true){
+                        String playerId = "";
+                        String password = "";
+
+                        System.out.print("아이디(30자 이하 영문. q를 눌러 취소): ");
+                        playerId = scan.next();
+                        if(playerId.equals("q")) {
+                            break; // q를 눌러 취소
+                        }
+                        // 아이디 제약조건 확인
+                        else if(!(playerId.length() <= 30) || !(Pattern.matches("[a-zA-Z]+", playerId))){
+                            System.out.println("아이디는 30자 이하 영문이어야 합니다.\n");
+                            break; // 아이디 입력 실패
+                        }
+                        // 아이디 중복 체크
+                        else if (!"null".equals(findDuplicateID(conn, playerId))) { // 뭔가 가져왔다
+                            System.out.println("이미 존재하는 아이디가 있습니다.");
+                            break;
+                        }
+                        /* 아이디 정상 입력 -> 패스워드 입력 받기 */
+                        else{
+                            System.out.print("비밀번호: ");
+                            password = scan.next();
+
+                            /* 아이디/패스워드 유효성 검사 */
+                            sql = "insert into PLAYER (PLAYER_ID , HASHED_PW , SESSION_TOKEN , LAST_ACTIVITY) values(?, ?, ?, ?)";
+                            String hashed_pw = encrypt.hashedpw_with_salt(password);
+                            while(!"null".equals(findDuplicatePW(conn, playerId, hashed_pw))) {
+                                hashed_pw = encrypt.hashedpw_with_salt(password);
+                            }
+                            stmt = conn.prepareStatement(sql);
+                            
+                            stmt.setString(1, playerId);
+                            stmt.setString(2, hashed_pw);
+                            
+                            SecureRandom random = new SecureRandom();
+                            byte[] bytes = new byte[48]; // Base64 인코딩 시 64글자
+                            random.nextBytes(bytes);
+                            /* 세션 토큰 설정 */
+                            session_token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+                            stmt.setString(3, session_token);
+                            
+                            timestamp = new Timestamp(System.currentTimeMillis());
+                            stmt.setTimestamp(4, timestamp);
+                            
+                            try {
+                                stmt.executeUpdate();
+                                System.out.println("회원가입에 성공하였습니다.");
+                                break; // 다시 로그인 창으로 돌아감
+                            } catch(SQLException e) {
+                                System.err.println("error = " + e.getMessage());
+                                System.exit(1);
+                            }
+                        }
+                    }
+                }
+                else{
+                    System.out.println("1(" + signin + ") 또는 2(" + signup + ") 중에 입력해주세요.");
+                }
+            }
 		} catch(SQLException ex2) {
 			System.err.println("sql error = " + ex2.getMessage());
 			System.exit(1);
 		}
+		return GamePanel.Login;
 	}
-	
-	public static void bring_recent_game(Connection conn, PreparedStatement stmt) {
-		
-	}
-		
-	public static void game_start(Connection conn, PreparedStatement stmt) {
+
+    /* 로그인 이후 패널: 가능한 기능
+     * - 월드 레코드
+     * - 게임 시작
+     * - 로그아웃
+    */
+    private static GamePanel GotoInLoginPanel(Connection conn, PreparedStatement stmt){
+        int userInput =-1;
+        try{
+            while(true){
+                /* 로그인 이후 패널 창 */
+                System.out.println("로그인 이후 패널에 오신 걸 환영합니다. 아래 기능 중 하나를 선택하세요");
+                System.out.println("0: " + "게임 종료"); // 게임 종료
+                System.out.println("1: " + world_record_view_Ranking); // 세계 기록
+                System.out.println("2: " + game_start); // 게임 시작
+                System.out.println("3: " + signout); // 로그아웃
+                
+                System.out.print("입력: ");
+                userInput = scan.nextInt(); // 유저 인풋 받기
+                if(userInput == 0){ // 게임 종료
+                    System.out.println("프로그램을 종료합니다.");
+                    System.exit(userInput); // 프로그램 종료
+                }
+                if(userInput == 1){ // 세계 기록 조회
+                    System.out.println("[세계 기록]"); // 상위 10명만 가져옴
+                    String sql = "SELECT * FROM (SELECT p.player_id, gs.nickname, gs.shop_name, gs.game_end_day_count, gs.game_end_date " +
+                                 "FROM PLAYER P, GAME_SESSION GS " +
+                                 "WHERE p.player_key = gs.player_key " +
+                                 "AND gs.game_end_day_count > 0 " +
+                                 "ORDER BY gs.game_end_day_count ASC) " +
+                                 "WHERE ROWNUM <= 10";
+                    stmt = conn.prepareStatement(sql);
+
+                    try(ResultSet rs = stmt.executeQuery();){    
+                        int rank = 1;
+                        boolean hasRecords = false;
+                        while (rs.next()) {
+                            hasRecords = true;
+                            String playerId = rs.getString("player_id");
+                            String nickname = rs.getString("nickname");
+                            String shopName = rs.getString("shop_name");
+                            int endDayCount = rs.getInt("game_end_day_count");
+                            Date endDate = rs.getDate("game_end_date");
+                            
+                            System.out.println(rank + "등: " + nickname + " (" + playerId + ")");
+                            System.out.println("   가게명: " + shopName);
+                            System.out.println("   클리어 일수: " + endDayCount + "일");
+                            System.out.println("   클리어 날짜: " + endDate);
+                            System.out.println();
+                            rank += 1;
+                        }
+                        
+                        if (!hasRecords) {
+                            System.out.println("아직 게임을 클리어한 플레이어가 없습니다.\n");
+                        }
+                        
+                    } catch (SQLException e) {
+                        System.err.println("랭킹 조회 실패: " + e.getMessage());
+                    }
+                }
+                else if(userInput ==2){ // 게임 시작
+                    return GamePanel.InGame; // 인게임 창으로 이동 
+                }
+                else if(userInput == 3){ // 로그아웃
+                    session_token = ""; // 세션토큰 초기화
+                    return GamePanel.Login; // 다시 로그인/회원가입 창으로 이동
+                }
+                else{
+                    System.out.println("가능한 선택범위 내 숫자를 입력해주세요.");
+                }
+            }
+        }
+        catch(Exception ex2) {
+			System.err.println("sql error = " + ex2.getMessage());
+			System.exit(1);
+		}
+        return null;
+    }
+
+
+    public static GamePanel GotoInGamePanel(Connection conn, PreparedStatement stmt){
+        return GamePanel.InLogin;
+    }
+
+	// public static void game_start(Connection conn, PreparedStatement stmt) {
+    public static void LoadGameSession(Connection conn, PreparedStatement stmt) {
 		String sql = "";
 		int GAME_SESSION_KEY = -1;
 		int PLAYER_KEY = -1;
@@ -229,7 +346,6 @@ public class Phase3JDBC {
 		}
 		
 		if (PLAYER_KEY != -1) {
-			Scanner scan = new Scanner(System.in);
 
 			sql = "select * from GAME_SESSION G where G.PLAYER_KEY = ?";
 			try {
@@ -294,7 +410,7 @@ public class Phase3JDBC {
 				// event
 			} 
 			
-			sql = "select * from (select * from CUSTOMER_CATALOG order by DBMS_RANDOM.VALUE) * rownum <= 2";
+			sql = "select * from (select * from CUSTOMER_CATALOG order by DBMS_RANDOM.VALUE) where rownum <= 2";
 			try {
 				stmt = conn.prepareStatement(sql);
 				ResultSet rs = stmt.executeQuery();
@@ -306,38 +422,52 @@ public class Phase3JDBC {
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
+			scan.close();
+		}
+		
+	}
+
+	public static String findDuplicateID (Connection conn, String playerId) throws SQLException {
+		String sql = "select P.PLAYER_ID from PLAYER P where P.PLAYER_ID = ?";
+		
+		try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+			stmt.setString(1, playerId);
 			
+			try (ResultSet rs = stmt.executeQuery()) {
+				// if (rs.getRow() != 0) {
+                if(rs.next()){ // rs.next 없이 바로 getRow 하면 0번 인덱스(없음) 가리킴. 1번 인덱스(시작) 가리키게 바꿈
+					return rs.getString(1);
+				} else {
+					return "null";
+				}
+			}
 		}
-		
-		
 	}
 	
-	
-	public static void main(String[] args) {
-		Connection conn = null;
-		PreparedStatement stmt = null;
-	
+	public static String findDuplicatePW (Connection conn, String playerId, String hashedPw) throws SQLException {
+		String sql = "select P.HASHED_PW from PLAYER P where P.PLAYER_ID = ?";
 		
-		// Load a JDBC driver for Oracle DBMS
-		try {
-			Class.forName("oracle.jdbc.driver.OracleDriver");
-		} catch(ClassNotFoundException e) {
-			System.err.println("error = " + e.getMessage());
-			System.exit(1);
+		try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+			stmt.setString(1, playerId);
+			
+			try (ResultSet rs = stmt.executeQuery()) {
+				if (rs.next() && rs.getString(1).equals(hashedPw)) { // << 내용 비교하려면 equals 사용해야 함
+					return "exist pw";
+				} else {
+					return "null";
+				}
+			}
 		}
-		
-		// 
-		try {
-			conn = DriverManager.getConnection(URL, USER_GAME, USER_PASSWD);
-		} catch (SQLException ex) {
-			ex.printStackTrace();
-			System.err.println("Cannot get a connection: " + ex.getLocalizedMessage());
-			System.err.println("Cannot get a connection: " + ex.getMessage());
-			System.exit(1);
-		}
-		
-		sign(conn, stmt);
-		game_start(conn, stmt);
+	}
+
+	public static void bring_recent_game(Connection conn, PreparedStatement stmt) {
 		
 	}
+
+
+
+
+
+
+
 }

@@ -11,9 +11,12 @@ import java.util.regex.Pattern;
 public class Phase3JDBC {
     private static Scanner scan = new Scanner(System.in); // 어차피 계속 쓸 건데 전역으로 하자
     public enum GamePanel{
-        Login,
-        InLogin,
-        InGame
+        Login, // 로그인/회원가입 창
+        InLogin, // 로그인 이후 창
+        InGame, // 게임 중
+        InDeal, // 거래 중
+        InSell, // 판매 중
+        InSettle // 정산 중
     }
 
 	public static final String URL = "jdbc:oracle:thin:@localhost:1523:orcl";
@@ -34,8 +37,8 @@ public class Phase3JDBC {
 	static String action_with_dealing = "거래 중 액션";
 	static String deal_succeed = "거래(구매) 성사";
 	static String deal_reject = "거래 거부";
-	static String request_for_item_restoration = "아이템 복원 요청";
-	static String item_restoration_complete = "아이템 복원 완료";
+	static String request_for_item_action = "아이템 처리 요청";
+	static String item_action_complete = "아이템 처리 완료";
 	static String item_sales_begin = "아이템 판매 개시";
 	static String item_sale_confirmed = "아이템 판매 확정";
 	static String loan_or_repayment = "대출 또는 상환";
@@ -77,14 +80,23 @@ public class Phase3JDBC {
          */
         GamePanel currentPanel = GamePanel.Login; // 초기 패널은 로그인/회원가입 창
         while(true){
-            if(currentPanel == GamePanel.Login){
+            if(currentPanel == GamePanel.Login){ // 로그인/회원가입 창에서 주는 명령
                 currentPanel = sign(conn, stmt); // 다음으로 이동할 패널을 반환 받음
             }
-            else if(currentPanel == GamePanel.InLogin){
+            else if(currentPanel == GamePanel.InLogin){ // 로그인 후 패널에서 주는 명령
                 currentPanel = GotoInLoginPanel(conn,stmt); // 다음으로 이동할 패널을 반환 받음
             }
-            else if(currentPanel == GamePanel.InGame){
+            else if(currentPanel == GamePanel.InGame){ // 인 게임 도달했을 때 주는 명령
                 currentPanel = GotoInGamePanel(conn, stmt); // 다음으로 이동할 패널을 반환 받음
+            }
+            else if(currentPanel == GamePanel.InDeal){ // 거래 중일 때, 주는 명령
+                currentPanel = GotoInDealPanel(conn, stmt); // 다음으로 이동할 패널을 반환 받음
+            }
+            else if(currentPanel == GamePanel.InSell){ // 판매 중일 때, 주는 명령
+                currentPanel = GotoInSellPanel(conn, stmt); // 다음으로 이동할 패널을 반환 받음                
+            }
+            else if(currentPanel == GamePanel.InSettle){ // 판매 중일 때, 주는 명령
+                currentPanel = GotoInSettlePanel(conn, stmt); // 다음으로 이동할 패널을 반환 받음                
             }
         }
 	}
@@ -308,9 +320,281 @@ public class Phase3JDBC {
         return null;
     }
 
+// ------------------------------------------------------- 구현 완료 ^^^^^^^^----------
+// ------------------------------------------------------- 구현 해야 함 vvvvvv---------
 
+    // 게임 중 패널
     public static GamePanel GotoInGamePanel(Connection conn, PreparedStatement stmt){
-        return GamePanel.InLogin;
+        int userInput =-1;
+        try{
+            while(true){
+                /* 로그인 이후 패널 창 */
+                System.out.println("게임 중 패널에 오신 걸 환영합니다. 아래 기능 중 하나를 선택하세요");
+                System.out.println("0: " + "게임 종료"); // 게임 종료
+                System.out.println("[게임 세션 불러오기 요청]... 플레이 중인 게임이 있는지 여부에 따라 사용 가능한 기능이 변경되어 표시됩니다.");
+                /*
+                 * TODO: if( CheckPlayerHavePlayingGame ){ // 플레이 중인 게임이 있는지 체크 쿼리문
+                 *          System.out.println("1: " + bring_recent_game); // 게임 세션 불러오기
+                 *       }
+                 *       else{
+                 *          System.out.println("1: " + game_start); // 새 게임 세션 생성
+                 *       }
+                 */
+                System.out.println("[게임 초기 요청]");
+                System.out.println("2: " + loading_initial_catalog_data); // 초기 카탈로그 데이터 가져오기
+                System.out.println("3: " + view_all_exhibition_items); // 현재 전시 중인 모든 전시장 아이템 불러오기
+                System.out.println("4: " + view_news); // 당일 이벤트 조회 if dayCount = 7, 새거 줘
+                System.out.println("5: " + item_action_complete); // 당일 처리 완료된 아이템 있는지 체크
+                System.out.println("6: " + generate_daily_deals+" << 거래 패널 이동 전 반드시 실행하기"); // 당일 거래 가져오기 if 해당 게임 세션 키 아이템 생성됨 남아있으면 그것만 가져와
+                System.out.println("[게임 도중 요청]");
+                System.out.println("7: " + item_sales_begin+"<< 테스트를 위해 판매 가능한 아이템을 임의로 생성해 진행함"); // 고객 카테고리 == 아이템 카테고리여서 판매 데이터 가져오게 시킴
+                System.out.println("8: " + loan_or_repayment); // 대출/상환 명령
+                System.out.println("9: " + request_for_item_action); // 아이템 처리 요청하기
+                System.out.println("10: " + move_on_to_the_next_day_Settle); // 다음날 넘어가기 명령. <정산 패널로 이동>
+                System.out.println("11: " + "<거래 패널로 이동>");
+                System.out.print("입력: ");
+                userInput = scan.nextInt(); // 유저 인풋 받기
+                if(userInput == 0){ // 게임 종료
+                    System.out.println("프로그램을 종료합니다.");
+                    System.exit(userInput); // 프로그램 종료
+                }
+                if(userInput == 1){ // 
+                    /*
+                     *  if (play중인 게임 있었으면(위에서 계산 된 결과 저장 변수) = true){
+                     *      세션 불러오기() => 결과 출력
+                     *  }
+                     *  else{
+                     *      세선 생성하기() => 결과 출력
+                     *  }
+                     */
+                }
+             
+                else if(userInput ==2){ // 초기 카탈로그 가져오기
+                    System.out.println("고객 카탈로그 100개 가져옴. 아이템 카탈로그 100개 가져옴");
+                    /* TODO:
+                     * 고객 카탈로그 100개, 아이템 카탈로그 100개 가져오되,
+                     * 출력은 2개 출력하고 "...", 2개 출력하고 "..." 하기
+                     */
+                }
+                else if(userInput == 3){ // 현재 전시 중인 아이템 목록 가져오기
+                    // TODO: 현재 전시 중인 아이템 목록 가져오기() => 출력
+                }
+                else if(userInput == 4){ // 현재 진행 중인 뉴스 이벤트 가져오기
+                    /*
+                     * TODO:
+                     * 임의의 dayCount를 입력 받음
+                     * if dayCount == 7일 배수
+                     *      if 이전 이벤트가 있는지 체크 쿼리()
+                     *          있다면 전부 삭제 쿼리()
+                     *      새 이벤트 0~3개 insert 쿼리()
+                     *      현재 이벤트 가져오기 쿼리() => 출력
+                     * else
+                     *      if 이전 이벤트가 있는지 체크 쿼리()
+                     *          있다면 가져오기 쿼리()  => 출력
+                     *      else 새 이벤트 0~3개 insert 쿼리()
+                     *           현재 이벤트 가져오기 쿼리() => 출력
+                     */
+                }
+                else if(userInput == 5){ // 당일 복원 완료된 아이템 있는지 체크하기
+                    //TODO: 체크하고 출력
+                }
+                else if(userInput == 6){ //
+                }
+                else if(userInput == 7){ // <판매 패널>로
+                    // TODO: 
+                    return GamePanel.InSell;
+                }
+                else if(userInput == 8){ // 대출/상환 요청
+                    /*
+                     * TODO: 
+                     * 인자로 개인빚인지 전당포 빚인지 입력 받기
+                     * if 개인빚이라면
+                     *      상환을 진행합니다 출력
+                     *      300 500 1000 2000 골드 중 선택하시오 : 
+                     * else if 전당포 빚이라면
+                     *      대출/상환 중 하나를 선택하시오 : 
+                     *      300 500 1000 2000 골드 중 선택하시오 :
+                     * 해당 빚 업데이트 쿼리()
+                     * 
+                     */
+                }
+                else if(userInput == 9){ // 아이템 처리 요청하기
+                    /*
+                     * TODO:
+                     * 인자로 무슨 요청할 건지 받기 auction/restore
+                     * 해당 요청 처리
+                     * if 요청 == auction
+                     *      아이템 state를 경매중(3)으로 업데이트 쿼리()
+                     *      거래 - sellDate를 해당 dayCount로 업데이트 쿼리() // 원래는 따로 있어야 하지만, 시간이 너무 촉박하므로 있는 거 갖다 씀
+                     *              ㄴ 나중에 sellDate랑 현재 dayCount 비교해서 경매를 시작한 날로부터 며칠이 지났는지 체크할 거임
+                     *              ㄴ 경매는 2일 걸리고, 복원에는 1일 걸림
+                     * else if 요청 == restore
+                     *      아이템 state를 복원중(2)으로 업데이트 쿼리()
+                     *      거래 - sellDate를 해당 dayCount로 업데이트 쿼리()
+                     */
+                }
+                else if(userInput == 10){ // 다음 날 정산으로
+                    /*
+                     * TODO:
+                     * 인자로 임의의 dayCount를 입력 받음
+                     * 데이 카운트를 해당 dayCount로 업데이트. (7일 배수면 주 정산 발생)
+                     * if 처리가 안 된 거래가 없는지 확인
+                     * 다음날 넘어가기 명령. <정산 패널로 이동>
+                     * if(dayCount == 7의 배수)
+                     *      주 정산 쿼리()
+                     * else 
+                     *      일 정산 쿼리()
+                     * 
+                     */
+                    return GamePanel.InSettle; // 정산 패널로 이동
+                }
+                else if(userInput == 11){ // 거래패널로 이동. 거래 하기
+                    /*
+                     * TODO:
+                     * if 남은 거래가 있는지 확인
+                     *      있다면, 먼저 거래 생성하기를 눌러주세요 출력
+                     * else
+                     */
+                            return GamePanel.InDeal; // 거래 패널로 이동
+                }
+                else{
+                    System.out.println("가능한 선택범위 내 숫자를 입력해주세요.");
+                }
+            }
+        }
+        catch(Exception ex2) {
+			System.err.println("sql error = " + ex2.getMessage());
+			System.exit(1);
+		}
+        return null;
+    }
+
+
+    public static GamePanel GotoInDealPanel(Connection conn, PreparedStatement stmt){
+        int userInput =-1;
+        try{
+            while(true){
+                /* 로그인 이후 패널 창 */
+                System.out.println("거래 중 패널에 오신 걸 환영합니다. 아래 기능 중 하나를 선택하세요");
+                System.out.println("0: " + "게임 종료"); // 게임 종료
+                System.out.println("1: " + customer_hint); // 고객 힌트 열기(고객 정보가 드러남)
+                System.out.println("2: " + get_item_hint); // 아이템 힌트 열기
+                System.out.println("3: " +action_with_dealing ); // 거래 중 액션
+                System.out.println("4: " +deal_succeed ); // 거래(구매) 성사
+                System.out.println("5: " + deal_reject); // 거래 거부
+
+                System.out.print("입력: ");
+                userInput = scan.nextInt(); // 유저 인풋 받기
+                if(userInput == 0){ // 게임 종료
+                    System.out.println("프로그램을 종료합니다.");
+                    System.exit(userInput); // 프로그램 종료
+                }
+                if(userInput == 1){ // 고객 힌트 열기(고객 정보가 드러남)
+                    // TODO: 지금까지 열린 고객 힌트 출력(customer_hidden_discovered 참고해야 함)
+                    // TODO: 인자로 무슨 고객 힌트 열람할 건지 받아서 실행해야 함
+                }
+                else if(userInput ==2){ // 아이템 힌트 열기
+                    // TODO: 지금까지 열린 모든 아이템 힌트 출력(최대 6개)
+                    // TODO: 6개의 힌트 중 랜덤하게 하나를 골라서 해당 힌트 정보 보내기
+                    // 동일한 힌트가 6개 연속으로 나올 수도 있음. 랜덤하게 힌트를 골라서 주기 때문에
+                    /*
+                     * 	- 흠이 있을 것 같은 삘 0.0~1.0
+			         *  - 레전더리 확률값
+			         *  - 유니크 확률값
+			         *  - 레어 확률값
+			         *  - 진품 확률값
+			         *  - 최소 몇개 이상 ( (0+10 * 부주의함) *(0.8))
+                     */
+                }
+                else if(userInput == 3){ //거래 중 액션
+                    // TODO: 거래 중 액션 취하기()
+                    // TODO: 인자로 무슨 액션 취할 건지, 다 입력 받아서 실행해야 함
+                }
+                else if(userInput == 4){ //거래(구매) 성사
+                    // TODO: 해당 거래 상태 업데이트()
+                    return GamePanel.InGame;
+                }
+                else if(userInput == 5){ //거래 거부
+                    // TODO: 해당 거래, 아이템 정보 삭제()
+                    return GamePanel.InGame;
+                }
+                else{
+                    System.out.println("가능한 선택범위 내 숫자를 입력해주세요.");
+                }
+            }
+        }
+        catch(Exception ex2) {
+			System.err.println("sql error = " + ex2.getMessage());
+			System.exit(1);
+		}
+        return null;
+    }
+
+
+    // 판매 중 패널
+    public static GamePanel GotoInSellPanel(Connection conn, PreparedStatement stmt){
+        int userInput =-1;
+        try{
+            while(true){
+                /* 로그인 이후 패널 창 */
+                System.out.println("판매 중 패널에 오신 걸 환영합니다. 아래 기능 중 하나를 선택하세요");
+                System.out.println("0: " + "게임 종료"); // 게임 종료
+                System.out.println("1: " + item_sale_confirmed); // 판매 확정 요청
+                System.out.println("2: " + "판매 거부"); // 판매 거부 (요청 없이 그냥 넘어감으로 구현 됨)
+                System.out.print("입력: ");
+                userInput = scan.nextInt(); // 유저 인풋 받기
+                if(userInput == 0){ // 게임 종료
+                    System.out.println("프로그램을 종료합니다.");
+                    System.exit(userInput); // 프로그램 종료
+                }
+                else if(userInput == 1){ // 판매 확정 요청
+                    // TODO: 
+                    return GamePanel.InGame;
+                }
+                else if(userInput == 2){ // 판매 거부 (요청 없이 그냥 넘어감으로 구현 됨)
+                    return GamePanel.InGame;
+                }
+                else{
+                    System.out.println("가능한 선택범위 내 숫자를 입력해주세요.");
+                }
+            }
+        }
+        catch(Exception ex2) {
+			System.err.println("sql error = " + ex2.getMessage());
+			System.exit(1);
+		}
+        return null;
+    }
+
+    // 정산 중 패널
+    public static GamePanel GotoInSettlePanel(Connection conn, PreparedStatement stmt){
+        int userInput =-1;
+        try{
+            while(true){
+                /* 로그인 이후 패널 창 */
+                System.out.println("하루 끝 정산 중 패널에 오신 걸 환영합니다. 아래 기능 중 하나를 선택하세요");
+                System.out.println("0: " + "게임 종료"); // 게임 종료
+                System.out.println("1: " + check_game_over); // 정산 중에 게임이 끝났는지 확인
+                System.out.print("입력: ");
+                userInput = scan.nextInt(); // 유저 인풋 받기
+                if(userInput == 0){ // 게임 종료
+                    System.out.println("프로그램을 종료합니다.");
+                    System.exit(userInput); // 프로그램 종료
+                }
+                else if(userInput == 1){ // 정산 중에 게임이 끝났는지 확인
+                    // TODO: 만약 게임이 끝났으면, json 정보 출력 후 GamePanel.InLogin으로 이동
+                    // TODO: 게임이 안 끝났으면, 게임 안 끝났다 출력 후 GamePanel.InGame으로 이동 
+                }
+                else{
+                    System.out.println("가능한 선택범위 내 숫자를 입력해주세요.");
+                }
+            }
+        }
+        catch(Exception ex2) {
+			System.err.println("sql error = " + ex2.getMessage());
+			System.exit(1);
+		}
+        return null;
     }
 
 	// public static void game_start(Connection conn, PreparedStatement stmt) {

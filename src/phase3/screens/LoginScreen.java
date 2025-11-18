@@ -6,8 +6,8 @@ public class LoginScreen extends BaseScreen {
     private static final String TITLE = "전당포 운영 게임";
     private static final String[] ACTIONS = { "로그인", "회원가입" };
 
-    public LoginScreen(Scanner scanner) {
-        super(scanner);
+    public LoginScreen(Connection connection, Scanner scanner) {
+        super(connection, scanner);
     }
 
     public String showLoginScreen() {

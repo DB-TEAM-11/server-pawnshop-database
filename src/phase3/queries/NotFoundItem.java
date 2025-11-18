@@ -20,7 +20,7 @@ public class NotFoundItem {
 
         ArrayList<String> notFoundItemName = new ArrayList<String>();
         do {
-            notFoundItemName.add(queryResult.getString(0));
+            notFoundItemName.add(queryResult.getString(1));
         } while (queryResult.next());
 
         statement.close();

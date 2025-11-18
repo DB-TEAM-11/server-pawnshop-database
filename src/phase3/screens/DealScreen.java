@@ -34,8 +34,8 @@ public class DealScreen extends BaseScreen {
     private static String[] CHOICES_ACCEPT_DEAL__SAVE = { "저장" };
     private static String[] CHOICES_DENY_DEAL__REMOVE_DEAL = { "삭제" };
     
-    public DealScreen(Scanner scanner) {
-        super(scanner);
+    public DealScreen(Connection connection, Scanner scanner) {
+        super(connection, scanner);
     }
 
     public void showDealScreen() {

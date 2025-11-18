@@ -9,10 +9,14 @@ public abstract class BaseScreen {
 
     protected Scanner scanner;
 
-    public BaseScreen(Scanner scanner) {
+    public BaseScreen(Connection connection, Scanner scanner) {
+        if (connection == null) {
+            throw new RuntimeException("Connection must not null");
+        }
         if (scanner == null) {
             throw new RuntimeException("Scanner must not null");
         }
+        this.connection = connection;
         this.scanner = scanner;
     }
 

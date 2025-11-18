@@ -8,7 +8,7 @@ import java.sql.Statement;
 import phase3.exceptions.NotASuchRowException;
 
 public class CustomerInfo {
-    private static final String QUERY = "";
+    private static final String QUERY = "SELECT CUSTOMER_NAME, IMG_ID, FRAUD, WELL_COLLECT, CLUMSY FROM CUSTOMER_CATALOG WHERE CUSTOMER_KEY = %d";
 
     public String customerName;
     public String imgId;

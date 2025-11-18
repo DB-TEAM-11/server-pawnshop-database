@@ -37,7 +37,7 @@ public abstract class BaseScreen {
     }
 
     protected int showChoices(String title, String message, String[] choices, boolean canExit) {
-        int midWidth = COLUMN_WIDTH - title.length() - 2;
+        int midWidth = COLUMN_WIDTH - title.length() - (int) HANGUL_PATTERN.matcher(title).results().count() - 2;
 
         System.out.println("#".repeat(COLUMN_WIDTH));
         System.out.print("#");

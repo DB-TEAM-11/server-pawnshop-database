@@ -1,9 +1,7 @@
 {
-    "java.project.sourcePaths": [
-        "src"
-    ],
-    "java.project.referencedLibraries": [
-        "lib/**/*.jar",
-        "c:\\oracle\\comp322\\ojdbc10.jar"
-    ]
+  "java.project.sourcePaths": ["src"],
+  "java.project.referencedLibraries": [
+    "lib/**/*.jar",
+    "oracle_jdbc_drivers/*.jar"
+  ]
 }

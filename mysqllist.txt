@@ -1,0 +1,768 @@
+1. 회원 가입
+Request: { "playerId": "string", "password": "string" }
+Response: {}
+	1-1. 아이디 중복 확인 [기존 쿼리 활용]
+        SELECT HASHED_PW FROM PLAYER WHERE PLAYER_ID = ?;
+	1-2. 신규 플레이어 등록
+        INSERT INTO PLAYER(PLAYER_ID, HASHED_PW, SESSION_TOKEN, LAST_ACTIVITY) VALUES ('%s', '%s', null, TO_DATE('%s', 'YYYY-MM-DD'))
+
+2. 로그인 (POST /player/login)
+Request: { "playerId": "string", "password": "string" }
+Response: { "sessionToken": "string", "hasGameSession": "Y/N" }
+    2-1. 아이디와 비밀번호 확인 [기존 쿼리 활용]
+        SELECT HASHED_PW FROM PLAYER WHERE PLAYER_ID = ?;
+    2-2. 진행 중인 게임 세션 확인
+        SELECT G.GAME_SESSION_KEY FROM PLAYER P, GAME_SESSION G WHERE P.SESSION_TOKEN = '%s' AND P.PLAYER_KEY = G.PLAYER_KEY ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+
+3. 세션(게임) 생성 (POST /game-session/new)
+Request: { "nickname": "string", "shopName": "string" }
+Response: { "dayCount": 1, "money": 50000, ... }
+    3-1. 새 게임 세션 생성
+        UPDATE PLAYER SET SESSION_TOKEN = '%s', LAST_ACTIVITY = TO_DATE('2025-11-19 00:13:12', 'YYYY-MM-DD HH24:MI:SS') WHERE SESSION_TOKEN = '%s'
+    3-2. 생성된 게임 세션 정보 반환
+        SELECT G.* FROM PLAYER P, GAME_SESSION G WHERE P.SESSION_TOKEN = '%s' AND P.PLAYER_KEY = G.PLAYER_KEY ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+
+4. 최근 게임 세션 불러오기 (POST /game-session/latest)
+Request: {}
+Response: { "dayCount": 25, "money": 128000, ... }
+    4-1. 플레이어 정보 조회 [기존 쿼리 활용]
+        SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = 1 ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY;
+
+5. 초기 카탈로그 데이터 불러오기 (GET /catalog/initialData)
+Request: {}
+Response: { "itemCatalogs": [...], "customerCatalogs": [...] }
+    5-1. 모든 아이템 카탈로그 조회
+        SELECT * FROM ITEM_CATALOG
+    5-2. 모든 고객 카탈로그 조회
+        SELECT * FROM CUSTOMER_CATALOG
+
+
+6. 전시장 아이템 전체 조회 (POST /display/currentAll)
+Request: {}
+Response: { "displays": [...] }
+    6-1. 진열대 정보 조회 [기존 쿼리 활용 - Type 8]
+
+7. 뉴스(당일 이벤트) 조회 (GET /news/current)
+Request: {}
+Response: { "newsList": [...] }
+    7-1. 당일자 Event 조회 [기존 쿼리 활용]
+
+8. 고객 정보 드러남 (PATCH /customer/reveal)
+Request: { "customerKey": 89, "attribute": "FRAUD" }
+Response: { "attribute": "FRAUD", "value": 0.97, "leftMoney": 49950 }
+    8-1. 고객 정보 조회 [기존 쿼리 활용]
+        SELECT CUSTOMER_NAME, IMG_ID, FRAUD, WELL_COLLECT, CLUMSY
+        FROM CUSTOMER_CATALOG
+        WHERE CUSTOMER_KEY = ?;
+
+    8-1.5 세션토큰으로 게임 세션 키 받아오기
+        SELECT GAME_SESSION_KEY FROM GAME_SESSION
+        WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+        ORDER BY GAME_SESSION_KEY DESC
+        FETCH FIRST ROW ONLY
+    8-2. 발견한 고객 정보 저장
+    MERGE INTO CUSTOMER_HIDDEN_DISCOVERED_IN_GAME_SESSION CH
+    USING (
+        SELECT ? AS GAME_SESSION_KEY, ? AS CUSTOMER_KEY, ? AS HINT_REVEALED_FLAG
+        FROM DUAL) SOURCE
+    ON (CH.GAME_SESSION_KEY = SOURCE.GAME_SESSION_KEY 
+    AND CH.CUSTOMER_KEY = SOURCE.CUSTOMER_KEY) 
+    WHEN MATCHED THEN
+        UPDATE SET CH.HINT_REVEALED_FLAG = SOURCE.HINT_REVEALED_FLAG
+    WHEN NOT MATCHED THEN
+        INSERT (GAME_SESSION_KEY, CUSTOMER_KEY, HINT_REVEALED_FLAG)
+        VALUES (SOURCE.GAME_SESSION_KEY, SOURCE.CUSTOMER_KEY, SOURCE.HINT_REVEALED_FLAG);
+    // 있으면 업데이트, 없으면 INSERT
+
+    8-4. 플레이어 돈 차감 및 업데이트
+    UPDATE GAME_SESSION 
+    SET MONEY = MONEY - 20
+    WHERE GAME_SESSION_KEY = (
+        SELECT GAME_SESSION_KEY FROM GAME_SESSION
+        WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+        ORDER BY GAME_SESSION_KEY DESC
+        FETCH FIRST ROW ONLY
+    );
+
+    8-5. 업데이트된 잔액 조회
+    SELECT MONEY FROM GAME_SESSION 
+    WHERE GAME_SESSION_KEY = (
+        SELECT GAME_SESSION_KEY FROM GAME_SESSION
+        WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+        ORDER BY GAME_SESSION_KEY DESC
+        FETCH FIRST ROW ONLY
+    );
+
+
+9. 아이템 힌트 조회 (GET /item/getHints)
+Request: { "itemKey": 301 }
+Response: { "hintName": "레전더리 확률", "hintValue": "...", "leftMoney": 49990 }
+    9-1. 거래 정보 및 고객 정보로 힌트 계산 [기존 쿼리 활용 - Type 7]
+    SELECT
+    (10 * CLUMSY) FLAW_BASE,
+    (15 + (65 * WELL_COLLECT)) LEGENDARY_P,
+    (20 + PROBABILITY_BASE) UNIQUE_P,
+    (30 + PROBABILITY_BASE) RARE_P,
+    (35 + PROBABILITY_BASE) NORMAL_P,
+    FAKE_P,
+    (1 - FAKE_P) GENIUE_P
+    FROM (
+    SELECT CC.*, (65 * (1 - WELL_COLLECT) / 3) PROBABILITY_BASE, (10 + 90 * FRAUD) FAKE_P
+    FROM CUSTOMER_CATALOG CC WHERE CUSTOMER_KEY = ?
+    );
+    // 6개 다 가져오고 여기서 랜덤으로 하나만 내보내는 거임
+    9-2. 플레이어 돈 차감 및 업데이트
+    UPDATE GAME_SESSION 
+    SET MONEY = MONEY - 10
+    WHERE GAME_SESSION_KEY = (
+        SELECT GAME_SESSION_KEY FROM GAME_SESSION
+        WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+        ORDER BY GAME_SESSION_KEY DESC
+        FETCH FIRST ROW ONLY
+    );
+    9-3. 업데이트된 잔액 조회
+    SELECT MONEY FROM GAME_SESSION 
+    WHERE GAME_SESSION_KEY = (
+        SELECT GAME_SESSION_KEY FROM GAME_SESSION
+        WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+        ORDER BY GAME_SESSION_KEY DESC
+        FETCH FIRST ROW ONLY
+    );
+
+10. 하루 거래 3개 미리 생성 (POST /deal/generateDailyDeals)
+Request: {}
+Response: { "dailyDeals": [...] }
+    10-1. 오늘 이미 생성된 거래 확인 (ITEM_STATE = 0인 거래들)
+        SELECT DR.*
+        FROM DEAL_RECORD DR, EXISTING_ITEM I
+        WHERE DR.GAME_SESSION_KEY = (
+                SELECT GAME_SESSION_KEY 
+                FROM GAME_SESSION
+                WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+                AND GAME_END_DAY_COUNT IS NULL
+                ORDER BY GAME_SESSION_KEY DESC
+                FETCH FIRST ROW ONLY
+            )
+            AND DR.ITEM_KEY = I.ITEM_KEY
+            AND I.ITEM_STATE = 0
+        ORDER BY DR.DRC_KEY;
+    // 해당 플레이어 키를 가진 게임 세션 중 아직 플레이 중이고
+    // 가지고 있는 거래 중 아이템의 아이템 스테이트가 0인 거래들 가져오기
+    10-2. 없으면 새로 3개 생성 (Java에서 처리)
+        a. 랜덤 고객 3명 선택 (중복 불가)
+            SELECT CUSTOMER_KEY, FRAUD, WELL_COLLECT, CLUMSY, CATEGORY_KEY
+            FROM CUSTOMER_CATALOG
+            ORDER BY DBMS_RANDOM.VALUE
+            FETCH FIRST 3 ROWS ONLY;
+        b. 각 고객별 랜덤 아이템 카탈로그 선택
+            SELECT ITEM_CATALOG_KEY, BASE_PRICE
+            FROM ITEM_CATALOG
+            WHERE CATEGORY_KEY = ?
+            ORDER BY DBMS_RANDOM.VALUE
+            FETCH FIRST ROW ONLY;
+        아이템 카테고리 번호 랜덤 생성해서 아이템 카탈로그 키 가져오기
+        c. EXISTING_ITEM 생성 (Java에서 확률 계산)
+            INSERT INTO EXISTING_ITEM (
+            GAME_SESSION_KEY, ITEM_CATALOG_KEY,
+            GRADE, FOUND_GRADE,
+            FLAW_EA, FOUND_FLAW_EA, SUSPICIOUS_FLAW_AURA,
+            AUTHENTICITY, IS_AUTHENTICITY_FOUND,
+            ITEM_STATE
+            ) VALUES (?,?, ?,0, ?,0,?, ?,-1, 0);
+        d. DEAL_RECORD 생성
+            INSERT INTO DEAL_RECORD (
+            GAME_SESSION_KEY, SELLER_KEY, ITEM_KEY, ASKING_PRICE, PURCHASE_PRICE, APPRAISED_PRICE
+            ) VALUES (?, ?, ?, ?, ?, ?);
+
+11. 거래 중 액션 (POST /deal/action)
+Request: { "drcKey": 201, "actionType": "FINDFLAW", "actionLevel": 2 }
+Response: { "totalPurchasePrice": 1200,
+            "totalAppraisedPrice": 1400,
+            "changedPurchasedPriceByAction": "-200",   // 구매가 상승/하락분
+            "changedAppraisedPriceByAction": "+200",   // 감정가 상승/하락분
+            "foundGrade": 2,
+            "foundFlawEa": 1,
+            "isAuthenticityFound": true,
+            "leftMoney": 49870  }
+    11-1. 현재 거래 및 아이템 정보 조회
+        SELECT I.*, DR.*
+        FROM EXISTING_ITEM I, DEAL_RECORD DR
+        WHERE DR.DRC_KEY = ?
+            AND DR.ITEM_KEY = I.ITEM_KEY;
+
+    11-2. 액션 적용 후 아이템 정보 업데이트
+        흠 찾기의 경우
+        UPDATE EXISTING_ITEM
+        SET FOUND_FLAW_EA = FOUND_FLAW_EA + ?
+        WHERE ITEM_KEY = ?;
+
+        진위 판정의 경우
+        UPDATE EXISTING_ITEM
+        SET IS_AUTHENTICITY_FOUND = 'Y'
+        WHERE ITEM_KEY = ?;
+
+        감정의 경우
+        UPDATE EXISTING_ITEM
+        SET FOUND_GRADE = ?
+        WHERE ITEM_KEY = ?;
+
+    11-3. 업데이트된 가격 계산 후 DEAL_RECORD 업데이트
+        UPDATE DEAL_RECORD
+        SET PURCHASE_PRICE = ?,
+        APPRAISED_PRICE = ?
+        WHERE DRC_KEY = ?;
+    11-4. 플레이어 돈 차감
+        UPDATE GAME_SESSION 
+        SET MONEY = MONEY - ?
+        WHERE GAME_SESSION_KEY = (
+            SELECT GAME_SESSION_KEY FROM GAME_SESSION
+            WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+            ORDER BY GAME_SESSION_KEY DESC
+            FETCH FIRST ROW ONLY
+        );
+    11-5. 업데이트된 정보 조회
+        SELECT I.FOUND_GRADE, I.FOUND_FLAW_EA, I.IS_AUTHENTICITY_FOUND,
+            DR.PURCHASE_PRICE, DR.APPRAISED_PRICE,
+            G.MONEY
+        FROM EXISTING_ITEM I, DEAL_RECORD DR, GAME_SESSION G
+        WHERE I.ITEM_KEY = ?
+            AND DR.ITEM_KEY = I.ITEM_KEY
+            AND DR.GAME_SESSION_KEY = G.GAME_SESSION_KEY;
+
+12. 거래(구매) 성사 (POST /deal/complete)
+Request: { "drcKey": 201, "itemKey": 301 }
+Response: { "leftMoney": 48670, "displayedItem": {...} }
+    12-1. 현재 게임 세션 및 잔액 확인
+        SELECT MONEY, UNLOCKED_SHOWCASE_COUNT
+        FROM GAME_SESSION
+        WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+        ORDER BY GAME_SESSION_KEY DESC
+        FETCH FIRST ROW ONLY;
+    12-2. 거래 정보 조회(구매가)
+        SELECT PURCHASE_PRICE FROM DEAL_RECORD WHERE DRC_KEY = ?;
+    12-3. 잔액 충분한지 확인 (Java에서)
+    12-4. 거래 완료 처리 - DEAL_RECORD 업데이트
+        UPDATE DEAL_RECORD
+        SET BOUGHT_DATE = (
+            SELECT DAY_COUNT FROM GAME_SESSION 
+            WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+            ORDER BY GAME_SESSION_KEY DESC
+            FETCH FIRST ROW ONLY
+        )
+        WHERE DRC_KEY = ?;
+    12-5. 아이템 상태 변경 (전시 중)
+        UPDATE EXISTING_ITEM
+        SET ITEM_STATE = 1
+        WHERE ITEM_KEY = ?;
+    12-6. 전시장에 추가 - 빈 자리 찾기
+        SELECT DISPLAY_POS
+        FROM GAME_SESSION_ITEM_DISPLAY
+        WHERE GAME_SESSION_KEY = (
+            SELECT GAME_SESSION_KEY FROM GAME_SESSION
+            WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+            ORDER BY GAME_SESSION_KEY DESC
+            FETCH FIRST ROW ONLY
+        )
+        ORDER BY DISPLAY_POS ASC;
+    12-7. 전시장에 아이템 추가
+        INSERT INTO GAME_SESSION_ITEM_DISPLAY (GAME_SESSION_KEY, DISPLAY_POS, ITEM_KEY)
+        VALUES (?, ?, ?);
+    12-8. 플레이어 돈 차감
+        UPDATE GAME_SESSION
+        SET MONEY = MONEY - ?
+        WHERE GAME_SESSION_KEY = (
+            SELECT GAME_SESSION_KEY FROM GAME_SESSION
+            WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+            ORDER BY GAME_SESSION_KEY DESC
+            FETCH FIRST ROW ONLY
+        );
+    12-9. 업데이트된 전시 아이템 정보 반환
+        SELECT D.DISPLAY_POS, I.*, IC.*, DR.PURCHASE_PRICE, DR.ASKING_PRICE, 
+            DR.APPRAISED_PRICE, DR.BOUGHT_DATE, CC.CUSTOMER_NAME, GS.MONEY
+        FROM GAME_SESSION_ITEM_DISPLAY D, EXISTING_ITEM I, ITEM_CATALOG IC, 
+            DEAL_RECORD DR, CUSTOMER_CATALOG CC, GAME_SESSION GS
+        WHERE D.ITEM_KEY = ?
+            AND D.ITEM_KEY = I.ITEM_KEY
+            AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY
+            AND DR.ITEM_KEY = I.ITEM_KEY
+            AND DR.SELLER_KEY = CC.CUSTOMER_KEY
+            AND GS.GAME_SESSION_KEY = DR.GAME_SESSION_KEY;
+13. 거래 거부 (POST /deal/cancel)
+Request: { "drcKey": 201, "itemKey": 301 }
+Response: {}
+    13-1. 아이템 삭제
+        DELETE FROM EXISTING_ITEM WHERE ITEM_KEY = ?;
+    13-2. 거래 기록 삭제
+        DELETE FROM DEAL_RECORD WHERE DRC_KEY = ?;
+
+14. 아이템 복원/경매 요청 (POST /item/action)
+Request: { "actionType": "restore", "itemKey": 301 }
+Response: { "itemState": 2 }
+    14-1. 아이템 상태 확인
+        SELECT ITEM_STATE, GAME_SESSION_KEY
+        FROM EXISTING_ITEM
+        WHERE ITEM_KEY = ?;
+    14-2. 아이템 상태 변경 (복원 중: 2, 경매 중: 3)
+        UPDATE EXISTING_ITEM
+        SET ITEM_STATE = ?
+        WHERE ITEM_KEY = ?;
+    14-3. 복원/경매 시작일 기록
+    UPDATE DEAL_RECORD
+    SET LAST_ACTION_DATE = (
+        SELECT DAY_COUNT FROM GAME_SESSION 
+        WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+        ORDER BY GAME_SESSION_KEY DESC
+        FETCH FIRST ROW ONLY
+    )
+    WHERE DRC_KEY = (SELECT DRC_KEY FROM EXISTING_ITEM WHERE ITEM_KEY = ?);
+>> TODO: LAST_ACTION_DATE 추가해야됨 주의
+
+
+15. 아이템 복원/경매 완료 (POST /item/result)
+Request: {}
+Response: { "actionResults": [...] }
+    15-1. 복원 중인 아이템 조회 (복원 시작 후 1일 경과)
+        SELECT I.ITEM_KEY, I.ITEM_STATE, I.FOUND_FLAW_EA, I.IS_AUTHENTICITY_FOUND,
+            I.AUTHENTICITY, DR.APPRAISED_PRICE, DR.ASKING_PRICE,
+            G.DAY_COUNT, DR.LAST_ACTION_DATE
+        FROM EXISTING_ITEM I, DEAL_RECORD DR, GAME_SESSION G
+        WHERE I.ITEM_STATE = 2
+            AND I.DRC_KEY = DR.DRC_KEY
+            AND DR.GAME_SESSION_KEY = G.GAME_SESSION_KEY
+            AND G.GAME_SESSION_KEY = (
+                SELECT GAME_SESSION_KEY FROM GAME_SESSION
+                WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+                ORDER BY GAME_SESSION_KEY DESC
+                FETCH FIRST ROW ONLY
+            )
+            AND G.DAY_COUNT - DR.LAST_ACTION_DATE >= 1;
+    15-2. 경매 중인 아이템 조회 (경매 시작 후 2일 경과)
+        SELECT I.ITEM_KEY, I.ITEM_STATE, DR.APPRAISED_PRICE, DR.ASKING_PRICE,
+            G.DAY_COUNT, DR.LAST_ACTION_DATE
+        FROM EXISTING_ITEM I, DEAL_RECORD DR, GAME_SESSION G
+        WHERE I.ITEM_STATE = 3
+            AND I.DRC_KEY = DR.DRC_KEY
+            AND DR.GAME_SESSION_KEY = G.GAME_SESSION_KEY
+            AND G.GAME_SESSION_KEY = (
+                SELECT GAME_SESSION_KEY FROM GAME_SESSION
+                WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+                ORDER BY GAME_SESSION_KEY DESC
+                FETCH FIRST ROW ONLY
+            )
+            AND G.DAY_COUNT - DR.LAST_ACTION_DATE >= 2;
+    15-2.5 세션토큰으로 플레이어 키 받아오기
+        SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?
+    15-3. 현재 진행 중인 이벤트 가져오기[기존 쿼리 활용]
+        SELECT * FROM EXISTING_NEWS N, NEWS_CATALOG NC
+        WHERE
+            N.GAME_SESSION_KEY = (
+                SELECT GAME_SESSION_KEY FROM GAME_SESSION
+                WHERE PLAYER_KEY = ?
+                ORDER BY GAME_SESSION_KEY DESC
+                FETCH FIRST ROW ONLY
+            )
+            AND N.NCAT_KEY = NC.NCT_KEY
+        ORDER BY NC.NCT_KEY;
+    15-4. 복원 완료 처리 - 아이템 상태 변경 (복원 완료: 5)
+        UPDATE EXISTING_ITEM
+        SET ITEM_STATE = 5, -- 복원 완료
+            FOUND_FLAW_EA = 0  -- 흠 수리 완료
+        WHERE ITEM_KEY = ?;
+    15-5. 복원 완료 - 진위 확정
+        UPDATE EXISTING_ITEM
+        SET IS_AUTHENTICITY_FOUND = 'Y' 
+        WHERE ITEM_KEY = ?;
+    // 무엇이든 일단 'Y'로 바꿔
+    15-6. 복원 완료 - 감정가 업데이트
+        UPDATE DEAL_RECORD
+        SET APPRAISED_PRICE = ?
+        WHERE DRC_KEY = (SELECT DRC_KEY FROM EXISTING_ITEM WHERE ITEM_KEY = ?);
+    15-7. 복원 비용 차감
+        UPDATE GAME_SESSION
+        SET MONEY = MONEY - ?
+        WHERE GAME_SESSION_KEY = (
+            SELECT GAME_SESSION_KEY FROM GAME_SESSION
+            WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+            ORDER BY GAME_SESSION_KEY DESC
+            FETCH FIRST ROW ONLY
+        );
+    15-8. 경매 완료 처리 - 아이템 판매 완료
+        UPDATE EXISTING_ITEM
+        SET ITEM_STATE = 4  -- 판매 완료
+        WHERE ITEM_KEY = ?;
+    15-9. 경매 완료 - 판매 날짜 및 최종 판매가 기록
+        UPDATE DEAL_RECORD
+        SET SOLD_DATE = (
+            SELECT DAY_COUNT FROM GAME_SESSION 
+            WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+            ORDER BY GAME_SESSION_KEY DESC
+            FETCH FIRST ROW ONLY
+        ),
+            SELLING_PRICE = ?,
+            CUSTOMER_KEY = 0  -- 경매인
+        WHERE DRC_KEY = (SELECT DRC_KEY FROM EXISTING_ITEM WHERE ITEM_KEY = ?);
+    15-10. 경매 수익금 입금
+        UPDATE GAME_SESSION
+        SET MONEY = MONEY + ?
+        WHERE GAME_SESSION_KEY = (
+            SELECT GAME_SESSION_KEY FROM GAME_SESSION
+            WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+            ORDER BY GAME_SESSION_KEY DESC
+            FETCH FIRST ROW ONLY
+        );
+    15-11. 전시장에서 제거
+        DELETE FROM GAME_SESSION_ITEM_DISPLAY
+        WHERE ITEM_KEY = ?;
+
+16. 아이템 판매 개시 (POST /item/sellStart)
+Request: { "itemKey": 301, "customerKey": 89 }
+Response: { "sellingPrice": 3000 }
+    16-0. 세션토큰으로 플레이어 키 받아오기
+        SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?
+    16-1. 아이템과 고객 카테고리 일치 확인 [기존 쿼리 활용]
+        // 고객이 좋아하는 전시대 속 아이템 목록
+        SELECT *
+        FROM CUSTOMER_CATALOG C, GAME_SESSION_ITEM_DISPLAY D, EXISTING_ITEM I, ITEM_CATALOG IC
+        WHERE
+            C.CUSTOMER_KEY = 1
+            AND D.GAME_SESSION_KEY = (
+                SELECT GAME_SESSION_KEY FROM GAME_SESSION
+                WHERE PLAYER_KEY = ?
+                ORDER BY GAME_SESSION_KEY DESC
+                FETCH FIRST ROW ONLY
+            )
+            AND D.ITEM_KEY = I.ITEM_KEY
+            AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY
+            AND IC.CATEGORY_KEY = C.CATEGORY_KEY
+        ORDER BY D.DISPLAY_POS;
+    16-2. 판매가 계산을 위한 정보 조회
+        SELECT DR.APPRAISED_PRICE, I.IS_AUTHENTICITY_FOUND
+        FROM DEAL_RECORD DR, EXISTING_ITEM I
+        WHERE I.ITEM_KEY = ?
+            AND DR.DRC_KEY = I.DRC_KEY;
+    16-3. 현재 진행 중인 이벤트 가져오기[기존 쿼리 활용]
+        SELECT * FROM EXISTING_NEWS N, NEWS_CATALOG NC
+        WHERE
+            N.GAME_SESSION_KEY = (
+                SELECT GAME_SESSION_KEY FROM GAME_SESSION
+                WHERE PLAYER_KEY = ?
+                ORDER BY GAME_SESSION_KEY DESC
+                FETCH FIRST ROW ONLY
+            )
+            AND N.NCAT_KEY = NC.NCT_KEY
+        ORDER BY NC.NCT_KEY;
+17. 아이템 판매 확정 (POST /item/sellComplete)
+Request: { "itemKey": 301, "customerKey": 89 }
+Response: { "earnedAmount": "+2400", "leftMoney": 55000, "displayedPositionKey": 3 }
+    17-1. 아이템과 고객 카테고리 일치 확인[기존 쿼리 활용]
+        // 고객이 좋아하는 전시대 속 아이템 목록
+        SELECT *
+        FROM CUSTOMER_CATALOG C, GAME_SESSION_ITEM_DISPLAY D, EXISTING_ITEM I, ITEM_CATALOG IC
+        WHERE
+            C.CUSTOMER_KEY = 1
+            AND D.GAME_SESSION_KEY = (
+                SELECT GAME_SESSION_KEY FROM GAME_SESSION
+                WHERE PLAYER_KEY = ?
+                ORDER BY GAME_SESSION_KEY DESC
+                FETCH FIRST ROW ONLY
+            )
+            AND D.ITEM_KEY = I.ITEM_KEY
+            AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY
+            AND IC.CATEGORY_KEY = C.CATEGORY_KEY
+        ORDER BY D.DISPLAY_POS;
+    17-2.0 세션토큰으로 플레이어 키 받아오기
+        SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?
+    17-2.1 현재 진행 중인 이벤트 가져오기[기존 쿼리 활용]
+        SELECT * FROM EXISTING_NEWS N, NEWS_CATALOG NC
+        WHERE
+            N.GAME_SESSION_KEY = (
+                SELECT GAME_SESSION_KEY FROM GAME_SESSION
+                WHERE PLAYER_KEY = ?
+                ORDER BY GAME_SESSION_KEY DESC
+                FETCH FIRST ROW ONLY
+            )
+            AND N.NCAT_KEY = NC.NCT_KEY
+        ORDER BY NC.NCT_KEY;
+    17-2.2 판매 정보 계산용 데이터 조회
+        SELECT 
+            EI.IS_AUTHENTICITY_FOUND, 
+            DR.PURCHASE_PRICE, 
+            DR.APPRAISED_PRICE 
+        FROM EXISTING_ITEM EI 
+        JOIN DEAL_RECORD DR ON EI.ITEM_KEY = DR.ITEM_KEY
+        WHERE EI.ITEM_KEY = ?;
+    17-3. 아이템 상태 변경 (판매 완료: 4)
+        UPDATE EXISTING_ITEM
+        SET ITEM_STATE = 4
+        WHERE ITEM_KEY = ?;
+    17-4. 판매 기록 업데이트
+        UPDATE DEAL_RECORD
+        SET SOLD_DATE = ( -- 판매일
+            SELECT DAY_COUNT FROM GAME_SESSION 
+            WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+            ORDER BY GAME_SESSION_KEY DESC
+            FETCH FIRST ROW ONLY
+        ),
+            SELLING_PRICE = ?, -- 판매금액
+            BUYER_KEY = ?  -- 구매자
+        WHERE DRC_KEY = (SELECT DRC_KEY FROM EXISTING_ITEM WHERE ITEM_KEY = ?);
+    17-5. 판매 수익금 입금
+        UPDATE GAME_SESSION
+        SET MONEY = MONEY + ?
+        WHERE GAME_SESSION_KEY = (
+            SELECT GAME_SESSION_KEY FROM GAME_SESSION
+            WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+            ORDER BY GAME_SESSION_KEY DESC
+            FETCH FIRST ROW ONLY
+        );
+    17-6. 전시장에서 제거
+        DELETE FROM GAME_SESSION_ITEM_DISPLAY
+        WHERE ITEM_KEY = ?;
+    17-7. 업데이트된 잔액 조회
+        SELECT G.MONEY
+        FROM PLAYER P, GAME_SESSION G
+        WHERE P.SESSION_TOKEN = ? AND P.PLAYER_KEY = G.PLAYER_KEY
+
+18. 대출(빌리기) / 상환 (POST /loan/update)
+Request: { "debtType": "PERSONAL", "amount": 100000 }
+Response: { "leftDebtAmount": 400000, "leftMoney": 60000, ... }
+    18-1. 현재 게임 세션 정보 조회
+        SELECT * 
+        FROM GAME_SESSION G 
+        WHERE G.PLAYER_KEY = (
+            SELECT P.PLAYER_KEY 
+            FROM PLAYER P 
+            WHERE P.SESSION_TOKEN = ?
+        )
+    18-2. 대출/상환 처리 (PERSONAL)
+        amount가 양수면 대출(빚 증가, 돈 증가)
+        amount가 음수면 상환(빚 감소, 돈 감소)
+            UPDATE GAME_SESSION G 
+            SET G.PERSONAL_DEBT = G.PERSONAL_DEBT + ? 
+            WHERE G.PLAYER_KEY = (
+                SELECT P.PLAYER_KEY 
+                FROM PLAYER P 
+                WHERE P.SESSION_TOKEN = ?
+            )
+    18-3. 대출/상환 처리 (PAWNSHOP)
+        UPDATE GAME_SESSION G 
+        SET G.PAWNSHOP_DEBT = G.PAWNSHOP_DEBT + ? 
+        WHERE G.PLAYER_KEY = (
+            SELECT P.PLAYER_KEY 
+            FROM PLAYER P 
+            WHERE P.SESSION_TOKEN = ?
+        );
+    18-4. 게임 종료 조건 확인(다 상환했나)
+        SELECT G.MONEY, G.PERSONAL_DEBT, G.PAWNSHOP_DEBT 
+        FROM GAME_SESSION G 
+        WHERE G.PLAYER_KEY = (
+            SELECT P.PLAYER_KEY 
+            FROM PLAYER P 
+            WHERE P.SESSION_TOKEN = ?
+        );
+    18-5. 게임 클리어 시 기록
+        UPDATE GAME_SESSION
+        SET GAME_END_DAY_COUNT = (
+            SELECT DAY_COUNT FROM GAME_SESSION 
+            WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+            ORDER BY GAME_SESSION_KEY DESC
+            FETCH FIRST ROW ONLY
+        ),
+            GAME_END_DATE = SYSDATE
+        WHERE GAME_SESSION_KEY = (
+            SELECT GAME_SESSION_KEY FROM GAME_SESSION
+            WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+            ORDER BY GAME_SESSION_KEY DESC
+            FETCH FIRST ROW ONLY
+        )
+            AND PERSONAL_DEBT = 0
+            AND PAWNSHOP_DEBT = 0;
+    18-6. 세계 기록 조회 (게임 종료 시)
+        SELECT P.PLAYER_ID, G.NICKNAME, G.SHOP_NAME, G.GAME_END_DAY_COUNT, G.GAME_END_DATE
+        FROM PLAYER P, GAME_SESSION G
+        WHERE G.GAME_SESSION_KEY = (
+                SELECT GAME_SESSION_KEY FROM GAME_SESSION
+                WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+                ORDER BY GAME_SESSION_KEY DESC
+                FETCH FIRST ROW ONLY
+            )
+            AND P.PLAYER_KEY = G.PLAYER_KEY;
+
+19. 다음 날 넘어가기 (POST /day/next)
+Request: {}
+Response: { "dayCount": 2, "leftMoney": 48000, ... }
+    19-1. DAY_COUNT 증가
+        UPDATE GAME_SESSION
+        SET DAY_COUNT = DAY_COUNT + 1
+        WHERE GAME_SESSION_KEY = (
+            SELECT GAME_SESSION_KEY FROM GAME_SESSION
+            WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+            ORDER BY GAME_SESSION_KEY DESC
+            FETCH FIRST ROW ONLY
+        );
+    19-2. 업데이트된 게임 세션 정보 조회
+        SELECT DAY_COUNT, MONEY, PERSONAL_DEBT, PAWNSHOP_DEBT
+        FROM GAME_SESSION
+        WHERE GAME_SESSION_KEY = (
+            SELECT GAME_SESSION_KEY FROM GAME_SESSION
+            WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+            ORDER BY GAME_SESSION_KEY DESC
+            FETCH FIRST ROW ONLY
+        );
+    19-3. 7의 배수 일차인 경우 뉴스 이벤트 생성 (Java에서 처리)
+        - 이전 뉴스 삭제
+            DELETE FROM EXISTING_NEWS
+            WHERE GAME_SESSION_KEY = (
+                SELECT GAME_SESSION_KEY FROM GAME_SESSION
+                WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+                ORDER BY GAME_SESSION_KEY DESC
+                FETCH FIRST ROW ONLY
+            );
+        - 새 뉴스 생성 (1~3개, Java에서 개수 결정)
+            INSERT INTO EXISTING_NEWS (GAME_SESSION_KEY, NCAT_KEY, AMOUNT)
+                VALUES (?, ?, ?);
+
+20. 정산하기 (POST /day/finalize)
+Request: {}
+Response: { "startMoney": 50000, "todayEndMoney": 60000, ... }
+    20-1. 다음 날 넘어갈 때 정산 [기존 쿼리 활용]
+        SELECT
+            G.MONEY + SUM(BOUGHT.PURCHASE_PRICE) - SUM(SOLD.SELLING_PRICE) AS TODAY_START,
+            G.MONEY AS TODAY_END,
+            FLOOR(G.PAWNSHOP_DEBT * 0.05) AS TODAY_INTEREST,
+            G.MONEY - FLOOR(G.PAWNSHOP_DEBT * 0.05) AS TODAY_FINAL
+        FROM ((
+            GAME_SESSION G LEFT OUTER JOIN DEAL_RECORD BOUGHT ON
+                G.GAME_SESSION_KEY = BOUGHT.GAME_SESSION_KEY
+                AND G.DAY_COUNT = BOUGHT.BOUGHT_DATE
+            ) LEFT OUTER JOIN DEAL_RECORD SOLD ON
+                G.GAME_SESSION_KEY = SOLD.GAME_SESSION_KEY
+                AND G.DAY_COUNT = SOLD.SOLD_DATE
+            )
+        WHERE
+            G.GAME_SESSION_KEY = (
+                SELECT GAME_SESSION_KEY FROM GAME_SESSION
+                WHERE PLAYER_KEY = 1
+                ORDER BY GAME_SESSION_KEY DESC
+                FETCH FIRST ROW ONLY
+            )
+        GROUP BY G.MONEY, G.PAWNSHOP_DEBT;  -- G는 정확히 1개 -> 결과 자체에는 영항 X
+    20-2. 주별 정산 (7의 배수 일차) [기존 쿼리 활용]
+        SELECT
+            G.MONEY + SUM(BOUGHT.PURCHASE_PRICE) - SUM(SOLD.SELLING_PRICE) AS TODAY_START,
+            G.MONEY AS TODAY_END,
+            FLOOR(G.PAWNSHOP_DEBT * 0.05) AS TODAY_INTEREST,
+            FLOOR(G.PERSONAL_DEBT * 0.0005) AS TODAY_INTEREST_PERSONAL,
+            G.MONEY - FLOOR(G.PAWNSHOP_DEBT * 0.05) - FLOOR(G.PERSONAL_DEBT * 0.0005) AS TODAY_FINAL
+        FROM ((
+            GAME_SESSION G LEFT OUTER JOIN DEAL_RECORD BOUGHT ON
+                G.GAME_SESSION_KEY = BOUGHT.GAME_SESSION_KEY
+                AND G.DAY_COUNT = BOUGHT.BOUGHT_DATE
+            ) LEFT OUTER JOIN DEAL_RECORD SOLD ON
+                G.GAME_SESSION_KEY = SOLD.GAME_SESSION_KEY
+                AND G.DAY_COUNT = SOLD.SOLD_DATE
+            )
+        WHERE
+            G.GAME_SESSION_KEY = (
+                SELECT GAME_SESSION_KEY FROM GAME_SESSION
+                WHERE PLAYER_KEY = 1
+                ORDER BY GAME_SESSION_KEY DESC
+                FETCH FIRST ROW ONLY
+            )
+        GROUP BY G.MONEY, G.PAWNSHOP_DEBT, G.PERSONAL_DEBT;  -- G는 정확히 1개 -> 결과 자체에는 영항 X
+    20-3. 이자 차감
+        UPDATE GAME_SESSION
+        SET MONEY = MONEY - FLOOR(PAWNSHOP_DEBT * 0.05)
+        WHERE GAME_SESSION_KEY = (
+            SELECT GAME_SESSION_KEY FROM GAME_SESSION
+            WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+            ORDER BY GAME_SESSION_KEY DESC
+            FETCH FIRST ROW ONLY
+        );
+    20-4. 주별 이자 차감 (7의 배수 일차)
+        UPDATE GAME_SESSION
+        SET MONEY = MONEY - FLOOR(PAWNSHOP_DEBT * 0.05) - FLOOR(PERSONAL_DEBT * 0.0005)
+        WHERE GAME_SESSION_KEY = (
+            SELECT GAME_SESSION_KEY FROM GAME_SESSION
+            WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+            ORDER BY GAME_SESSION_KEY DESC
+            FETCH FIRST ROW ONLY
+        );
+    20-5. 게임 종료 조건 확인
+        SELECT G.MONEY, G.PERSONAL_DEBT, G.PAWNSHOP_DEBT 
+        FROM GAME_SESSION G 
+        WHERE G.PLAYER_KEY = (
+            SELECT P.PLAYER_KEY 
+            FROM PLAYER P 
+            WHERE P.SESSION_TOKEN = ?
+        );
+    20-6. 게임 오버 처리 (돈이 음수)
+        UPDATE GAME_SESSION
+        SET GAME_END_DAY_COUNT = -(
+            SELECT DAY_COUNT FROM GAME_SESSION 
+            WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+            ORDER BY GAME_SESSION_KEY DESC
+            FETCH FIRST ROW ONLY
+        )
+        WHERE GAME_SESSION_KEY = (
+            SELECT GAME_SESSION_KEY FROM GAME_SESSION
+            WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+            ORDER BY GAME_SESSION_KEY DESC
+            FETCH FIRST ROW ONLY
+        )
+            AND MONEY < 0;
+    20-7. 세계 기록 조회 (게임 종료 시)
+        SELECT P.PLAYER_ID, G.NICKNAME, G.SHOP_NAME, G.GAME_END_DAY_COUNT, G.GAME_END_DATE
+        FROM PLAYER P, GAME_SESSION G
+        WHERE G.GAME_SESSION_KEY = (
+                SELECT GAME_SESSION_KEY FROM GAME_SESSION
+                WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?)
+                ORDER BY GAME_SESSION_KEY DESC
+                FETCH FIRST ROW ONLY
+            )
+            AND P.PLAYER_KEY = G.PLAYER_KEY;
+
+21. 세계 기록 조회(랭킹) (GET /worldRecords)
+Request: {}
+Response: { "worldRecords": [...] }
+    21-1. 상위 10개 기록 조회 (클리어 일수 적은 순)
+    SELECT *
+    FROM (SELECT p.player_id, gs.nickname, gs.shop_name, gs.game_end_day_count, gs.game_end_date 
+        FROM PLAYER P, GAME_SESSION GS 
+        WHERE p.player_key = gs.player_key 
+        AND gs.game_end_day_count > 0 
+        ORDER BY gs.game_end_day_count ASC)
+    WHERE ROWNUM <= 10
+
+22. 로그아웃 (POST /player/logout)
+Request: {}
+Response: {}
+    22-1. 세션 토큰 무효화 (Java/서버 레벨에서 처리, DB 쿼리 불필요)
+        UPDATE PLAYER 
+        SET SESSION_TOKEN = NULL 
+        WHERE SESSION_TOKEN = ?;
+특정 플레이어가 발견 못한 아이템 (Type 10) [기존 쿼리 활용] << 추가해야 됨
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

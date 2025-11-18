@@ -1,5 +1,6 @@
 package phase3.screens;
 
+import java.sql.Connection;
 import java.util.Scanner;
 
 public class DebitAndItemScreen extends BaseScreen {
@@ -18,8 +19,8 @@ public class DebitAndItemScreen extends BaseScreen {
     private static final String[] CHOICES_CHECK_DEBIT = { "상환 금액 유효성 검증" };
     private static final String[] CHOICES_CHECK_REMAINING_DEBIT_IS_EXIST_REQUEST = { "남은 빚 있는지 확인하기" };
 
-    public DebitAndItemScreen(Scanner scanner) {
-        super(scanner);
+    public DebitAndItemScreen(Connection connection, Scanner scanner) {
+        super(connection, scanner);
     }
 
     public boolean showDebitAndItemScreen() {

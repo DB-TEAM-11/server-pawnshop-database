@@ -1,5 +1,6 @@
 package phase3.screens;
 
+import java.sql.Connection;
 import java.util.Scanner;
 
 public class SellScreen extends BaseScreen {
@@ -8,8 +9,8 @@ public class SellScreen extends BaseScreen {
     private static final String[] CHOICES = { "판매", "거절" };
 
     
-    public SellScreen(Scanner scanner) {
-        super(scanner);
+    public SellScreen(Connection connection, Scanner scanner) {
+        super(connection, scanner);
     }
 
     public void showSellScreen(int itemId) {

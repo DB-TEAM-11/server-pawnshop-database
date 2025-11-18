@@ -1,5 +1,6 @@
 package phase3.screens;
 
+import java.sql.Connection;
 import java.util.Scanner;
 
 public class MainScreen extends BaseScreen {
@@ -40,10 +41,10 @@ public class MainScreen extends BaseScreen {
     private DealScreen dealScreen;
     private DebitAndItemScreen debitAndItemScreen;
     
-    public MainScreen(Scanner scanner) {
-        super(scanner);
-        dealScreen = new DealScreen(scanner);
-        debitAndItemScreen = new DebitAndItemScreen(scanner);
+    public MainScreen(Connection connection, Scanner scanner) {
+        super(connection, scanner);
+        dealScreen = new DealScreen(connection, scanner);
+        debitAndItemScreen = new DebitAndItemScreen(connection, scanner);
     }
 
     public void showMainScreen() {

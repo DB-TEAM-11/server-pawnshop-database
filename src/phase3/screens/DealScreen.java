@@ -1,5 +1,6 @@
 package phase3.screens;
 
+import java.sql.Connection;
 import java.util.Scanner;
 
 public class DealScreen extends BaseScreen {

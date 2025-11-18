@@ -33,11 +33,12 @@ public class Main {
             System.exit(1);
         }
         
-        
+        // 스크린 객체 생성
         Scanner scanner = new Scanner(System.in);
         LoginScreen loginScreen = new LoginScreen(connection, scanner);
         IntroScreen introScreen = new IntroScreen(connection, scanner);
         MainScreen main = new MainScreen(connection, scanner);
+        // 게임 루프 동작
         try {
             while (true) {
                 loginScreen.showLoginScreen();

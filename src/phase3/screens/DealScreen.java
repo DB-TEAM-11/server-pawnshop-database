@@ -35,8 +35,12 @@ public class DealScreen extends BaseScreen {
     private static String[] CHOICES_ACCEPT_DEAL__SAVE = { "저장" };
     private static String[] CHOICES_DENY_DEAL__REMOVE_DEAL = { "삭제" };
     
+    // 게임 세션 정보 저장 싱글톤(전역 변수 느낌으로 사용)
+    private PlayerSession session;
+
     public DealScreen(Connection connection, Scanner scanner) {
         super(connection, scanner);
+        this.sessionToken = GameSession.getInstance();
     }
 
     public void showDealScreen() {

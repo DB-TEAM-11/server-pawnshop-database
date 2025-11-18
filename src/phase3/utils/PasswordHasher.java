@@ -1,14 +1,14 @@
-package phase3;
+package phase3.utils;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
-public class Encrypt {
-	public String hashedpw_with_salt(String pwd) {
+public class PasswordHasher {
+	public String hashPasswordAndAppendSalt(String pwd) {
 		
 		String salt = this.getSalt();
 		
-		String hashed_pw = this.getEncrypt(pwd, salt);
+		String hashed_pw = this.getHashed(pwd, salt);
 		
 		String res = hashed_pw + ";" + salt;
 		
@@ -29,17 +29,17 @@ public class Encrypt {
 		return sb.toString();
 	}
 	
-	public String getEncrypt(String pwd, String salt) {
+	public String getHashed(String pwd, String salt) {
 		String result = "";
 		
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA-256");
 			
 			md.update((pwd + salt).getBytes());
-			byte[] pwdsalt = md.digest();
+			byte[] digest = md.digest();
 			
 			StringBuffer sb = new StringBuffer();
-			for (byte b: pwdsalt) {
+			for (byte b: digest) {
 				sb.append(String.format("%02x", b));
 			}
 			

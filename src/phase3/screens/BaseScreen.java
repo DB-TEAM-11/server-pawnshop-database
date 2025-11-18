@@ -1,12 +1,16 @@
 package phase3.screens;
 
+import java.sql.Connection;
 import java.util.Scanner;
+import java.util.regex.Pattern;
 
 import phase3.exceptions.CloseGameException;
 
 public abstract class BaseScreen {
     private static final int COLUMN_WIDTH = 80;
+    private static final Pattern HANGUL_PATTERN = Pattern.compile("[가-힣]");
 
+    protected Connection connection;
     protected Scanner scanner;
 
     public BaseScreen(Connection connection, Scanner scanner) {
@@ -39,7 +43,7 @@ public abstract class BaseScreen {
         System.out.print("#");
         System.out.print(" ".repeat(midWidth - midWidth / 2));
         System.out.print(title);
-        System.out.println(" ".repeat(midWidth / 2));
+        System.out.print(" ".repeat(midWidth / 2));
         System.out.println("#");
         System.out.println("#".repeat(COLUMN_WIDTH));
         if (message != null)

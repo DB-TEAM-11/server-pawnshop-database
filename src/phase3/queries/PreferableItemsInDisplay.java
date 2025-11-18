@@ -109,8 +109,8 @@ public class PreferableItemsInDisplay {
                 queryResult.getInt(17),
                 queryResult.getInt(18),
                 queryResult.getFloat(19),
-                queryResult.getString(20) == "Y",
-                queryResult.getString(21) == "Y",
+                queryResult.getString(20).equals("Y"),
+                queryResult.getString(21).equals("Y"),
                 queryResult.getInt(22),
                 queryResult.getString(24),
                 queryResult.getInt(27)

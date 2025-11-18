@@ -18,19 +18,19 @@ public class DealRecordByDrcKey {
     public int flawEa;
     public int foundFlawEa;
     public float suspiciousFlawAura;
-    public char authenticity;
-    public char isAuthenticityFound;
+    public boolean authenticity;
+    public boolean isAuthenticityFound;
     public int itemState;
     public int drcKey;
     public int sellerKey;
-    public Integer buyerKey;
-    public Integer askingPrice;
-    public Integer purchasePrice;
-    public Integer appraisedPrice;
-    public Integer sellingPrice;
-    public Integer boughtDate;
-    public Integer soldDate;
-    public Integer lastActionDate;
+    public int buyerKey;
+    public int askingPrice;
+    public int purchasePrice;
+    public int appraisedPrice;
+    public int sellingPrice;
+    public int boughtDate;
+    public int soldDate;
+    public int lastActionDate;
 
     private DealRecordByDrcKey(
         int itemKey,
@@ -41,21 +41,21 @@ public class DealRecordByDrcKey {
         int flawEa,
         int foundFlawEa,
         float suspiciousFlawAura,
-        char authenticity,
-        char isAuthenticityFound,
+        boolean authenticity,
+        boolean isAuthenticityFound,
         int itemState,
         int drcKey,
         int gameSessionKeyFromDR,
         int sellerKey,
-        Integer buyerKey,
+        int buyerKey,
         int itemKeyFromDR,
-        Integer askingPrice,
-        Integer purchasePrice,
-        Integer appraisedPrice,
-        Integer sellingPrice,
-        Integer boughtDate,
-        Integer soldDate,
-        Integer lastActionDate
+        int askingPrice,
+        int purchasePrice,
+        int appraisedPrice,
+        int sellingPrice,
+        int boughtDate,
+        int soldDate,
+        int lastActionDate
     ) {
         this.itemKey = itemKey;
         this.gameSessionKey = gameSessionKey;
@@ -97,21 +97,21 @@ public class DealRecordByDrcKey {
             queryResult.getInt(6),
             queryResult.getInt(7),
             queryResult.getFloat(8),
-            queryResult.getString(9).charAt(0),
-            queryResult.getString(10).charAt(0),
+            queryResult.getString(9).equals("Y"),
+            queryResult.getString(10).equals("Y"),
             queryResult.getInt(11),
             queryResult.getInt(12),
             queryResult.getInt(13),
             queryResult.getInt(14),
-            (Integer) queryResult.getObject(15),
+            queryResult.getInt(15),
             queryResult.getInt(16),
-            (Integer) queryResult.getObject(17),
-            (Integer) queryResult.getObject(18),
-            (Integer) queryResult.getObject(19),
-            (Integer) queryResult.getObject(20),
-            (Integer) queryResult.getObject(21),
-            (Integer) queryResult.getObject(22),
-            (Integer) queryResult.getObject(23)
+            queryResult.getInt(17),
+            queryResult.getInt(18),
+            queryResult.getInt(19),
+            queryResult.getInt(20),
+            queryResult.getInt(21),
+            queryResult.getInt(22),
+            queryResult.getInt(23)
         );
 
         statement.close();

@@ -14,29 +14,29 @@ public class DealRecordByItemState {
     public int drcKey;
     public int gameSessionKey;
     public int sellerKey;
-    public Integer buyerKey;
+    public int buyerKey;
     public int itemKey;
-    public Integer askingPrice;
-    public Integer purchasePrice;
-    public Integer appraisedPrice;
-    public Integer sellingPrice;
-    public Integer boughtDate;
-    public Integer soldDate;
-    public Integer lastActionDate;
+    public int askingPrice;
+    public int purchasePrice;
+    public int appraisedPrice;
+    public int sellingPrice;
+    public int boughtDate;
+    public int soldDate;
+    public int lastActionDate;
 
     private DealRecordByItemState(
         int drcKey,
         int gameSessionKey,
         int sellerKey,
-        Integer buyerKey,
+        int buyerKey,
         int itemKey,
-        Integer askingPrice,
-        Integer purchasePrice,
-        Integer appraisedPrice,
-        Integer sellingPrice,
-        Integer boughtDate,
-        Integer soldDate,
-        Integer lastActionDate
+        int askingPrice,
+        int purchasePrice,
+        int appraisedPrice,
+        int sellingPrice,
+        int boughtDate,
+        int soldDate,
+        int lastActionDate
     ) {
         this.drcKey = drcKey;
         this.gameSessionKey = gameSessionKey;
@@ -62,15 +62,15 @@ public class DealRecordByItemState {
                 queryResult.getInt(1),
                 queryResult.getInt(2),
                 queryResult.getInt(3),
-                (Integer) queryResult.getObject(4),
+                queryResult.getInt(4),
                 queryResult.getInt(5),
-                (Integer) queryResult.getObject(6),
-                (Integer) queryResult.getObject(7),
-                (Integer) queryResult.getObject(8),
-                (Integer) queryResult.getObject(9),
-                (Integer) queryResult.getObject(10),
-                (Integer) queryResult.getObject(11),
-                (Integer) queryResult.getObject(12)
+                queryResult.getInt(6),
+                queryResult.getInt(7),
+                queryResult.getInt(8),
+                queryResult.getInt(9),
+                queryResult.getInt(10),
+                queryResult.getInt(11),
+                queryResult.getInt(12)
             ));
         }
 

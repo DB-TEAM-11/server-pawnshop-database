@@ -19,8 +19,8 @@ public class DisplayedItemInfo {
     public int flawEa;
     public int foundFlawEa;
     public float suspiciousFlawAura;
-    public char authenticity;
-    public char isAuthenticityFound;
+    public boolean authenticity;
+    public boolean isAuthenticityFound;
     public int itemState;
     public String itemCatalogName;
     public String imgId;
@@ -43,8 +43,8 @@ public class DisplayedItemInfo {
         int flawEa,
         int foundFlawEa,
         float suspiciousFlawAura,
-        char authenticity,
-        char isAuthenticityFound,
+        boolean authenticity,
+        boolean isAuthenticityFound,
         int itemState,
         String itemCatalogName,
         String imgId,
@@ -99,8 +99,8 @@ public class DisplayedItemInfo {
             queryResult.getInt(7),
             queryResult.getInt(8),
             queryResult.getFloat(9),
-            queryResult.getString(10).charAt(0),
-            queryResult.getString(11).charAt(0),
+            queryResult.getString(10).equals("Y"),
+            queryResult.getString(11).equals("Y"),
             queryResult.getInt(12),
             queryResult.getString(13),
             queryResult.getString(14),

@@ -21,15 +21,14 @@ public class CustomerHiddenDiscovered {
     public static int getHintRevealedFlag(Connection connection, int gameSessionKey, int customerKey) throws SQLException {
         Statement statement = connection.createStatement();
         ResultSet queryResult = statement.executeQuery(String.format(QUERY, gameSessionKey, customerKey));
-        
-        int hintRevealedFlag = 0;
-        if (queryResult.next()) {
-            hintRevealedFlag = queryResult.getInt(1);
+        if (!queryResult.next()) {
+            throw new NotASuchRowException();
         }
+
+        int hintRevealedFlag = queryResult.getInt(1);;
 
         statement.close();
         queryResult.close();
-
         return hintRevealedFlag;
     }
 

@@ -12,9 +12,9 @@ public class RestoringItems {
     public int itemKey;
     public int itemState;
     public int foundFlawEa;
-    public char isAuthenticityFound;
+    public boolean isAuthenticityFound;
     public int grade;
-    public char authenticity;
+    public boolean authenticity;
     public int appraisedPrice;
     public int dayCount;
     public int lastActionDate;
@@ -23,9 +23,9 @@ public class RestoringItems {
         int itemKey,
         int itemState,
         int foundFlawEa,
-        char isAuthenticityFound,
+        boolean isAuthenticityFound,
         int grade,
-        char authenticity,
+        boolean authenticity,
         int appraisedPrice,
         int dayCount,
         int lastActionDate
@@ -51,9 +51,9 @@ public class RestoringItems {
                 queryResult.getInt(1),
                 queryResult.getInt(2),
                 queryResult.getInt(3),
-                queryResult.getString(4).charAt(0),
+                queryResult.getString(4).equals("Y"),
                 queryResult.getInt(5),
-                queryResult.getString(6).charAt(0),
+                queryResult.getString(6).equals("Y"),
                 queryResult.getInt(7),
                 queryResult.getInt(8),
                 queryResult.getInt(9)

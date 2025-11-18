@@ -6,6 +6,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
+import phase3.exceptions.NotASuchRowException;
+
 public class StaticItem {
     private static String QUERY = "SELECT HASHED_PW FROM PLAYER WHERE PLAYER_ID = '%d'";
 
@@ -44,11 +46,11 @@ public class StaticItem {
             return itemCatalog;
         }
         Statement statement = connection.createStatement();
-        ResultSet staticItems = statement.executeQuery("SELECT * FROM (ITEM_CATALOG IC JOIN ITEM_CATEGORY CT ON IC.CATEGORY_KEY = CT.CATEGORY_KEY)");
+        ResultSet staticItems = statement.executeQuery(QUERY);
         if (!staticItems.next()) {
-            return null;
+            throw new NotASuchRowException();
         }
-
+        
         ArrayList<StaticItem> catalog = new ArrayList<StaticItem>();
         do {
             catalog.add(new StaticItem(

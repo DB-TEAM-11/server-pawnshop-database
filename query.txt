@@ -21,8 +21,16 @@ update player p set p.session_token = 'null' where session_token = ?
 
 
 [18]
-1. select * from game_session g where g.player_key = (select p.player_key from player p where p.session_token = ?(토큰))
-2. update game_session g set g.personal_dept = g.personal_dept + ? where g.player_key = (select p.player_key from player p where p.session_token = ?(토큰))
+1. 
+select * from game_session g 
+where g.player_key = (
+	select p.player_key 
+	from player p where 
+	p.session_token = ?(토큰)
+)
+
+2. 
+update game_session g set g.personal_dept = g.personal_dept + ? where g.player_key = (select p.player_key from player p where p.session_token = ?(토큰))
 3. update game_session g set g.PAWNSHOP_DEBT = g.PAWNSHOP_DEBT + ? where g.player_key = (select p.player_key from player p where p.session_token = ?(토큰))
 4. 20-5
 5. 20-6
@@ -47,10 +55,35 @@ join deal_record on deal_record dr
 where ei.item_key = dr.ITEM_KEY
 and ei.item_key = ?
 
+SELECT * FROM EXISTING_NEWS N, NEWS_CATALOG NC
+WHERE
+    N.GAME_SESSION_KEY = (
+        SELECT GAME_SESSION_KEY FROM EXISTING_ITEM EI
+        WHERE ITEM_KEY = ?
+        ORDER BY GAME_SESSION_KEY DESC
+        FETCH FIRST ROW ONLY
+    )
+    AND N.NCAT_KEY = NC.NCT_KEY
+ORDER BY NC.NCT_KEY;
+
 
 3. 
-select g.GAME_SESSION_KEY from game_session g where g.PLAYER_KEY = (select p.player_key from player p where p.session_token = ?(토큰))
 
+update existing_item ei set ei.ITEM_STATE = 4 
+where ei.item_key = ?
+and exists(
+	select ei.game_session_key 
+	from existing_item ei
+	where ei.item_key= (
+		select g.GAME_SESSION_KEY 
+		from game_session g 
+		where g.PLAYER_KEY = (
+			select p.player_key 
+			from player p 
+			where p.session_token = ?(토큰)
+		)
+	)
+	
 
 진품여부 미확정 IS_AUTHENTICITY_FOUND
 현재 적용 중인 이벤트 가져오기

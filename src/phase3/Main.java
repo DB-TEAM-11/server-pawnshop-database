@@ -11,7 +11,7 @@ import phase3.screens.LoginScreen;
 import phase3.screens.MainScreen;
 
 public class Main {
-    public static final String URL = "jdbc:oracle:thin:@localhost:1523:orcl";
+    public static final String URL = "jdbc:oracle:thin:@localhost:1521:orcl";
     public static final String USER_GAME = "MYGAME";
     public static final String USER_PASSWD = "GAME1234";
     

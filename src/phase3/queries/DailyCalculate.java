@@ -35,7 +35,7 @@ public class DailyCalculate {
         }
 
         DailyCalculate dailyCalculate = new DailyCalculate(
-            queryResult.getInt(1),
+            queryResult.getObject(1) == null ? queryResult.getInt(2) : queryResult.getInt(1),
             queryResult.getInt(2),
             queryResult.getInt(3),
             queryResult.getInt(4)

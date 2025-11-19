@@ -38,7 +38,7 @@ public class WeeklyCaluclate {
         }
         
         WeeklyCaluclate weeklyCaluclate = new WeeklyCaluclate(
-            queryResult.getInt(1),
+            queryResult.getObject(1) == null ? queryResult.getInt(2) : queryResult.getInt(1),
             queryResult.getInt(2),
             queryResult.getInt(3),
             queryResult.getInt(4),

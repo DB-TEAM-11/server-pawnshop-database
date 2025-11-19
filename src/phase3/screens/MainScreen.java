@@ -166,13 +166,38 @@ public class MainScreen extends BaseScreen {
     private void showCreateGameSessionRequest() {
         showChoices(TITLE_CREATE_GAME_SESSION_REQUEST, MESSAGE_CREATE_GAME_SESSION_REQUEST, CHOICES_CREATE_GAME_SESSION_REQUEST, false);
 
-        try {
+        String nickname = "";
+        String shopName = "";
+
+        while (true) {
             System.out.print("닉네임을 입력하세요 (최대 10글자): ");
-            String nickname = scanner.nextLine().trim();
-            
+            nickname = scanner.nextLine().trim();
+            if (nickname.isEmpty()) {
+                System.out.println("닉네임이 입력되지 않았습니다.");
+                continue;
+            }
+            if (nickname.length() > 10) {
+                System.out.println("길이가 너무 깁니다.");
+                continue;
+            }
+            break;
+        }
+        
+        while (true) {
             System.out.print("상점 이름을 입력하세요 (최대 10글자): ");
-            String shopName = scanner.nextLine().trim();
-            
+            shopName = scanner.nextLine().trim();
+            if (shopName.isEmpty()) {
+                System.out.println("상점 이름이 입력되지 않았습니다.");
+                continue;
+            }
+            if (shopName.length() > 10) {
+                System.out.println("길이가 너무 깁니다.");
+                continue;
+            }
+            break;
+        }
+
+        try {
             // 새 게임 세션 생성
             InsertGameSession.insertGameSession(connection, playerSession.getSessionToken(), nickname, shopName);
             

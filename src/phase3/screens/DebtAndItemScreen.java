@@ -8,6 +8,7 @@ import phase3.PlayerSession;
 import phase3.constants.ItemState;
 import phase3.exceptions.CloseGameException;
 import phase3.queries.ItemInDisplay;
+import phase3.queries.MoneyUpdater;
 import phase3.queries.PawnshopDebt;
 import phase3.queries.PersonalDebt;
 import phase3.queries.PlayerInfo;
@@ -17,9 +18,10 @@ import phase3.queries.ExistingItemUpdater;
 public class DebtAndItemScreen extends BaseScreen {
     private static final String TITLE_MAIN = "빚 대출/상환 & 아이템 경매/복원";
     private static final String TITLE_PERSONAL_DEBT = "개인 빚 상환";
-    private static final String TITLE_PERSONAL_DEBT_EXECUTE = "개인 빚 상환";
+    private static final String TITLE_PERSONAL_DEBT_EXECUTE = "개인 빚 상환 저장";
     private static final String TITLE_PAWNSHOP_DEBT = "가게 빚 상환";
-    private static final String TITLE_PAWNSHOP_DEBT_EXECUTE = "가게 빚 상환";
+    private static final String TITLE_PAWNSHOP_DEBT_EXECUTE = "가게 빚 상환 저장";
+    private static final String TITLE_MOMEY_SAVE = "재산 저장";
     private static final String TITLE_AUCTION_ITEM = "아이템 경매";
     private static final String TITLE_REPAIR_ITEM = "아이템 복원";
     private static final String TITLE_IS_PAWNSHOP_DEBT_EXISTS = "가게 빚 잔액 확인";
@@ -36,12 +38,14 @@ public class DebtAndItemScreen extends BaseScreen {
     private static final String[] CHOICES_PERSONAL_DEBT_EXECUTE = { "개인 빚 상환 실행" };
     private static final String[] CHOICES_PAWNSHOP_DEBT = { "상환: 2000", "상환: 1000", "상환: 500", "상환: 100", "대출: 2000", "대출: 1000", "대출: 500", "대출: 100", "취소" };
     private static final String[] CHOICES_PAWNSHOP_DEBT_EXECUTE = { "가게 빚 대출/상환 실행" };
+    private static final String[] CHOICES_MOMEY_SAVE = { "재산 저장" };
     private static final String[] CHOICES_AUCTION_ITEM = { "아이템 상태를 경매 중으로 변경" };
     private static final String[] CHOICES_REPAIR_ITEM = { "아이템 상태를 복원 중으로 변경" };
     private static final String[] CHOICES_IS_PAWNSHOP_DEBT_EXISTS = { "가게 빚 확인" };
     private static final String[] CHOICES_IS_PERSONAL_DEBT_EXISTS = { "개인 빚 확인" };
 
     private static final String TOO_MUCH_REPAYMENT = "재산보다 상환액이 더 큽니다. 다시 확인해 주세요.";
+    private static final String SMALL_DEBT = "빚보다 상환액이 더 큽니다. 다시 확인해 주세요.";
     private static final String INVALID_POSITION = "올바르지 않은 위치입니다. 다시 선택해 주세요.";
     private static final String SHOP_DEBT_REMAIN = "아직 가게 빚이 있습니다.";
     private static final String PERSONAL_DEBT_REMAIN = "아직 개인 빚이 있습니다.";
@@ -112,16 +116,29 @@ public class DebtAndItemScreen extends BaseScreen {
                     throw new IllegalStateException("Invalid index returned");
             }
 
-            if (playerInfo.money >= -amount) {
-                break;
+            if (playerInfo.money < -amount) {
+                System.out.println(TOO_MUCH_REPAYMENT);
+                continue;
+            }
+            if (playerInfo.personalDebt < -amount) {
+                System.out.println(SMALL_DEBT);
+                continue;
             }
 
-            System.out.println(TOO_MUCH_REPAYMENT);
+            break;
         }
 
         showChoices(TITLE_PERSONAL_DEBT_EXECUTE, CHOICES_PERSONAL_DEBT_EXECUTE, false);
         try {
             PersonalDebt.addToPersonalDebt(connection, session.sessionToken, amount);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+
+        showChoices(TITLE_MOMEY_SAVE, CHOICES_MOMEY_SAVE, false);
+        try {
+            MoneyUpdater.addMoney(connection, session.sessionToken, amount);
         } catch (SQLException e) {
             e.printStackTrace();
             throw new CloseGameException();
@@ -165,11 +182,16 @@ public class DebtAndItemScreen extends BaseScreen {
                     throw new IllegalStateException("Invalid index returned");
             }
 
-            if (playerInfo.money >= -amount) {
-                break;
+            if (playerInfo.money < -amount) {
+                System.out.println(TOO_MUCH_REPAYMENT);
+                continue;
+            }
+            if (playerInfo.pawnshopDebt < -amount) {
+                System.out.println(SMALL_DEBT);
+                continue;
             }
 
-            System.out.println(TOO_MUCH_REPAYMENT);
+            break;
         }
 
         showChoices(TITLE_PAWNSHOP_DEBT_EXECUTE, CHOICES_PAWNSHOP_DEBT_EXECUTE, false);
@@ -180,7 +202,15 @@ public class DebtAndItemScreen extends BaseScreen {
             throw new CloseGameException();
         }
 
-        if(amount <0){ // 게임 끝 검사
+        showChoices(TITLE_MOMEY_SAVE, CHOICES_MOMEY_SAVE, false);
+        try {
+            MoneyUpdater.addMoney(connection, session.sessionToken, amount);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+
+        if (amount < 0){ // 게임 끝 검사
             return showCheckRemainingDebtIsExistRequest();
         }
         return false; // 게임 끝 검사 안 함

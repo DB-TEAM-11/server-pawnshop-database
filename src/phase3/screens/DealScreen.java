@@ -599,16 +599,16 @@ private void showItemAuthenticationScreen() {
     private void showOpenCustomerHintScreen() {
         switch (showChoices(TITLE_OPEN_CUSTOMER_HINT, CHOICES_OPEN_CUSTOMER_HINT)) {
             case 1:
-            openCustomerHint(2, "사기칠 거 같은 비율 (FRAUD)");
-            return;
+                openCustomerHint(2, "사기칠 거 같은 비율 (FRAUD)");
+                return;
             case 2:
-            openCustomerHint(1, "수집가 능력 (WELL_COLLECT)");
-            return;
+                openCustomerHint(1, "수집가 능력 (WELL_COLLECT)");
+                return;
             case 3:
-            openCustomerHint(0, "대충 관리함 (CLUMSY)");
-            return;
+                openCustomerHint(0, "대충 관리함 (CLUMSY)");
+                return;
             case 4:
-            return;
+                return;
         }
     }
     
@@ -642,6 +642,8 @@ private void showItemAuthenticationScreen() {
         int hintRevealedFlag;
         try {
             hintRevealedFlag = CustomerHiddenDiscovered.getHintRevealedFlag(connection, gameSessionKey, dealRecord.sellerKey);
+        } catch (NotASuchRowException e) {
+            hintRevealedFlag = 0;
         } catch (SQLException e) {
             e.printStackTrace();
             throw new CloseGameException();

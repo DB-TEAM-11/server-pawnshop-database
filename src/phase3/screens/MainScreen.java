@@ -509,7 +509,7 @@ public class MainScreen extends BaseScreen {
     }
 
     private void finishAuction() {
-        showChoices(TITLE_FINISH_AUCTION, CHOICES_FINISH_AUCTION);
+        showChoices(TITLE_FINISH_AUCTION, CHOICES_FINISH_AUCTION, false);
         try {
             AuctioningItems[] auctioningItems = AuctioningItems.getAuctioningItems(connection, playerSession.sessionToken);
             for (AuctioningItems auctioningItem : auctioningItems) {
@@ -529,6 +529,10 @@ public class MainScreen extends BaseScreen {
                 MoneyUpdater.addMoney(connection, playerSession.getSessionToken(), soldPrice);
                 DisplayManagement.removeFromDisplay(connection, auctioningItem.itemKey);
 
+                System.out.println("-".repeat(80));
+                System.out.println("아이템 이름: " + auctioningItem.itemName);
+                System.out.println("경매 수익: " + soldPrice);
+
                 // // 세션토큰 키로 플레이어 키 받아오기 PlayerKeyByToken - getPlayerKey
                 // int playerKey = PlayerKeyByToken.getPlayerKey(connection, PlayerSession.getInstance().getSessionToken());
                 // // 현재 진행 중인 이벤트 가져오기[기존 쿼리 활용] TodaysEvent - getTodaysEvent
@@ -545,10 +549,11 @@ public class MainScreen extends BaseScreen {
             e.printStackTrace();
             throw new CloseGameException();
         }
+        System.out.println("-".repeat(80));
     }
 
     private boolean finishRecover() {
-        showChoices(TITLE_FINISH_RECOVER, CHOICES_FINISH_RECOVER);
+        showChoices(TITLE_FINISH_RECOVER, CHOICES_FINISH_RECOVER, false);
         RestoringItems[] restoringItems;
         try {
             restoringItems = RestoringItems.getRestoringItems(connection, playerSession.sessionToken);
@@ -629,12 +634,18 @@ public class MainScreen extends BaseScreen {
                 throw new CloseGameException();
             }
 
+            System.out.println("-".repeat(80));
+            System.out.println("아이템 이름: " + restoringItem.itemName);
+            System.out.println("복원 비용: " + flawBefore * -10);
+            System.out.println("현재 감정가: " + newAppraisedPrice);
+
             // 세션토큰으로 플레이어 키 받아오기 PlayerKeyByToken - getPlayerKey
             // 현재 진행 중인 이벤트 가져오기[기존 쿼리 활용] TodaysEvent - getTodaysEvent
             // 복원 완료 - 진위 확정  ExistingItemUpdater - updateAuthenticityFound
             // 복원 완료 - 감정가 업데이트 DealRecordUpdater - updateAppraisedPrice
             // 복원 비용 차감 MoneyUpdater - subtractMoney
         }
+        System.out.println("-".repeat(80));
         return false;
     }
 

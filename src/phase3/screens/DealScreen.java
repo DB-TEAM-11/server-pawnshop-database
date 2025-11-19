@@ -384,15 +384,30 @@ public class DealScreen extends BaseScreen {
     }
     
     private int determineGradeByAppraisal(int maxGrade, int realGrade, Random random) {
-        if (realGrade <= maxGrade) {
-            return realGrade;
-        }
-        double failProbability = 0.5;
-        if (random.nextDouble() < failProbability) {
-            return Math.max(0, maxGrade - 1);
+        // maxGrade: 1=레어, 2=유니크, 3=레전더리
+        // realGrade: 0=일반, 1=레어, 2=유니크, 3=레전더리
+        
+        double rand = random.nextDouble();
+        int result;
+        
+        if (maxGrade == 3) { // 레전더리 감정
+            if (rand < 0.10) result = 0; // 일반 10%
+            else if (rand < 0.30) result = 1; // 레어 20%
+            else if (rand < 0.60) result = 2; // 유니크 30%
+            else result = 3; // 레전더리 40%
+        } else if (maxGrade == 2) { // 유니크 감정
+            if (rand < 0.20) result = 0; // 일반 20%
+            else if (rand < 0.50) result = 1; // 레어 30%
+            else result = 2; // 유니크 50%
+        } else if (maxGrade == 1) { // 레어 감정
+            if (rand < 0.30) result = 0; // 일반 30%
+            else result = 1; // 레어 70%
         } else {
-            return maxGrade;
+            result = 0; // 기본값
         }
+        
+        // 실제 등급보다 높게 나올 수 없음
+        return Math.min(result, realGrade);
     }
     
     private void showFlawFindScreen() {

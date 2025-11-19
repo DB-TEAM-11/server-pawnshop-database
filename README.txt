@@ -1,584 +1,753 @@
-README.txt
+================================================================================
+                       전당포 운영 게임 - README
+                       Phase 3 - Team 11 Project
+================================================================================
 
-	[ 전체 목차 ]
+[ 전체 목차 ]
 
  1. 프로그램 실행 순서
- 2. 사용된 10개 이상의 쿼리문들(저희는 phase2의 10개의 사용하였고, 추가 쿼리는 작성하였습니다)
- 3. 이전 Phase 대비 수정된 사항들
- 4. 간단 기획 설명
- 5. 세부 기획 목차
- 6. 세부 기획
- 7. SQL 쿼리문 설명 (Team11-Phase2-3.sql 설명)
+ 2. Phase 2에서 사용된 10개 이상의 쿼리
+ 3. Phase 2 대비 변경사항
+ 4. 게임 기획 개요
+ 5. 상세 게임 진행 가이드
 
 
+================================================================================
+                         1. 프로그램 실행 순서
+================================================================================
 
-						[ 프로그램 실행 순서 ]
+[ 1-1. 시작 화면 ]
 
-  [ PHASE 2 쿼리 활용 ]
-
-
-
-<시작 화면>
 ################################################################################
 #                               전당포 운영 게임                               #
 ################################################################################
 [1] 로그인
 [2] 회원가입
-[0] 게임 종료: 가능한 모든 공간에 게임 종료 선택지가 있어, 게임을 종료시킬 수 있음
+[0] 게임 종료
+
+※ 모든 화면에서 [0]을 선택하면 게임을 종료할 수 있습니다.
 
 
-1. 터미널에 [2]를 입력하여 회원가입을 시작한다.
-2. 아이디(영문 30자 이하) 및 비밀번호 입력
-	사용되는 쿼리
-	- 아이디 중복 체크 "SELECT P.PLAYER_ID FROM PLAYER P WHERE P.PLAYER_ID = '%s'"
-	- 플레이어 생성 "INSERT INTO PLAYER P (P.PLAYER_ID, P.HASHED_PW, P.SESSION_TOKEN, P.LAST_ACTIVITY) VALUES (?, ?, ?, ?)"
+[ 1-2. 회원가입 절차 ]
 
-(
-	영문 30자 초과 -> "영문 최대 30글자만 가능합니다." 출력
-	중복된 아이디를 입력할 경우 -> "이미 존재하는 사용자 입니다." 출력
-	비밀번호는 최대 한자 이상 입력해야 함.
-)
-회원가입 실패 시 다시 [시작] 창을 보여줌.
+1) [2]를 입력하여 회원가입 시작
+2) 아이디 입력 (영문 30자 이하)
+3) 비밀번호 입력 (최소 1자 이상)
 
-회원가입에 성공하였다면,
-- PLAYER 테이블에 새로운 row를 생성
-"INSERT INTO PLAYER P ( P.PLAYER_ID,  P.HASHED_PW,  P.SESSION_TOKEN,  P.LAST_ACTIVITY ) VALUES (?, ?, ?, ?)"
+◆ 사용되는 쿼리
+   - 아이디 중복 체크
+     SELECT P.PLAYER_ID FROM PLAYER P WHERE P.PLAYER_ID = '%s'
+   
+   - 플레이어 생성
+     INSERT INTO PLAYER P (P.PLAYER_ID, P.HASHED_PW, P.SESSION_TOKEN, 
+                          P.LAST_ACTIVITY) VALUES (?, ?, ?, ?)
 
-1번을 눌러서, 로그인 기능으로 이동
-
-회원가입 시 생성한 아이디 및 비밀번호 입력
-	사용되는 쿼리
-	- 사용자가 입력한 id와 player table의 id가 동일한 행의 HASHED_PW 컬럼의 값을 불러오는 쿼리
-	"SELECT P.HASHED_PW FROM PLAYER P WHERE P.PLAYER_ID = '%s'";
-
-	- 입력한 비밀번호와 불러온 비밀번호가 동일하다면 
-	사용자가 입력한 id와 player table의 id가 동일한 행이 존재하는지를 확인하는 쿼리 실행
-	"SELECT P.PLAYER_KEY FROM PLAYER P WHERE P.PLAYER_ID = '%s' AND P.HASHED_PW = '%s'"
-	로그인에 성공했다면, session_token을 새롭게 생성하고, LAST_ACTIVITY를 현재의 날짜 및 시간으로 업데이트하는 쿼리 실행
-	"UPDATE PLAYER SET SESSION_TOKEN = '%s', LAST_ACTIVITY = TO_DATE('%s', 'YYYY-MM-DD HH24:MI:SS') WHERE PLAYER_ID = '%s'"
+◆ 오류 처리
+   - 영문 30자 초과 → "영문 최대 30글자만 가능합니다."
+   - 아이디 중복 → "이미 존재하는 사용자 입니다."
+   - 회원가입 실패 시 시작 화면으로 복귀
 
 
-<로그인 실패 시>
-"계정이 존재하지 않습니다" 출력
+[ 1-3. 로그인 절차 ]
 
-<로그인 성공 시>
+1) [1]을 입력하여 로그인 시작
+2) 아이디 및 비밀번호 입력
+
+◆ 사용되는 쿼리
+   - 비밀번호 조회
+     SELECT P.HASHED_PW FROM PLAYER P WHERE P.PLAYER_ID = '%s'
+   
+   - 로그인 검증
+     SELECT P.PLAYER_KEY FROM PLAYER P 
+     WHERE P.PLAYER_ID = '%s' AND P.HASHED_PW = '%s'
+   
+   - 세션 토큰 생성 및 업데이트
+     UPDATE PLAYER SET SESSION_TOKEN = '%s', 
+                      LAST_ACTIVITY = TO_DATE('%s', 'YYYY-MM-DD HH24:MI:SS') 
+     WHERE PLAYER_ID = '%s'
+
+◆ 오류 처리
+   - 로그인 실패 → "계정이 존재하지 않습니다"
+
+
+[ 1-4. 로그인 후 메인 메뉴 ]
+
+################################################################################
 [1] 게임 시작
 [2] 월드 레코드
 [3] 로그아웃
 [0] 게임 종료
 
-[2]
-	월드 레코드 불러오는 쿼리
-	- "SELECT * FROM (SELECT p.player_id, gs.nickname, gs.shop_name, gs.game_end_day_count, gs.game_end_date FROM PLAYER P, GAME_SESSION GS WHERE p.player_key = gs.player_key AND gs.game_end_day_count > 0 ORDER BY gs.game_end_day_count ASC) WHERE ROWNUM <= 10";
-
-게임 시작
-	사용되는 쿼리
-	- 기존에 진행하던 게임 세션이 있는지 확인하기 위해 로그인이 할당 받은 세션토큰으로 PLAYER 테이블의 PLAYER_KEY를 불러온 후,
-	"SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'";
-	- 해당 PLAYER_KEY가 가지고 있는 게임 세션이 있는지 확인
-	"SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY";
-	
-	- 기존에 진행하던 게임이 없는 경우 새로운 게임을 생성
-	"INSERT INTO GAME_SESSION (PLAYER_KEY, NICKNAME, SHOP_NAME) VALUES ((SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'), '%s', '%s')";
-	
-	- 생성된 게임을 불러오기 위해, 로그인 시 할당 받은 세션 토큰을 통해 PLAYER 테이블에서 PLAYER_KEY를 가져옴
-	"SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'";
-	- 가져온 PLAYER_KEY를 통해 이에 맞는 게임 세션을 불러옴
-	"SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY";
-
-	전시중인 아이템 목록을 불러옴
-	"SELECT D.DISPLAY_POS, I.*, IC.* 
-	FROM GAME_SESSION_ITEM_DISPLAY D, 
-		EXISTING_ITEM I, 
-		ITEM_CATALOG IC 
-	WHERE D.GAME_SESSION_KEY = ( 
-		SELECT GAME_SESSION_KEY 
-		FROM GAME_SESSION 
-		WHERE PLAYER_KEY = %d 
-		ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY 
-	) AND D.ITEM_KEY = I.ITEM_KEY 
-		AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY 
-		ORDER BY D.DISPLAY_POS";
-
-	전시중인 아이템이 있다면, 해당 아이템의 자세한 정보를 불러옴
-	- "SELECT 
-		D.DISPLAY_POS, I.*, IC.*, DR.DRC_KEY, 
-		DR.PURCHASE_PRICE, DR.ASKING_PRICE, 
-		DR.APPRAISED_PRICE, DR.BOUGHT_DATE, 
-		CC.CUSTOMER_NAME, GS.MONEY 
-	FROM GAME_SESSION_ITEM_DISPLAY D, 
-		EXISTING_ITEM I, ITEM_CATALOG IC, 
-		DEAL_RECORD DR, CUSTOMER_CATALOG CC, 
-		GAME_SESSION GS 
-	WHERE D.ITEM_KEY = %d 
-	AND D.ITEM_KEY = I.ITEM_KEY 
-	AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY 
-	AND I.ITEM_KEY = DR.ITEM_KEY 
-	AND DR.SELLER_KEY = CC.CUSTOMER_KEY 
-	AND GS.GAME_SESSION_KEY = DR.GAME_SESSION_KEY"
-
-	이전에 하던 거래가 있는지 확인
-	"SELECT DR.* 
-	FROM DEAL_RECORD DR, EXISTING_ITEM I 
-	WHERE DR.GAME_SESSION_KEY = (
-		SELECT GAME_SESSION_KEY 
-		FROM GAME_SESSION 
-		WHERE PLAYER_KEY = %d 
-		ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
-	) AND DR.ITEM_KEY = I.ITEM_KEY 
-	AND I.ITEM_STATE = %d 
-	ORDER BY DR.DRC_KEY"
-
-	거래가 없다면
-	- 7일차인지 확인
-	"SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY";
-	- 7일차라면, 주간 정산 정보 가져오기 -> 정산이 완료된 상태를 가져와 출력
-	"SELECT 
-		G.MONEY + SUM(BOUGHT.PURCHASE_PRICE) 
-		- SUM(SOLD.SELLING_PRICE) AS TODAY_START, 
-		G.MONEY AS TODAY_END, 
-		FLOOR(G.PAWNSHOP_DEBT * 0.05) AS TODAY_INTEREST, 
-		FLOOR(G.PERSONAL_DEBT * 0.0005) AS TODAY_INTEREST_PERSONAL, 
-		G.MONEY 
-		- FLOOR(G.PAWNSHOP_DEBT * 0.05) 
-		- FLOOR(G.PERSONAL_DEBT * 0.0005) AS TODAY_FINAL 
-		FROM (( 
-				GAME_SESSION G 
-				LEFT OUTER JOIN DEAL_RECORD BOUGHT 
-				ON G.GAME_SESSION_KEY = BOUGHT.GAME_SESSION_KEY 
-				AND G.DAY_COUNT = BOUGHT.BOUGHT_DATE 
-			) LEFT OUTER JOIN DEAL_RECORD SOLD 
-				ON G.GAME_SESSION_KEY = SOLD.GAME_SESSION_KEY 
-				AND G.DAY_COUNT = SOLD.SOLD_DATE 
-			) WHERE G.GAME_SESSION_KEY = ( 
-				SELECT GAME_SESSION_KEY 
-				FROM GAME_SESSION 
-				WHERE PLAYER_KEY = %d 
-				ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY 
-			) GROUP BY G.MONEY, G.PAWNSHOP_DEBT, G.PERSONAL_DEBT";
-    
-		주간 정산 정보에서 가져온 이자 값을 활용하여 이자를 지불함
-		"UPDATE GAME_SESSION SET MONEY = MONEY - %d 
-		WHERE GAME_SESSION_KEY = (
-			SELECT GAME_SESSION_KEY 
-			FROM GAME_SESSION 
-			WHERE PLAYER_KEY = (
-				SELECT PLAYER_KEY 
-				FROM PLAYER 
-				WHERE SESSION_TOKEN = '%s'
-			) ORDER BY GAME_SESSION_KEY DESC 
-			FETCH FIRST ROW ONLY)";
-
-		게임 오버
-			TODAY_FINAL의 값이 < 0이라면 게임 오버
-
-	7일차가 아니라면, 일일 정산 실행
-	"SELECT 
-		G.MONEY 
-		+ SUM(BOUGHT.PURCHASE_PRICE) 
-		- SUM(SOLD.SELLING_PRICE) AS TODAY_START, 
-		G.MONEY AS TODAY_END, 
-		FLOOR(G.PAWNSHOP_DEBT * 0.05) AS TODAY_INTEREST, 
-		G.MONEY - FLOOR(G.PAWNSHOP_DEBT * 0.05) AS TODAY_FINAL 
-		FROM (( 
-			GAME_SESSION G LEFT OUTER JOIN DEAL_RECORD BOUGHT 
-			ON G.GAME_SESSION_KEY = BOUGHT.GAME_SESSION_KEY 
-			AND G.DAY_COUNT = BOUGHT.BOUGHT_DATE 
-		) LEFT OUTER JOIN DEAL_RECORD SOLD 
-			ON G.GAME_SESSION_KEY = SOLD.GAME_SESSION_KEY 
-			AND G.DAY_COUNT = SOLD.SOLD_DATE
-		) WHERE G.GAME_SESSION_KEY = ( 
-			SELECT GAME_SESSION_KEY 
-			FROM GAME_SESSION 
-			WHERE PLAYER_KEY = %d 
-			ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY 
-		) GROUP BY G.MONEY, G.PAWNSHOP_DEBT";
-
-		일일 이자 차감
-		"UPDATE GAME_SESSION SET MONEY = MONEY - %d WHERE GAME_SESSION_KEY = (SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s') ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY)";
-		
-		게임 오버
-			TODAY_FINAL의 값이 < 0이라면 게임 오버
-
-
-		다음 날로 이동(GAME_SESSION의 DAY_COUNT)
-		"UPDATE GAME_SESSION 
-		SET DAY_COUNT = DAY_COUNT + 1 
-		WHERE GAME_SESSION_KEY = (
-			SELECT GAME_SESSION_KEY 
-			FROM GAME_SESSION 
-			WHERE PLAYER_KEY = (
-				SELECT PLAYER_KEY 
-				FROM PLAYER WHERE SESSION_TOKEN = '%s'
-			) ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY)";
-
-
-		다음 날로 업데이트된 상태의 게임 세션을 출력
-		"SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY";
-    
-
-		[다음날 거래 3개 생성]
-		사용자의 게임 세션을 가져오기 위해
-		"SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s') ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY";
-		
-		해당 게임 세션의 이벤트를 가져오기 위해(이벤트에 따라 거래 상품들의 가격에 영향을 주기 때문)
-		"SELECT * FROM EXISTING_NEWS N, NEWS_CATALOG NC 
-		 WHERE N.GAME_SESSION_KEY = ( 
-			SELECT GAME_SESSION_KEY 
-			FROM GAME_SESSION 
-			WHERE PLAYER_KEY = %d 
-			ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY 
-		) AND N.NCAT_KEY = NC.NCT_KEY ORDER BY NC.NCT_KEY";
-
-		이후 나와 거래할 고객들을 랜덤하게 3명 선택
-		"SELECT 
-			CUSTOMER_KEY, 
-			FRAUD, 
-			WELL_COLLECT, 
-			CLUMSY, 
-			CATEGORY_KEY 
-		FROM CUSTOMER_CATALOG 
-		ORDER BY DBMS_RANDOM.VALUE FETCH FIRST %d ROWS ONLY"
-
-		각 고객별로 거래를 시작함.
-		1. 각 고객이 선호하는 카테고리와 일치하는 카테고리의 아이템을 하나 가져온다
-		"SELECT * FROM ITEM_CATALOG 
-		WHERE CATEGORY_KEY = %d 
-		ORDER BY DBMS_RANDOM.VALUE 
-		FETCH FIRST ROW ONLY";
-
-		해당 아이템에 대한 흠 확률, 흠 갯수, 가품 확률, 등급 결정 등을 결정한 후
-		아이템을 생성한다.
-		"INSERT INTO EXISTING_ITEM (
-			GAME_SESSION_KEY, 
-			ITEM_CATALOG_KEY, 
-			GRADE, FOUND_GRADE, 
-			FLAW_EA, FOUND_FLAW_EA, 
-			SUSPICIOUS_FLAW_AURA, 
-			AUTHENTICITY, IS_AUTHENTICITY_FOUND, 
-			ITEM_STATE
-		) VALUES (?, ?, ?, 0, ?, 0, ?, ?, 'N', 0)";
-
-		방금 생성한 아이템의 키를 가져옴
-		"SELECT ITEM_KEY FROM EXISTING_ITEM WHERE GAME_SESSION_KEY = %d ORDER BY ITEM_KEY DESC FETCH FIRST ROW ONLY";
-
-		거래 기준가를 계산함
-
-		이렇게 수집하고 계산한 정보를 통해 거래를 생성한다.
-
-	거래가 있다면
-		남은 거래 중 첫 번째 거래 정보를 가져옴
-		"SELECT DR.* FROM DEAL_RECORD DR, EXISTING_ITEM I 
-		WHERE DR.GAME_SESSION_KEY = (
-			SELECT GAME_SESSION_KEY 
-			FROM GAME_SESSION 
-			WHERE PLAYER_KEY = %d 
-			ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
-		) AND DR.ITEM_KEY = I.ITEM_KEY 
-		AND I.ITEM_STATE = %d ORDER BY DR.DRC_KEY";
-
-
-		현재 거래의 기록을 가져오기 위해
-		"SELECT I.*, DR.* FROM EXISTING_ITEM I, DEAL_RECORD DR WHERE DR.DRC_KEY = %d AND DR.ITEM_KEY = I.ITEM_KEY";
-		를 실행하고
-		현재 거래의 손님의 정보를 가져오기 위해
-		"SELECT CUSTOMER_NAME, IMG_ID, FRAUD, WELL_COLLECT, CLUMSY FROM CUSTOMER_CATALOG WHERE CUSTOMER_KEY = %d";
-		를 실행하고
-		현재 거래의 아이템 카탈로그 정보를 가져오기 위해
-		"SELECT * FROM ITEM_CATALOG WHERE ITEM_CATALOG_KEY = %d";
-		를 실행함.
-		현재 플레이어의 잔액을 가져오기 위해
-		"SELECT MONEY FROM GAME_SESSION WHERE GAME_SESSION_KEY = (
-			SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (
-				SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
-			) ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
-		)"
-		를 실행함.
-		이렇게 얻은 정보를 통해 아래의 정보들을 출력함
-
-		또한, player_key를 가져오기 위해
-		"SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'";
-		가져온 PLAYER_KEY를 가지고 해당 사용자의 게임 세션 정보를 가져옴
-		"SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY";
-		해당 거래의 손님의 힌트 정보를 불러옴
-		"SELECT HINT_REVEALED_FLAG FROM CUSTOMER_HIDDEN_DISCOVERED_IN_GAME_SESSION WHERE GAME_SESSION_KEY = %d AND CUSTOMER_KEY = %d";
-		위에 불러온 정보를 통해 아래를 출력함
-
-		이 둘은 거래 중인 상황에서 input을 받을 때 항상 실행됨
-		1. 아이템 조사 -> 아이템 힌트 얻기
-		아이템 힌트를 얻기 위해서 현재 본인의 잔고를 조회
-		"SELECT MONEY FROM GAME_SESSION WHERE GAME_SESSION_KEY = (
-			SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (
-				SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
-			) ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY)"
-		잔액이 10원 보다 적으면 힌트를 개봉 할 수 없음
-		아니라면, 
-		"SELECT I.*, DR.* FROM EXISTING_ITEM I, DEAL_RECORD DR WHERE DR.DRC_KEY = %d AND DR.ITEM_KEY = I.ITEM_KEY";
-		을 통해서 현재 DEAL_RECORD의 모든 내용을 가져오고,
-		아래의 쿼리문을 통해서
-		"SELECT 
-			(10 * CLUMSY) FLAW_BASE, 
-			(15 + (65 * WELL_COLLECT)) LEGENDARY_P, 
-			(20 + PROBABILITY_BASE) UNIQUE_P, 
-			(30 + PROBABILITY_BASE) RARE_P, 
-			(35 + PROBABILITY_BASE) NORMAL_P, 
-			FAKE_P, (1 - FAKE_P) GENIUE_P
-		FROM ( 
-			SELECT CC.*, 
-			(65 * (1 - WELL_COLLECT) / 3) PROBABILITY_BASE, 
-			(10 + 90 * FRAUD) FAKE_P 
-			FROM CUSTOMER_CATALOG CC 
-			WHERE CUSTOMER_KEY = %d )"
-		손님의 여러 정보를 불러옴
-		이를 통해서 아이템 정보를 계산하여
-		사용자의 원하는 힌트 값에 따라서 아이템 힌트 값을 출력함.
-
-		아이템 힌트 가격은 무조건 10원이기 때문에, 10원 차감한 후,
-		"UPDATE GAME_SESSION SET MONEY = MONEY - %d WHERE GAME_SESSION_KEY = (SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s') ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY)"
-		사용자의 잔액 조회를 한 후 아래의 정보들을 출력
-		"SELECT MONEY FROM GAME_SESSION WHERE GAME_SESSION_KEY = (
-			SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (
-				SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
-			) ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
-		)"
-
-		2. 등급 검사
-		1 = 20, 2 = 30, 3 = 50 중에 하나를 고르고, 
-		본인의 잔액을 조회한 후, cost 보다 본인의 잔액이 부족하면 실패
-		잔액이 더 크거나 같다면, 
-		현재까지 밝혀진 아이템의 등급을 불러와서 출력
-		"SELECT I.*, DR.* FROM EXISTING_ITEM I, DEAL_RECORD DR WHERE DR.DRC_KEY = %d AND DR.ITEM_KEY = I.ITEM_KEY"
-
-
-
-		3. 흠 찾기
-		1 = 20, 2 = 60, 3 = 100
-		잔액 검사한 후 되면
-		"SELECT I.*, DR.* FROM EXISTING_ITEM I, DEAL_RECORD DR WHERE DR.DRC_KEY = %d AND DR.ITEM_KEY = I.ITEM_KEY";
-		를 통해 해당 아이템과 거래 기록의 데이터를 가지고 오고, 
-
-		흠 밝혀진 흠의 갯수와 그런 것들을 잘 해서
-		흠의 갯수를 업데이트 함
-		"UPDATE EXISTING_ITEM SET FOUND_FLAW_EA = FOUND_FLAW_EA + %d WHERE ITEM_KEY = %d"
-				
-		이후 이벤트 정보도 가져와 
-		"SELECT * FROM ITEM_CATALOG WHERE ITEM_CATALOG_KEY = %d";
-		이를 잘 적용하여 아이템의 가격에 적용시켜서 가격 변동을 시킨 후,
-
-		이를 다시 거래 기록을 업데이트
-		"UPDATE DEAL_RECORD SET PURCHASE_PRICE = %d, APPRAISED_PRICE = %d WHERE DRC_KEY = %d"
-		사용자 잔액 업데이트
-		"UPDATE GAME_SESSION SET MONEY = MONEY - %d WHERE GAME_SESSION_KEY = (SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s') ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY)"
-		사용자 잔액 조회
-		"SELECT MONEY FROM GAME_SESSION WHERE GAME_SESSION_KEY = (SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s') ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY)"
-		위 정보를 가지고 아래와 같이 출력
-
-
-		4. 아이템 정가품 판정
-		200 골드 
-		잔액 검사 통과
-		해당 거래의 아이템의 정보를 가져와서 정가품 진위여부를 체크
-		"SELECT I.*, DR.* FROM EXISTING_ITEM I, DEAL_RECORD DR WHERE DR.DRC_KEY = %d AND DR.ITEM_KEY = I.ITEM_KEY"
-		이미 진위 여부를 받았다면, 지나가고
-		받지 않았다면, 진위 여부체크
-
-		새롭게 찾은 진위여부 체크여부 부분을 업데이트(정가품 검사 받았다고)
-		"UPDATE EXISTING_ITEM SET IS_AUTHENTICITY_FOUND = 'Y' WHERE ITEM_KEY = %d"
-
-		"SELECT * FROM ITEM_CATALOG WHERE ITEM_CATALOG_KEY = %d"로 해당 아이템의 카탈로그를 불러온 후,
-		카탈로그 키를 통해서 해당 카탈로그 아이템의 이벤트를 불러 온 후,
-		"SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'"
-		"SELECT * FROM EXISTING_NEWS N, NEWS_CATALOG NC WHERE N.GAME_SESSION_KEY = ( 
-			SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = %d 
-			ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY 
-			) AND N.NCAT_KEY = NC.NCT_KEY ORDER BY NC.NCT_KEY"
-		해당 아이템의 이벤트의 내용에 따라 정가품의 판정 확률 계산 후,
-		정가품 판정 후 아이템의 가격 업데이트
-		"UPDATE DEAL_RECORD SET PURCHASE_PRICE = %d, APPRAISED_PRICE = %d WHERE DRC_KEY = %d"
-
-		이후 잔액 차감 및 잔액 조회
-
-		위의 데이터를 토대로 아래의 결과를 출력
-
-
-		5. 손님 힌트 조회
-		50 골드보다 잔액 적으면 실패
-		해당 아이템의 거래 기록을 불러오고,
-		"SELECT I.*, DR.* FROM EXISTING_ITEM I, DEAL_RECORD DR WHERE DR.DRC_KEY = %d AND DR.ITEM_KEY = I.ITEM_KEY"
-		player_key를 불러온 후,
-
-		해당 player_key를 통해서 
-		"SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY"
-		게임 세션의 정보를 모두 불러옴
-
-		게임 세션 키와 게임 세션의 손님 키를 통해서 해당 손님의 힌트가 밝혀졌는지 여부를 체크하고,
-		"SELECT HINT_REVEALED_FLAG FROM CUSTOMER_HIDDEN_DISCOVERED_IN_GAME_SESSION WHERE GAME_SESSION_KEY = %d AND CUSTOMER_KEY = %d";
-
-		현재 거래의 고객의 정보를 가져와서
-		"SELECT CUSTOMER_NAME, IMG_ID, FRAUD, WELL_COLLECT, CLUMSY FROM CUSTOMER_CATALOG WHERE CUSTOMER_KEY = %d"
-		처음에 사용자가 얻고자 하였던 0/1/2에 대한 정보를 보여줌.
-
-		그리고 고객의 힌트 공개여부를 업데이트 함.
-		"MERGE INTO CUSTOMER_HIDDEN_DISCOVERED_IN_GAME_SESSION CH USING (SELECT %d AS GAME_SESSION_KEY, %d AS CUSTOMER_KEY, %d AS HINT_REVEALED_FLAG FROM DUAL) SOURCE ON (CH.GAME_SESSION_KEY = SOURCE.GAME_SESSION_KEY AND CH.CUSTOMER_KEY = SOURCE.CUSTOMER_KEY) WHEN MATCHED THEN UPDATE SET CH.HINT_REVEALED_FLAG = SOURCE.HINT_REVEALED_FLAG WHEN NOT MATCHED THEN INSERT (GAME_SESSION_KEY, CUSTOMER_KEY, HINT_REVEALED_FLAG) VALUES (SOURCE.GAME_SESSION_KEY, SOURCE.CUSTOMER_KEY, SOURCE.HINT_REVEALED_FLAG)"
-
-		이후, 잔액 업데이트 및 조회
-
-		위의 결과 정보들로 아래에 출력
-
-
-		6. 거래 수락
-		현재 거래 정보와 나의 잔액 조회
-		"SELECT I.*, DR.* FROM EXISTING_ITEM I, DEAL_RECORD DR WHERE DR.DRC_KEY = %d AND DR.ITEM_KEY = I.ITEM_KEY"
-		"SELECT MONEY FROM GAME_SESSION WHERE GAME_SESSION_KEY = (SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s') ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY)"
-
-		현재 잔액을 통해서 구매 가능 여부 체크
-
-
-		구매 가능하다면, 
-		세션 토큰으로 플레이어 키 받아오고,
-		"SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'"
-
-		플레이어 키로 해당 플레이어의 게임 세션 정보를 받아옴
-		"SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY"
-		
-		이후, 게임 세션 정보의 unlockedShowcaseCount 컬럼의 값을 통해서 전시대에 몇개까지 진열이 가능한지 여부를 체크하고,
-		현재 전시대에 전시가 가능한지 체크
-		"SELECT DISPLAY_POS FROM GAME_SESSION_ITEM_DISPLAY WHERE GAME_SESSION_KEY = (SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s') ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY) ORDER BY DISPLAY_POS ASC"
-
-		가득찼다면 구매 취소
-
-		전시대 비어있다면 빈 전시대 번호 클릭하여 해당 번호의 전시대에 업데이트
-		거래 기록에 구매 날짜 업데이트하고,
-		"UPDATE DEAL_RECORD SET BOUGHT_DATE = (SELECT DAY_COUNT FROM GAME_SESSION WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s') ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY) WHERE DRC_KEY = %d"
-		아이템의 상태를 구매완료로 변경
-		"UPDATE EXISTING_ITEM SET ITEM_STATE = %d WHERE ITEM_KEY = %d"
-		GAME_SESSION_ITEM_DISPLAY의 DISPLAY_POS의 상태 업데이트
-		"INSERT INTO GAME_SESSION_ITEM_DISPLAY (GAME_SESSION_KEY, DISPLAY_POS, ITEM_KEY) VALUES (%d, %d, %d)"
-
-		잔액 업데이트 및 조회
-
-
-
-		7. 거래 기록 삭제
-		거래 기록 키를 통해서 거래 기록을 불러오고
-		거래 기록과 해당 아이템의 존재 여부를 삭제
-		"DELETE FROM DEAL_RECORD WHERE DRC_KEY = %d"
-		"DELETE FROM EXISTING_ITEM WHERE ITEM_KEY = %d"
-
-
-
-		[2번을 입력하면]
-		세션 토큰을 이용하여 사용자의 player_key를 들고오고, 이를 통해서 해당 플레이어의 게임 세션을 불러온다.
-		"SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'"
-		"SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY"
-
-		[1] 개인 빛 상환 
-		1 = 2000,
-		2 = 1000
-		3 = 500
-		4 = 100
-		5 = 취소
-
-		위에서 불러온 게임 세션의 잔액과 비교하여 더 많은 빚을 내려고 하면 실패
-
-		잔액이 남으면 개인 빚 차감, 잔액 차감
-		"UPDATE GAME_SESSION G SET G.PERSONAL_DEBT = G.PERSONAL_DEBT + %d WHERE G.PLAYER_KEY = (SELECT P.PLAYER_KEY FROM PLAYER P WHERE P.SESSION_TOKEN = '%s')"
-		"UPDATE GAME_SESSION SET MONEY = MONEY + %d WHERE GAME_SESSION_KEY = (SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s') ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY)"
-
-		빚 얼마나 남았는지 체크여부
-		가게 빚과
-		"SELECT PAWNSHOP_DEBT FROM PLAYER P, GAME_SESSION G WHERE P.PLAYER_KEY = G.PLAYER_KEY AND P.SESSION_TOKEN = '%s' AND G.GAME_END_DAY_COUNT IS NULL ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY"
-		개인 빚이 남아있는지를 체크하고
-		"SELECT PERSONAL_DEBT FROM PLAYER P, GAME_SESSION G WHERE P.PLAYER_KEY = G.PLAYER_KEY AND P.SESSION_TOKEN = '%s' AND G.GAME_END_DAY_COUNT IS NULL ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY"
-		다 아직 남아있으면 게임 계속해서 진행, 다 갚았으면, 게임 즉시 종료
-
-		[가게 빚 상환 및 대출]
-		1=2000, 2=1000, 3=500, 4=100, 5=-2000, 6=-1000, 7=-500, 8=-100, 9=취소 중 선택
-
-		선택에 따른 가게 빚과 플레이어 잔액을 업데이트
-		"UPDATE GAME_SESSION G SET G.PAWNSHOP_DEBT = G.PAWNSHOP_DEBT + %d WHERE G.PLAYER_KEY = (SELECT P.PLAYER_KEY FROM PLAYER P WHERE P.SESSION_TOKEN = '%s')"
-		"UPDATE GAME_SESSION SET MONEY = MONEY + %d WHERE GAME_SESSION_KEY = (SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s') ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY)"
-
-		상환한 상황이라면 게임 클리어 여부 검사
-		가게 빚과
-		"SELECT PAWNSHOP_DEBT FROM PLAYER P, GAME_SESSION G WHERE P.PLAYER_KEY = G.PLAYER_KEY AND P.SESSION_TOKEN = '%s' AND G.GAME_END_DAY_COUNT IS NULL ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY"
-		개인 빚이 남아있는지를 체크하고
-		"SELECT PERSONAL_DEBT FROM PLAYER P, GAME_SESSION G WHERE P.PLAYER_KEY = G.PLAYER_KEY AND P.SESSION_TOKEN = '%s' AND G.GAME_END_DAY_COUNT IS NULL ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY"
-		다 아직 남아있으면 게임 계속해서 진행, 다 갚았으면, 게임 즉시 종료
-
-
-		3. 경매
-
-		4. 복원
-
-
-
-		게임 클리어
-		클리어한 게임 요약 보여줌
-		"SELECT GS.NICKNAME, GS.SHOP_NAME, GS.GAME_END_DAY_COUNT, GS.GAME_END_DATE FROM PLAYER P, GAME_SESSION GS WHERE P.SESSION_TOKEN = '%s' AND P.PLAYER_KEY = GS.PLAYER_KEY ORDER BY GS.GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY"
-		아직 찾지 못한 아이템 리스트를 출력
-		"(SELECT IC.ITEM_CATALOG_NAME FROM ITEM_CATALOG IC) MINUS ( SELECT IC.ITEM_CATALOG_NAME FROM GAME_SESSION G, EXISTING_ITEM I, ITEM_CATALOG IC WHERE G.PLAYER_KEY = %d AND G.GAME_SESSION_KEY = I.GAME_SESSION_KEY AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY )"
-
-		위의 해당 데이터를 이용하여, 아래의 내용을 출력
-
-
-		게임 오버
-		오버한 게임 요약 보여줌
-		"SELECT GS.NICKNAME, GS.SHOP_NAME, GS.GAME_END_DAY_COUNT, GS.GAME_END_DATE FROM PLAYER P, GAME_SESSION GS WHERE P.SESSION_TOKEN = '%s' AND P.PLAYER_KEY = GS.PLAYER_KEY ORDER BY GS.GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY"
-		아직 찾지 못한 아이템 리스트를 출력
-		"(SELECT IC.ITEM_CATALOG_NAME FROM ITEM_CATALOG IC) MINUS ( SELECT IC.ITEM_CATALOG_NAME FROM GAME_SESSION G, EXISTING_ITEM I, ITEM_CATALOG IC WHERE G.PLAYER_KEY = %d AND G.GAME_SESSION_KEY = I.GAME_SESSION_KEY AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY )"
-
-		위의 해당 데이터를 이용하여, 아래의 내용을 출력
-
-		게임 세션 정보를 불러와서 
-		"SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY"
-		불러온 게임 세션의 DAY_COUNT의 음수를 취한 값을 GAME_SESSION 테이블의 GAME_END_DAY_COUNT 속성에 삽입
-		"UPDATE GAME_SESSION SET GAME_END_DAY_COUNT = %d, GAME_END_DATE = SYSDATE WHERE GAME_SESSION_KEY = (SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s') ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY)"
-
-
-
-
-로그아웃
-	- 사용자의 session_token을 null로, 변경하며 세션을 무효화
-	"UPDATE PLAYER SET SESSION_TOKEN = NULL WHERE SESSION_TOKEN = '%s'";
-
-	
-
-1. 1번을 누르면 게임이 시작되고,
-2. 2번을 누르면 해당 게임을 클리어한 사용자 10명의 리스트, 즉 세계 기록 리스트가 뜬다
-(2번을 눌렀을 때는 다음 입력 선택지도 이전과 동일. 즉, '게임 시작', '월드 레코드', '로그아웃', '게임 종료' 메뉴가 뜸)
-3. 3번을 누르면 로그아웃.
-4. 0번을 누르면 게임이 종료됨.
-
-
-[게임 시작]
-1. [1]번을 입력하여 게임 세션을 가져옴(게임 시작 직후엔 선택지는 1번 하나)
-2. 진행 중인 게임 세션이 없다면, 엔터 키를 입력
-3. 새 게임을 생성해야 함. [1]번을 입력하여 새 게임 세션 생성(선택지는 1번 하나)
-4. 닉네임 입력(최대 10글자), 상점 이름 입력(최대 10글자) 입력 -> 게임 세션 생성 완료
-5. 전시 중인 아이템 가져오기 -> [1]번 입력(선택지는 1번 하나)
-5.1. 전시 중인 아이템이 없다면 계속하기 위해 Enter입력
-5.1.1. 남은 거래 있는지 확인([1]번 입력. 선택지는 1번 하나). 
-5.1.2. 남은 거래가 있다면, 남은 거래의 갯수를 띄워주고, 해당 거래를 계속해서 진행해야 함. (계속 진행하기 위해, 'Enter' 입력)
-5.1.3. 남은 거래가 없다면 "대기 중인 거래가 없습니다." 출력. (거래 생성 하며 계속 진행하기 위해, 'Enter' 입력)
-고객을 랜덤하게 3명을 불러오고 아이템 3개를 랜덤하게 불러와서 초기 거래 기록을 생성하고,
-화면에 
-'고객의 수', 
-'고객이 생성되었다는 문구', 
-'아이템 이름', '등급', '흠 갯수', '정가품 여부', '제시가 출력' 
-
-5.1.3.1 
-
-
-5.2. 전시 중인 아이템이 있다면
-
-
-
-2.
-
-
-						[ 10개의 Query문들 ]
-1. Team11-Phase3-UsedPhase2Queries.sql
-
-						[ 이전 Phase 대비 수정된 사항 ]
+◆ [2] 월드 레코드 조회
+   - 게임 클리어 기록 상위 10명 표시
+   
+   쿼리:
+   SELECT * FROM (
+       SELECT p.player_id, gs.nickname, gs.shop_name, 
+              gs.game_end_day_count, gs.game_end_date 
+       FROM PLAYER P, GAME_SESSION GS 
+       WHERE p.player_key = gs.player_key 
+         AND gs.game_end_day_count > 0 
+       ORDER BY gs.game_end_day_count ASC
+   ) WHERE ROWNUM <= 10
+
+
+[ 1-5. 게임 세션 시작 ]
+
+◆ 게임 세션 확인 및 생성
+
+   1) 플레이어 키 조회
+      SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+   
+   2) 기존 게임 세션 확인
+      SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d 
+      ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+   
+   3) 게임 세션이 없는 경우 → 새 게임 생성
+      - 닉네임 입력 (최대 10자)
+      - 상점명 입력 (최대 10자)
+      
+      INSERT INTO GAME_SESSION (PLAYER_KEY, NICKNAME, SHOP_NAME) 
+      VALUES ((SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'), 
+              '%s', '%s')
+
+
+[ 1-6. 전시장 아이템 조회 ]
+
+◆ 전시 중인 아이템 목록 조회
+   SELECT D.DISPLAY_POS, I.*, IC.* 
+   FROM GAME_SESSION_ITEM_DISPLAY D, 
+        EXISTING_ITEM I, 
+        ITEM_CATALOG IC 
+   WHERE D.GAME_SESSION_KEY = (
+       SELECT GAME_SESSION_KEY FROM GAME_SESSION 
+       WHERE PLAYER_KEY = %d 
+       ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+   ) AND D.ITEM_KEY = I.ITEM_KEY 
+     AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY 
+   ORDER BY D.DISPLAY_POS
+
+◆ 전시 아이템 상세 정보 조회
+   SELECT D.DISPLAY_POS, I.*, IC.*, DR.DRC_KEY, 
+          DR.PURCHASE_PRICE, DR.ASKING_PRICE, DR.APPRAISED_PRICE, 
+          DR.BOUGHT_DATE, CC.CUSTOMER_NAME, GS.MONEY 
+   FROM GAME_SESSION_ITEM_DISPLAY D, EXISTING_ITEM I, ITEM_CATALOG IC, 
+        DEAL_RECORD DR, CUSTOMER_CATALOG CC, GAME_SESSION GS 
+   WHERE D.ITEM_KEY = %d 
+     AND D.ITEM_KEY = I.ITEM_KEY 
+     AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY 
+     AND I.ITEM_KEY = DR.ITEM_KEY 
+     AND DR.SELLER_KEY = CC.CUSTOMER_KEY 
+     AND GS.GAME_SESSION_KEY = DR.GAME_SESSION_KEY
+
+
+[ 1-7. 거래 진행 확인 ]
+
+◆ 진행 중인 거래 조회
+   SELECT DR.* 
+   FROM DEAL_RECORD DR, EXISTING_ITEM I 
+   WHERE DR.GAME_SESSION_KEY = (
+       SELECT GAME_SESSION_KEY FROM GAME_SESSION 
+       WHERE PLAYER_KEY = %d 
+       ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+   ) AND DR.ITEM_KEY = I.ITEM_KEY 
+     AND I.ITEM_STATE = %d 
+   ORDER BY DR.DRC_KEY
+
+
+[ 1-8. 정산 시스템 ]
+
+◆ 거래가 없을 때 → 정산 진행
+
+   1) 7일차 확인
+      SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d 
+      ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+
+   2-1) 주간 정산 (7일차)
+        SELECT G.MONEY + SUM(BOUGHT.PURCHASE_PRICE) 
+                       - SUM(SOLD.SELLING_PRICE) AS TODAY_START, 
+               G.MONEY AS TODAY_END, 
+               FLOOR(G.PAWNSHOP_DEBT * 0.05) AS TODAY_INTEREST, 
+               FLOOR(G.PERSONAL_DEBT * 0.0005) AS TODAY_INTEREST_PERSONAL, 
+               G.MONEY - FLOOR(G.PAWNSHOP_DEBT * 0.05) 
+                       - FLOOR(G.PERSONAL_DEBT * 0.0005) AS TODAY_FINAL 
+        FROM ((GAME_SESSION G 
+               LEFT OUTER JOIN DEAL_RECORD BOUGHT 
+               ON G.GAME_SESSION_KEY = BOUGHT.GAME_SESSION_KEY 
+                  AND G.DAY_COUNT = BOUGHT.BOUGHT_DATE) 
+              LEFT OUTER JOIN DEAL_RECORD SOLD 
+              ON G.GAME_SESSION_KEY = SOLD.GAME_SESSION_KEY 
+                 AND G.DAY_COUNT = SOLD.SOLD_DATE) 
+        WHERE G.GAME_SESSION_KEY = (
+            SELECT GAME_SESSION_KEY FROM GAME_SESSION 
+            WHERE PLAYER_KEY = %d 
+            ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+        ) GROUP BY G.MONEY, G.PAWNSHOP_DEBT, G.PERSONAL_DEBT
+
+        이자 차감:
+        UPDATE GAME_SESSION SET MONEY = MONEY - %d 
+        WHERE GAME_SESSION_KEY = (
+            SELECT GAME_SESSION_KEY FROM GAME_SESSION 
+            WHERE PLAYER_KEY = (
+                SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+            ) ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+        )
+
+        ※ TODAY_FINAL < 0 이면 게임 오버
+
+   2-2) 일일 정산 (1~6일차)
+        SELECT G.MONEY + SUM(BOUGHT.PURCHASE_PRICE) 
+                       - SUM(SOLD.SELLING_PRICE) AS TODAY_START, 
+               G.MONEY AS TODAY_END, 
+               FLOOR(G.PAWNSHOP_DEBT * 0.05) AS TODAY_INTEREST, 
+               G.MONEY - FLOOR(G.PAWNSHOP_DEBT * 0.05) AS TODAY_FINAL 
+        FROM ((GAME_SESSION G 
+               LEFT OUTER JOIN DEAL_RECORD BOUGHT 
+               ON G.GAME_SESSION_KEY = BOUGHT.GAME_SESSION_KEY 
+                  AND G.DAY_COUNT = BOUGHT.BOUGHT_DATE) 
+              LEFT OUTER JOIN DEAL_RECORD SOLD 
+              ON G.GAME_SESSION_KEY = SOLD.GAME_SESSION_KEY 
+                 AND G.DAY_COUNT = SOLD.SOLD_DATE) 
+        WHERE G.GAME_SESSION_KEY = (
+            SELECT GAME_SESSION_KEY FROM GAME_SESSION 
+            WHERE PLAYER_KEY = %d 
+            ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+        ) GROUP BY G.MONEY, G.PAWNSHOP_DEBT
+
+        이자 차감:
+        UPDATE GAME_SESSION SET MONEY = MONEY - %d 
+        WHERE GAME_SESSION_KEY = (
+            SELECT GAME_SESSION_KEY FROM GAME_SESSION 
+            WHERE PLAYER_KEY = (
+                SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+            ) ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+        )
+
+        ※ TODAY_FINAL < 0 이면 게임 오버
+
+
+[ 1-9. 다음 날 진행 ]
+
+◆ DAY_COUNT 증가
+   UPDATE GAME_SESSION SET DAY_COUNT = DAY_COUNT + 1 
+   WHERE GAME_SESSION_KEY = (
+       SELECT GAME_SESSION_KEY FROM GAME_SESSION 
+       WHERE PLAYER_KEY = (
+           SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+       ) ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+   )
+
+◆ 업데이트된 게임 세션 조회
+   SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d 
+   ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+
+
+[ 1-10. 일일 거래 3개 생성 ]
+
+◆ 게임 세션 키 조회
+   SELECT GAME_SESSION_KEY FROM GAME_SESSION 
+   WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s') 
+   ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+
+◆ 현재 이벤트 조회
+   SELECT * FROM EXISTING_NEWS N, NEWS_CATALOG NC 
+   WHERE N.GAME_SESSION_KEY = (
+       SELECT GAME_SESSION_KEY FROM GAME_SESSION 
+       WHERE PLAYER_KEY = %d 
+       ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+   ) AND N.NCAT_KEY = NC.NCT_KEY 
+   ORDER BY NC.NCT_KEY
+
+◆ 랜덤 고객 3명 선택
+   SELECT CUSTOMER_KEY, FRAUD, WELL_COLLECT, CLUMSY, CATEGORY_KEY 
+   FROM CUSTOMER_CATALOG 
+   ORDER BY DBMS_RANDOM.VALUE 
+   FETCH FIRST %d ROWS ONLY
+
+◆ 각 고객별 거래 생성
+   1) 고객 선호 카테고리 아이템 선택
+      SELECT * FROM ITEM_CATALOG 
+      WHERE CATEGORY_KEY = %d 
+      ORDER BY DBMS_RANDOM.VALUE 
+      FETCH FIRST ROW ONLY
+
+   2) 아이템 생성 (등급, 흠, 진위 등 랜덤 결정)
+      INSERT INTO EXISTING_ITEM (
+          GAME_SESSION_KEY, ITEM_CATALOG_KEY, 
+          GRADE, FOUND_GRADE, 
+          FLAW_EA, FOUND_FLAW_EA, 
+          SUSPICIOUS_FLAW_AURA, 
+          AUTHENTICITY, IS_AUTHENTICITY_FOUND, 
+          ITEM_STATE
+      ) VALUES (?, ?, ?, 0, ?, 0, ?, ?, 'N', 0)
+
+   3) 생성된 아이템 키 조회
+      SELECT ITEM_KEY FROM EXISTING_ITEM 
+      WHERE GAME_SESSION_KEY = %d 
+      ORDER BY ITEM_KEY DESC FETCH FIRST ROW ONLY
+
+
+[ 1-11. 거래 진행 (거래가 있을 때) ]
+
+◆ 첫 번째 거래 정보 가져오기
+   SELECT DR.* FROM DEAL_RECORD DR, EXISTING_ITEM I 
+   WHERE DR.GAME_SESSION_KEY = (
+       SELECT GAME_SESSION_KEY FROM GAME_SESSION 
+       WHERE PLAYER_KEY = %d 
+       ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+   ) AND DR.ITEM_KEY = I.ITEM_KEY 
+     AND I.ITEM_STATE = %d 
+   ORDER BY DR.DRC_KEY
+
+◆ 거래 상세 정보 조회
+   1) 현재 거래 기록
+      SELECT I.*, DR.* FROM EXISTING_ITEM I, DEAL_RECORD DR 
+      WHERE DR.DRC_KEY = %d AND DR.ITEM_KEY = I.ITEM_KEY
+
+   2) 고객 정보
+      SELECT CUSTOMER_NAME, IMG_ID, FRAUD, WELL_COLLECT, CLUMSY 
+      FROM CUSTOMER_CATALOG WHERE CUSTOMER_KEY = %d
+
+   3) 아이템 카탈로그 정보
+      SELECT * FROM ITEM_CATALOG WHERE ITEM_CATALOG_KEY = %d
+
+   4) 플레이어 잔액
+      SELECT MONEY FROM GAME_SESSION WHERE GAME_SESSION_KEY = (
+          SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (
+              SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+          ) ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+      )
+
+   5) 고객 힌트 정보
+      SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+      SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d 
+      ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+      SELECT HINT_REVEALED_FLAG 
+      FROM CUSTOMER_HIDDEN_DISCOVERED_IN_GAME_SESSION 
+      WHERE GAME_SESSION_KEY = %d AND CUSTOMER_KEY = %d
+
+
+[ 1-12. 거래 중 행동 ]
+
+◆ [1] 아이템 힌트 얻기 (10 골드)
+   
+   1) 잔액 확인
+      SELECT MONEY FROM GAME_SESSION WHERE GAME_SESSION_KEY = (
+          SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (
+              SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+          ) ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+      )
+      ※ 잔액 < 10 이면 실패
+
+   2) 거래 정보 조회
+      SELECT I.*, DR.* FROM EXISTING_ITEM I, DEAL_RECORD DR 
+      WHERE DR.DRC_KEY = %d AND DR.ITEM_KEY = I.ITEM_KEY
+
+   3) 고객 성향 기반 확률 계산
+      SELECT (10 * CLUMSY) FLAW_BASE, 
+             (15 + (65 * WELL_COLLECT)) LEGENDARY_P, 
+             (20 + PROBABILITY_BASE) UNIQUE_P, 
+             (30 + PROBABILITY_BASE) RARE_P, 
+             (35 + PROBABILITY_BASE) NORMAL_P, 
+             FAKE_P, (1 - FAKE_P) GENIUE_P
+      FROM (
+          SELECT CC.*, 
+                 (65 * (1 - WELL_COLLECT) / 3) PROBABILITY_BASE, 
+                 (10 + 90 * FRAUD) FAKE_P 
+          FROM CUSTOMER_CATALOG CC 
+          WHERE CUSTOMER_KEY = %d
+      )
+      ※ 손님의 여러 정보를 통해 아이템 정보를 계산하여 사용자가 원하는 힌트 출력
+
+   4) 잔액 차감 (10 골드)
+      UPDATE GAME_SESSION SET MONEY = MONEY - %d 
+      WHERE GAME_SESSION_KEY = (
+          SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (
+              SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+          ) ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+      )
+
+   5) 차감 후 잔액 조회
+      SELECT MONEY FROM GAME_SESSION WHERE GAME_SESSION_KEY = (
+          SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (
+              SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+          ) ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+      )
+
+
+◆ [2] 등급 검사 (20/30/50 골드)
+   
+   검사 레벨: 1 = 20골드, 2 = 30골드, 3 = 50골드
+   
+   1) 잔액 조회 후 비용 검증
+      ※ 잔액 < 비용이면 실패
+
+   2) 아이템 등급 정보 조회
+      SELECT I.*, DR.* FROM EXISTING_ITEM I, DEAL_RECORD DR 
+      WHERE DR.DRC_KEY = %d AND DR.ITEM_KEY = I.ITEM_KEY
+      ※ 현재까지 밝혀진 아이템의 등급 출력
+
+
+◆ [3] 흠 찾기 (20/60/100 골드)
+   
+   검사 레벨: 1 = 20골드, 2 = 60골드, 3 = 100골드
+   
+   1) 잔액 검사 후 아이템 정보 조회
+      SELECT I.*, DR.* FROM EXISTING_ITEM I, DEAL_RECORD DR 
+      WHERE DR.DRC_KEY = %d AND DR.ITEM_KEY = I.ITEM_KEY
+
+   2) 발견된 흠 개수 업데이트
+      UPDATE EXISTING_ITEM SET FOUND_FLAW_EA = FOUND_FLAW_EA + %d 
+      WHERE ITEM_KEY = %d
+
+   3) 아이템 카탈로그 정보 조회
+      SELECT * FROM ITEM_CATALOG WHERE ITEM_CATALOG_KEY = %d
+      ※ 이벤트 정보를 가져와 가격 변동 적용
+
+   4) 거래 기록 업데이트 (가격 재계산)
+      UPDATE DEAL_RECORD SET PURCHASE_PRICE = %d, APPRAISED_PRICE = %d 
+      WHERE DRC_KEY = %d
+
+   5) 사용자 잔액 차감
+      UPDATE GAME_SESSION SET MONEY = MONEY - %d 
+      WHERE GAME_SESSION_KEY = (
+          SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (
+              SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+          ) ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+      )
+
+   6) 사용자 잔액 조회
+      SELECT MONEY FROM GAME_SESSION WHERE GAME_SESSION_KEY = (
+          SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (
+              SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+          ) ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+      )
+
+
+◆ [4] 정가품 판정 (200 골드)
+   
+   1) 잔액 검사 후 아이템 정보 조회
+      SELECT I.*, DR.* FROM EXISTING_ITEM I, DEAL_RECORD DR 
+      WHERE DR.DRC_KEY = %d AND DR.ITEM_KEY = I.ITEM_KEY
+      ※ 이미 진위여부를 받았다면 스킵
+
+   2) 진위여부 확인 플래그 업데이트
+      UPDATE EXISTING_ITEM SET IS_AUTHENTICITY_FOUND = 'Y' 
+      WHERE ITEM_KEY = %d
+
+   3) 아이템 카탈로그 및 이벤트 정보 조회
+      SELECT * FROM ITEM_CATALOG WHERE ITEM_CATALOG_KEY = %d
+      
+      SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+      
+      SELECT * FROM EXISTING_NEWS N, NEWS_CATALOG NC 
+      WHERE N.GAME_SESSION_KEY = ( 
+          SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = %d 
+          ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY 
+      ) AND N.NCAT_KEY = NC.NCT_KEY 
+      ORDER BY NC.NCT_KEY
+      ※ 이벤트 내용에 따라 정가품 판정 확률 계산
+
+   4) 거래 기록 업데이트 (정가품 판정 후 가격 변경)
+      UPDATE DEAL_RECORD SET PURCHASE_PRICE = %d, APPRAISED_PRICE = %d 
+      WHERE DRC_KEY = %d
+
+   5) 잔액 차감 및 조회
+
+
+◆ [5] 손님 힌트 조회 (50 골드)
+   
+   1) 잔액 검사 (50 골드 미만이면 실패)
+
+   2) 거래 기록 조회
+      SELECT I.*, DR.* FROM EXISTING_ITEM I, DEAL_RECORD DR 
+      WHERE DR.DRC_KEY = %d AND DR.ITEM_KEY = I.ITEM_KEY
+
+   3) 게임 세션 정보 조회
+      SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+      
+      SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d 
+      ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+
+   4) 손님 힌트 공개 여부 확인
+      SELECT HINT_REVEALED_FLAG 
+      FROM CUSTOMER_HIDDEN_DISCOVERED_IN_GAME_SESSION 
+      WHERE GAME_SESSION_KEY = %d AND CUSTOMER_KEY = %d
+
+   5) 고객 정보 조회 및 힌트 제공
+      SELECT CUSTOMER_NAME, IMG_ID, FRAUD, WELL_COLLECT, CLUMSY 
+      FROM CUSTOMER_CATALOG WHERE CUSTOMER_KEY = %d
+      ※ 사용자가 선택한 힌트 정보 제공
+
+   6) 고객 힌트 공개 여부 업데이트
+      MERGE INTO CUSTOMER_HIDDEN_DISCOVERED_IN_GAME_SESSION CH 
+      USING (
+          SELECT %d AS GAME_SESSION_KEY, %d AS CUSTOMER_KEY, 
+                 %d AS HINT_REVEALED_FLAG FROM DUAL
+      ) SOURCE 
+      ON (CH.GAME_SESSION_KEY = SOURCE.GAME_SESSION_KEY 
+          AND CH.CUSTOMER_KEY = SOURCE.CUSTOMER_KEY) 
+      WHEN MATCHED THEN 
+          UPDATE SET CH.HINT_REVEALED_FLAG = SOURCE.HINT_REVEALED_FLAG 
+      WHEN NOT MATCHED THEN 
+          INSERT (GAME_SESSION_KEY, CUSTOMER_KEY, HINT_REVEALED_FLAG) 
+          VALUES (SOURCE.GAME_SESSION_KEY, SOURCE.CUSTOMER_KEY, 
+                  SOURCE.HINT_REVEALED_FLAG)
+      
+   7) 잔액 차감 및 조회
+
+
+◆ [6] 거래 수락 (구매)
+   
+   1) 현재 거래 정보 및 잔액 조회
+      SELECT I.*, DR.* FROM EXISTING_ITEM I, DEAL_RECORD DR 
+      WHERE DR.DRC_KEY = %d AND DR.ITEM_KEY = I.ITEM_KEY
+      
+      SELECT MONEY FROM GAME_SESSION WHERE GAME_SESSION_KEY = (
+          SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (
+              SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+          ) ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+      )
+      ※ 현재 잔액으로 구매 가능 여부 체크
+
+   2) 플레이어 및 게임 세션 정보 조회
+      SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+      
+      SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d 
+      ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+
+   3) 전시대 공간 확인
+      SELECT DISPLAY_POS 
+      FROM GAME_SESSION_ITEM_DISPLAY 
+      WHERE GAME_SESSION_KEY = (
+          SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (
+              SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+          ) ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+      ) ORDER BY DISPLAY_POS ASC
+      ※ unlockedShowcaseCount 값으로 전시 가능 개수 확인
+      ※ 전시대가 가득 차면 구매 취소
+
+   4) 거래 완료 처리
+      UPDATE DEAL_RECORD SET BOUGHT_DATE = (
+          SELECT DAY_COUNT FROM GAME_SESSION WHERE PLAYER_KEY = (
+              SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+          ) ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+      ) WHERE DRC_KEY = %d
+
+   5) 아이템 상태 변경 (구매 완료)
+      UPDATE EXISTING_ITEM SET ITEM_STATE = %d WHERE ITEM_KEY = %d
+
+   6) 전시대에 아이템 추가
+      INSERT INTO GAME_SESSION_ITEM_DISPLAY 
+      (GAME_SESSION_KEY, DISPLAY_POS, ITEM_KEY) 
+      VALUES (%d, %d, %d)
+
+   7) 잔액 차감 및 조회
+
+
+◆ [7] 거래 거절 (삭제)
+   
+   1) 거래 기록 삭제
+      DELETE FROM DEAL_RECORD WHERE DRC_KEY = %d
+
+   2) 아이템 삭제
+      DELETE FROM EXISTING_ITEM WHERE ITEM_KEY = %d
+
+
+[ 1-13. 빚 관리 및 대출 ]
+
+◆ 세션 정보 조회
+   SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+   
+   SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d 
+   ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+
+
+◆ [1] 개인 빚 상환
+   
+   상환 금액 선택: 1=2000, 2=1000, 3=500, 4=100, 5=취소
+   
+   1) 잔액 확인
+      ※ 잔액보다 많은 금액 상환 시도 시 실패
+
+   2) 개인 빚 차감
+      UPDATE GAME_SESSION G SET G.PERSONAL_DEBT = G.PERSONAL_DEBT + %d 
+      WHERE G.PLAYER_KEY = (
+          SELECT P.PLAYER_KEY FROM PLAYER P WHERE P.SESSION_TOKEN = '%s'
+      )
+
+   3) 잔액 차감
+      UPDATE GAME_SESSION SET MONEY = MONEY + %d 
+      WHERE GAME_SESSION_KEY = (
+          SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (
+              SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+          ) ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+      )
+
+   4) 게임 클리어 여부 확인
+      - 가게 빚 조회:
+        SELECT PAWNSHOP_DEBT FROM PLAYER P, GAME_SESSION G 
+        WHERE P.PLAYER_KEY = G.PLAYER_KEY AND P.SESSION_TOKEN = '%s' 
+          AND G.GAME_END_DAY_COUNT IS NULL 
+        ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+      
+      - 개인 빚 조회:
+        SELECT PERSONAL_DEBT FROM PLAYER P, GAME_SESSION G 
+        WHERE P.PLAYER_KEY = G.PLAYER_KEY AND P.SESSION_TOKEN = '%s' 
+          AND G.GAME_END_DAY_COUNT IS NULL 
+        ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+      
+      ※ 둘 다 0이면 게임 즉시 종료 (클리어)
+
+
+◆ [2] 가게 빚 상환 및 대출
+   
+   선택: 1=2000, 2=1000, 3=500, 4=100, 5=-2000, 6=-1000, 7=-500, 8=-100, 9=취소
+   
+   1) 가게 빚 업데이트
+      UPDATE GAME_SESSION G SET G.PAWNSHOP_DEBT = G.PAWNSHOP_DEBT + %d 
+      WHERE G.PLAYER_KEY = (
+          SELECT P.PLAYER_KEY FROM PLAYER P WHERE P.SESSION_TOKEN = '%s'
+      )
+
+   2) 잔액 업데이트
+      UPDATE GAME_SESSION SET MONEY = MONEY + %d 
+      WHERE GAME_SESSION_KEY = (
+          SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (
+              SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+          ) ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+      )
+
+   3) 상환 시 게임 클리어 여부 확인
+      - 가게 빚 조회:
+        SELECT PAWNSHOP_DEBT FROM PLAYER P, GAME_SESSION G 
+        WHERE P.PLAYER_KEY = G.PLAYER_KEY AND P.SESSION_TOKEN = '%s' 
+          AND G.GAME_END_DAY_COUNT IS NULL 
+        ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+      
+      - 개인 빚 조회:
+        SELECT PERSONAL_DEBT FROM PLAYER P, GAME_SESSION G 
+        WHERE P.PLAYER_KEY = G.PLAYER_KEY AND P.SESSION_TOKEN = '%s' 
+          AND G.GAME_END_DAY_COUNT IS NULL 
+        ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+      
+      ※ 둘 다 0이면 게임 즉시 종료 (클리어)
+
+
+◆ [3] 경매
+   (추가 구현 필요)
+
+
+◆ [4] 복원
+   (추가 구현 필요)
+
+
+[ 1-14. 게임 클리어 ]
+
+◆ 클리어한 게임 요약 조회
+   SELECT GS.NICKNAME, GS.SHOP_NAME, GS.GAME_END_DAY_COUNT, GS.GAME_END_DATE 
+   FROM PLAYER P, GAME_SESSION GS 
+   WHERE P.SESSION_TOKEN = '%s' AND P.PLAYER_KEY = GS.PLAYER_KEY 
+   ORDER BY GS.GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+
+◆ 미발견 아이템 리스트 출력
+   (SELECT IC.ITEM_CATALOG_NAME FROM ITEM_CATALOG IC) 
+   MINUS 
+   (SELECT IC.ITEM_CATALOG_NAME 
+    FROM GAME_SESSION G, EXISTING_ITEM I, ITEM_CATALOG IC 
+    WHERE G.PLAYER_KEY = %d AND G.GAME_SESSION_KEY = I.GAME_SESSION_KEY 
+      AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY)
+
+
+[ 1-15. 게임 오버 ]
+
+◆ 게임 오버 요약 조회
+   SELECT GS.NICKNAME, GS.SHOP_NAME, GS.GAME_END_DAY_COUNT, GS.GAME_END_DATE 
+   FROM PLAYER P, GAME_SESSION GS 
+   WHERE P.SESSION_TOKEN = '%s' AND P.PLAYER_KEY = GS.PLAYER_KEY 
+   ORDER BY GS.GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+
+◆ 미발견 아이템 리스트 출력
+   (SELECT IC.ITEM_CATALOG_NAME FROM ITEM_CATALOG IC) 
+   MINUS 
+   (SELECT IC.ITEM_CATALOG_NAME 
+    FROM GAME_SESSION G, EXISTING_ITEM I, ITEM_CATALOG IC 
+    WHERE G.PLAYER_KEY = %d AND G.GAME_SESSION_KEY = I.GAME_SESSION_KEY 
+      AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY)
+
+◆ 게임 종료 처리
+   1) 게임 세션 정보 조회
+      SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d 
+      ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+
+   2) 게임 종료 일자 기록
+      UPDATE GAME_SESSION 
+      SET GAME_END_DAY_COUNT = %d, GAME_END_DATE = SYSDATE 
+      WHERE GAME_SESSION_KEY = (
+          SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (
+              SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'
+          ) ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+      )
+      ※ GAME_END_DAY_COUNT는 DAY_COUNT의 음수 값
+
+
+========================================
+[ 2. 추가 기능 ]
+========================================
+
+[ 2-1. 로그아웃 ]
+
+◆ 세션 토큰 무효화
+   UPDATE PLAYER SET SESSION_TOKEN = NULL WHERE SESSION_TOKEN = '%s'
+
+
+[ 2-2. 메뉴 선택지 ]
+
+   1. 게임 시작
+   2. 월드 레코드 조회 (게임 클리어한 상위 10명)
+   3. 로그아웃
+   0. 게임 종료
+
+
+[ 2-3. 게임 시작 흐름 요약 ]
+
+   1. [1]번 입력하여 게임 세션 가져오기
+   
+   2. 진행 중인 게임 세션이 없다면 Enter 입력
+   
+   3. [1]번 입력하여 새 게임 세션 생성
+      - 닉네임 입력 (최대 10글자)
+      - 상점 이름 입력 (최대 10글자)
+      → 게임 세션 생성 완료
+   
+   4. 전시 중인 아이템 가져오기 → [1]번 입력
+   
+   5-1. 전시 중인 아이템이 없는 경우:
+        - Enter 입력으로 계속 진행
+        - [1]번 입력으로 남은 거래 확인
+        
+        5-1-1. 남은 거래가 있는 경우:
+               - 남은 거래 개수 출력
+               - Enter 입력으로 거래 진행
+        
+        5-1-2. 남은 거래가 없는 경우:
+               - "대기 중인 거래가 없습니다." 출력
+               - Enter 입력으로 거래 생성
+               - 랜덤 고객 3명, 랜덤 아이템 3개로 초기 거래 기록 생성
+               - 출력 정보: 고객 수, 생성 문구, 아이템 이름, 등급, 흠 개수, 정가품 여부, 제시가
+   
+   5-2. 전시 중인 아이템이 있는 경우:
+        (계속 진행)
+
+
+========================================
+[ 3. 참조 ]
+========================================
+
+[ 3-1. 10개의 Query문들 ]
+   Team11-Phase3-UsedPhase2Queries.sql 파일 참조
+
+
+[ 3-2. 이전 Phase 대비 수정 사항 ]
+   (내용 추가 필요)
 		

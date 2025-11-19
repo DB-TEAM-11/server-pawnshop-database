@@ -367,6 +367,8 @@ public class MainScreen extends BaseScreen {
         DealRecordByItemState[] deals;
         try {
             deals = DealRecordByItemState.getDealRecordByItemState(connection, playerKey, 0);
+        } catch (NotASuchRowException e) {
+            deals = new DealRecordByItemState[0];
         } catch (SQLException e) {
             e.printStackTrace();
             throw new CloseGameException();

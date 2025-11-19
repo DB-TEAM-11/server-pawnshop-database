@@ -158,6 +158,13 @@ public class MainScreen extends BaseScreen {
         PlayerInfo playerInfo;
         try {
             playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
+        } catch (NotASuchRowException e) {
+            // 진행 중인 게임이 없거나 오류 발생
+            gameSessionId = 0;
+            System.out.println("\n진행 중인 게임 세션이 없습니다.");
+            System.out.println("\n계속하려면 Enter를 누르세요...");
+            scanner.nextLine();
+            return 0;
         } catch (SQLException e) {
             e.printStackTrace();
             throw new CloseGameException();

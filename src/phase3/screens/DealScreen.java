@@ -126,7 +126,12 @@ public class DealScreen extends BaseScreen {
             playerKey = PlayerKeyByToken.getPlayerKey(connection, playerSession.getSessionToken());
             playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
             gameSessionKey = playerInfo.gameSessionKey;
-            hintRevealedFlag = CustomerHiddenDiscovered.getHintRevealedFlag(connection, gameSessionKey, dealRecord.sellerKey);
+            try {
+                hintRevealedFlag = CustomerHiddenDiscovered.getHintRevealedFlag(connection, gameSessionKey, dealRecord.sellerKey);
+            } catch (NotASuchRowException e) {
+                // 만난 적 있어도 힌트 연 적 없으면 DB에 기록 안 함
+                sb.append("(공개된 힌트 없음)\n");
+            }
         } catch (SQLException e) {
             e.printStackTrace();
             throw new CloseGameException();

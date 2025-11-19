@@ -116,17 +116,7 @@ public class MainScreen extends BaseScreen {
                 }
                 int firstDrcKey = deals[0].drcKey;
 
-                // 고객 선호 Category와 Match되는 Item 존재 -> 고객 구매 시도
-                PreferableItemsInDisplay[] preferableItems;
-                try {
-                    preferableItems = PreferableItemsInDisplay.getPreferableItemsInDisplay(connection, deals[0].sellerKey, playerKey);
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                    throw new CloseGameException();
-                }
-                if (preferableItems.length > 0) {
-                    sellScreen.showSellScreen(preferableItems[0].itemKey);
-                }
+                showTrySell(deals[0].sellerKey);
                 
                 switch (showChoices(TITLE_MAIN_MENU, CHOICES_MAIN_MENU)) {
                     case 1:
@@ -564,7 +554,7 @@ public class MainScreen extends BaseScreen {
         }
     }
 
-private void showGenerateDailyDeals() {
+    private void showGenerateDailyDeals() {
         System.out.println("\n=== 오늘의 거래 생성 ===");
         
         // 게임 세션 키 가져오기
@@ -672,6 +662,23 @@ private void showGenerateDailyDeals() {
         System.out.println("======================");
         System.out.println("\n계속하려면 Enter를 누르세요...");
         scanner.nextLine();
+    }
+
+    private void showTrySell(int sellerKey) {
+        // 고객 선호 Category와 Match되는 Item 존재 -> 고객 구매 시도
+        PreferableItemsInDisplay[] preferableItems;
+        try {
+            preferableItems = PreferableItemsInDisplay.getPreferableItemsInDisplay(connection, sellerKey, playerKey);
+        } catch (NotASuchRowException e) {
+            System.out.println("고객이 선호하는 Item이 진열되어 있지 않습니다.");
+            return;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        if (preferableItems.length > 0) {
+            sellScreen.showSellScreen(preferableItems[0].itemKey);
+        }
     }
     
     private int determineGradeByCustomer(float wellCollect) {

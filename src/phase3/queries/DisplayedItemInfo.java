@@ -8,7 +8,7 @@ import java.sql.Statement;
 import phase3.exceptions.NotASuchRowException;
 
 public class DisplayedItemInfo {
-    private static final String QUERY = "SELECT D.DISPLAY_POS, I.*, IC.*, DR.PURCHASE_PRICE, DR.ASKING_PRICE, DR.APPRAISED_PRICE, DR.BOUGHT_DATE, CC.CUSTOMER_NAME, GS.MONEY FROM GAME_SESSION_ITEM_DISPLAY D, EXISTING_ITEM I, ITEM_CATALOG IC, DEAL_RECORD DR, CUSTOMER_CATALOG CC, GAME_SESSION GS WHERE D.ITEM_KEY = %d AND D.ITEM_KEY = I.ITEM_KEY AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY AND I.ITEM_KEY = DR.ITEM_KEY AND DR.SELLER_KEY = CC.CUSTOMER_KEY AND GS.GAME_SESSION_KEY = DR.GAME_SESSION_KEY";
+    private static final String QUERY = "SELECT D.DISPLAY_POS, I.*, IC.*, DR.DRC_KEY, DR.PURCHASE_PRICE, DR.ASKING_PRICE, DR.APPRAISED_PRICE, DR.BOUGHT_DATE, CC.CUSTOMER_NAME, GS.MONEY FROM GAME_SESSION_ITEM_DISPLAY D, EXISTING_ITEM I, ITEM_CATALOG IC, DEAL_RECORD DR, CUSTOMER_CATALOG CC, GAME_SESSION GS WHERE D.ITEM_KEY = %d AND D.ITEM_KEY = I.ITEM_KEY AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY AND I.ITEM_KEY = DR.ITEM_KEY AND DR.SELLER_KEY = CC.CUSTOMER_KEY AND GS.GAME_SESSION_KEY = DR.GAME_SESSION_KEY";
 
     public int displayPos;
     public int itemKey;
@@ -26,6 +26,7 @@ public class DisplayedItemInfo {
     public String imgId;
     public int categoryKey;
     public int basePrice;
+    public int dealRecordKey;
     public int purchasePrice;
     public int askingPrice;
     public int appraisedPrice;
@@ -50,6 +51,7 @@ public class DisplayedItemInfo {
         String imgId,
         int categoryKey,
         int basePrice,
+        int dealRecordKey,
         int purchasePrice,
         int askingPrice,
         int appraisedPrice,
@@ -73,6 +75,7 @@ public class DisplayedItemInfo {
         this.imgId = imgId;
         this.categoryKey = categoryKey;
         this.basePrice = basePrice;
+        this.dealRecordKey = dealRecordKey;
         this.purchasePrice = purchasePrice;
         this.askingPrice = askingPrice;
         this.appraisedPrice = appraisedPrice;
@@ -110,8 +113,9 @@ public class DisplayedItemInfo {
             queryResult.getInt(18),
             queryResult.getInt(19),
             queryResult.getInt(20),
-            queryResult.getString(21),
-            queryResult.getInt(22)
+            queryResult.getInt(21),
+            queryResult.getString(22),
+            queryResult.getInt(23)
         );
 
         statement.close();

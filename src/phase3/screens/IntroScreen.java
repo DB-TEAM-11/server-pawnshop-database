@@ -1,7 +1,14 @@
 package phase3.screens;
 
 import java.sql.Connection;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.Scanner;
+
+import phase3.PlayerSession;
+import phase3.exceptions.CloseGameException;
+import phase3.queries.PlayerUpdater;
+import phase3.queries.WorldRecord;
 
 public class IntroScreen extends BaseScreen {
     public enum NextScreen {
@@ -12,8 +19,12 @@ public class IntroScreen extends BaseScreen {
     private static final String TITLE = "전당포 운영 게임";
     private static final String[] ACTIONS = { "게임 시작", "월드 레코드", "로그아웃" };
 
+    private PlayerSession session;
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
     public IntroScreen(Connection connection, Scanner scanner) {
         super(connection, scanner);
+        this.session = PlayerSession.getInstance();
     }
 
     public NextScreen showIntroScreen() {
@@ -32,10 +43,34 @@ public class IntroScreen extends BaseScreen {
     }
 
     private void showWorldRecord() {
-        // TODO: Implement querying world record
+        WorldRecord[] worldRecords = null;
+
+        try {
+            worldRecords = WorldRecord.retrieveWorldRecord(connection);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+
+        System.out.println("플레이어명 | 닉네임 | 가게 이름 | 게임 진행한 날짜 | 게임 끝난 날");
+        for (WorldRecord worldRecord : worldRecords) {
+            System.out.printf(
+                "%s %s %s %d %s\n",
+                worldRecord.playerId,
+                worldRecord.nickName,
+                worldRecord.shopName,
+                worldRecord.gameEndDayCount,
+                dateFormat.format(worldRecord.gameEndDate)
+            );
+        }
     }
 
     private void doLogout() {
-        // TODO: Implement logout
+        try {
+            PlayerUpdater.logout(connection, session.sessionToken);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
     }
 }

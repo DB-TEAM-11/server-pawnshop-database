@@ -11,7 +11,7 @@ import phase3.screens.LoginScreen;
 import phase3.screens.MainScreen;
 
 public class Main {
-    public static final String URL = "jdbc:oracle:thin:@localhost:1523:orcl";
+    public static final String URL = "jdbc:oracle:thin:@localhost:1521:orcl";
     public static final String USER_GAME = "MYGAME";
     public static final String USER_PASSWD = "GAME1234";
     
@@ -40,13 +40,16 @@ public class Main {
         MainScreen main = new MainScreen(connection, scanner);
         // 게임 루프 동작
         try {
+            outer:
             while (true) {
                 loginScreen.showLoginScreen();
-                if (introScreen.showIntroScreen() == IntroScreen.NextScreen.MAIN) {
-                    break;
+                while (true) {
+                    if (introScreen.showIntroScreen() == IntroScreen.NextScreen.LOGIN) {
+                        continue outer;
+                    }
+                    main.showMainScreen();
                 }
             }
-            main.showMainScreen();
         } catch (CloseGameException e) {
             System.out.println("Exiting...");
         }

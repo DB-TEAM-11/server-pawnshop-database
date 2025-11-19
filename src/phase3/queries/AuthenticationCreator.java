@@ -8,7 +8,7 @@ import java.sql.SQLException;
 public class AuthenticationCreator {
     private static final String QUERY = "INSERT INTO PLAYER P ( P.PLAYER_ID,  P.HASHED_PW,  P.SESSION_TOKEN,  P.LAST_ACTIVITY ) VALUES (?, ?, ?, ?)";
     
-    public static void CreateAuthentication(Connection connection, String id, String hashedPwWithSalt) {
+    public static void createAuthentication(Connection connection, String id, String hashedPwWithSalt) {
         PreparedStatement statement;
         try {
             statement = connection.prepareStatement(QUERY);
@@ -39,9 +39,5 @@ public class AuthenticationCreator {
         }
         
         return sb.toString();
-    }
-    
-    public static boolean IsEnglishOnly(String str) {
-        return str.matches("[a-zA-Z]+");
     }
 }

@@ -3,6 +3,8 @@ package phase3.screens;
 import java.sql.Connection;
 import java.util.Scanner;
 
+import phase3.PlayerSession;
+
 public class DealScreen extends BaseScreen {
     // private static String  = "";
     private static String TITLE_MAIN = "고객과 거래";
@@ -40,7 +42,7 @@ public class DealScreen extends BaseScreen {
 
     public DealScreen(Connection connection, Scanner scanner) {
         super(connection, scanner);
-        this.sessionToken = GameSession.getInstance();
+        this.session = PlayerSession.getInstance();
     }
 
     public void showDealScreen() {

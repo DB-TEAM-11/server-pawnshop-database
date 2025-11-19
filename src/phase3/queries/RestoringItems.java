@@ -7,10 +7,12 @@ import java.sql.Statement;
 import java.util.ArrayList;
 
 public class RestoringItems {
-    private static final String QUERY = "SELECT I.ITEM_KEY, I.ITEM_STATE, I.FOUND_FLAW_EA, I.IS_AUTHENTICITY_FOUND, I.GRADE, I.AUTHENTICITY, DR.APPRAISED_PRICE, G.DAY_COUNT, DR.LAST_ACTION_DATE FROM EXISTING_ITEM I, DEAL_RECORD DR, GAME_SESSION G WHERE I.ITEM_STATE = 2 AND I.ITEM_KEY = DR.ITEM_KEY AND DR.GAME_SESSION_KEY = G.GAME_SESSION_KEY AND G.PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s') AND G.GAME_SESSION_KEY = (SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s') ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY) AND G.DAY_COUNT - DR.LAST_ACTION_DATE >= 1";
+    private static final String QUERY = "SELECT I.ITEM_KEY, IC.CATEGORY_KEY, I.ITEM_STATE, I.FLAW_EA, I.FOUND_FLAW_EA, I.IS_AUTHENTICITY_FOUND, I.GRADE, I.AUTHENTICITY, DR.APPRAISED_PRICE, G.DAY_COUNT, DR.LAST_ACTION_DATE FROM EXISTING_ITEM I, ITEM_CATALOG IC, DEAL_RECORD DR, GAME_SESSION G WHERE I.ITEM_STATE = 2 AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY AND I.ITEM_KEY = DR.ITEM_KEY AND DR.GAME_SESSION_KEY = G.GAME_SESSION_KEY AND G.PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s') AND G.GAME_SESSION_KEY = (SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s') ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY) AND G.DAY_COUNT - DR.LAST_ACTION_DATE >= 1";
 
     public int itemKey;
+    public int itemCategory;
     public int itemState;
+    public int flawEa;
     public int foundFlawEa;
     public boolean isAuthenticityFound;
     public int grade;
@@ -21,7 +23,9 @@ public class RestoringItems {
 
     private RestoringItems(
         int itemKey,
+        int itemCategory,
         int itemState,
+        int flawEa,
         int foundFlawEa,
         boolean isAuthenticityFound,
         int grade,
@@ -31,7 +35,9 @@ public class RestoringItems {
         int lastActionDate
     ) {
         this.itemKey = itemKey;
+        this.itemCategory = itemCategory;
         this.itemState = itemState;
+        this.flawEa = flawEa;
         this.foundFlawEa = foundFlawEa;
         this.isAuthenticityFound = isAuthenticityFound;
         this.grade = grade;
@@ -51,12 +57,14 @@ public class RestoringItems {
                 queryResult.getInt(1),
                 queryResult.getInt(2),
                 queryResult.getInt(3),
-                queryResult.getString(4).equals("Y"),
+                queryResult.getInt(4),
                 queryResult.getInt(5),
                 queryResult.getString(6).equals("Y"),
                 queryResult.getInt(7),
-                queryResult.getInt(8),
-                queryResult.getInt(9)
+                queryResult.getString(8).equals("Y"),
+                queryResult.getInt(9),
+                queryResult.getInt(10),
+                queryResult.getInt(11)
             ));
         }
 

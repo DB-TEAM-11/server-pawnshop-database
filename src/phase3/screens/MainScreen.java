@@ -12,11 +12,6 @@ import phase3.exceptions.NotASuchRowException;
 import phase3.queries.*;
 
 public class MainScreen extends BaseScreen {
-    private enum NextScreen {
-        DEAL,
-        DEBT_AND_ITEM,
-    }
-    
     private static final String TITLE_LOAD_PLAYING_GAME_SESSION_REQUEST = "게임 세션 가져오기 요청";
     private static final String TITLE_CREATE_GAME_SESSION_REQUEST = "새 게임 세션 생성 요청";
     private static final String TITLE_DIPLAY_ITEM_REQUEST = "전시 중인 아이템 가져오기 요청";
@@ -102,7 +97,11 @@ public class MainScreen extends BaseScreen {
                     showNextDayRequest(); // 다음 날로 이동
                 }
                 finishAuction();
-                finishRecover();
+                if (finishRecover()) {
+                    System.out.println("***게임 오버***\n복원비를 내지 못해 파산했습니다...");
+                    showDefeat();
+                    break mainLoop;
+                }
                 showGenerateDailyDeals();  // 거래 3개 생성
             } else {
                 // 대기 중인 거래가 있을 때
@@ -524,7 +523,6 @@ public class MainScreen extends BaseScreen {
                         multiplier += event.amount * event.plusMinus * 0.01;
                     }
                 }
-
                 int soldPrice = (int)(auctioningItem.appraisedPrice * (Math.random() * 0.3 + 1.2) * multiplier);
 
                 DealRecordUpdater.updateSoldInfo(connection, playerSession.sessionToken, auctioningItem.itemKey, soldPrice);
@@ -549,24 +547,95 @@ public class MainScreen extends BaseScreen {
         }
     }
 
-    private void finishRecover() {
+    private boolean finishRecover() {
         showChoices(TITLE_FINISH_RECOVER, CHOICES_FINISH_RECOVER);
+        RestoringItems[] restoringItems;
         try {
-            RestoringItems[] restoringItems = RestoringItems.getRestoringItems(connection, playerSession.sessionToken);
-            for (RestoringItems restoringItem : restoringItems) {
-                // 아이템 스테이트 복원 완료
-                ExistingItemUpdater.updateItemState(connection, restoringItem.itemKey, ItemState.RECORVERED.value());
-                // 세션토큰으로 플레이어 키 받아오기 PlayerKeyByToken - getPlayerKey
-                // 현재 진행 중인 이벤트 가져오기[기존 쿼리 활용] TodaysEvent - getTodaysEvent
-                // 복원 완료 - 진위 확정  ExistingItemUpdater - updateAuthenticityFound
-                // 복원 완료 - 감정가 업데이트 DealRecordUpdater - updateAppraisedPrice
-                // 복원 비용 차감 MoneyUpdater - subtractMoney
-
-            }
+            restoringItems = RestoringItems.getRestoringItems(connection, playerSession.sessionToken);
         } catch (SQLException e) {
             e.printStackTrace();
             throw new CloseGameException();
         }
+        for (RestoringItems restoringItem : restoringItems) {
+            int flawBefore = restoringItem.flawEa;
+            
+            // 아이템 스테이트 복원 완료
+            try {
+                ExistingItemUpdater.removeFlaw(connection, restoringItem.itemKey);
+                ExistingItemUpdater.updateAuthenticityFound(connection, restoringItem.itemKey);
+                ExistingItemUpdater.updateItemState(connection, restoringItem.itemKey, ItemState.RECORVERED.value());
+            } catch (SQLException e) {
+                e.printStackTrace();
+                throw new CloseGameException();
+            }
+
+            double gradeMultiplier;
+            switch (restoringItem.grade) {
+                case 0:
+                    gradeMultiplier = 1.0;
+                    break;
+                case 1:
+                    gradeMultiplier = 1.2;
+                    break;
+                case 2:
+                    gradeMultiplier = 1.5;
+                    break;
+                case 3:
+                    gradeMultiplier = 1.7;
+                    break;
+                default:
+                    throw new IllegalStateException("Invalid grade");
+            }
+
+            double authenticityMultiplier = restoringItem.authenticity ? 1.0 : 0.7;
+
+            double eventMultiplier = 1.0;
+            TodaysEvent[] events;
+            try {
+                events = TodaysEvent.getTodaysEvent(connection, playerKey);
+            } catch (SQLException e) {
+                e.printStackTrace();
+                throw new CloseGameException();
+            }
+            for (TodaysEvent event : events) {
+                if (event.affectedPrice == 3 && event.categoryKey == restoringItem.itemCategory) {
+                    eventMultiplier += event.amount * event.plusMinus * 0.01;
+                }
+            }
+
+            int newAppraisedPrice = (int) (restoringItem.appraisedPrice * gradeMultiplier * authenticityMultiplier * eventMultiplier);
+
+            try {
+                DealRecordUpdater.updateAppraisedPrice(connection, restoringItem.itemKey, newAppraisedPrice);
+            } catch (SQLException e) {
+                e.printStackTrace();
+                throw new CloseGameException();
+            }
+
+            PlayerInfo playerInfo;
+            try {
+                playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
+            } catch (SQLException e) {
+                e.printStackTrace();
+                throw new CloseGameException();
+            }
+            if (playerInfo.money < flawBefore * 10) {
+                return true;
+            }
+            try {
+                MoneyUpdater.addMoney(connection, playerSession.sessionToken, flawBefore * -10);
+            } catch (SQLException e) {
+                e.printStackTrace();
+                throw new CloseGameException();
+            }
+
+            // 세션토큰으로 플레이어 키 받아오기 PlayerKeyByToken - getPlayerKey
+            // 현재 진행 중인 이벤트 가져오기[기존 쿼리 활용] TodaysEvent - getTodaysEvent
+            // 복원 완료 - 진위 확정  ExistingItemUpdater - updateAuthenticityFound
+            // 복원 완료 - 감정가 업데이트 DealRecordUpdater - updateAppraisedPrice
+            // 복원 비용 차감 MoneyUpdater - subtractMoney
+        }
+        return false;
     }
 
     private void showGenerateDailyDeals() {

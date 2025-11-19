@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.Scanner;
 
 import phase3.PlayerSession;
+import phase3.constants.ItemState;
 import phase3.exceptions.CloseGameException;
 import phase3.exceptions.NotASuchRowException;
 import phase3.queries.*;
@@ -29,6 +30,8 @@ public class MainScreen extends BaseScreen {
     private static final String TITLE_GET_NOT_FOUND_ITEM = "발견하지 못한 아이템 가져오기";
     private static final String TITLE_RECORD_GAME_CLEAR = "게임 클리어 기록하기";
     private static final String TITLE_RECORD_GAME_DEFEAT = "게임 패배 기록하기";
+    private static final String TITLE_FINISH_AUCTION = "경매 정산하기";
+    private static final String TITLE_FINISH_RECOVER = "복원 완료 처리";
     
     private static final String MESSAGE_LOAD_PLAYING_GAME_SESSION_REQUEST = "진행 중인 게임 세션이 있는지 확인하고, 있다면 불러와야 합니다.";
     private static final String MESSAGE_CREATE_GAME_SESSION_REQUEST = "진행 중인 게임이 없습니다. 새 게임을 시작해야 합니다.";
@@ -51,6 +54,8 @@ public class MainScreen extends BaseScreen {
     private static final String[] CHOICES_MAIN_MENU = { "거래 (재개)하기", "빛 상환 / 아이템 처리", "게임 포기하기" };
     private static final String[] CHOICES_GET = { "가져오기" };
     private static final String[] CHOICES_RECORD = { "기록하기" };
+    private static final String[] CHOICES_FINISH_AUCTION = { "정산하기" };
+    private static final String[] CHOICES_FINISH_RECOVER = { "처리하기" };
     
     private int gameSessionId;
     private int playerKey;
@@ -94,6 +99,8 @@ public class MainScreen extends BaseScreen {
                     }
                     showNextDayRequest(); // 다음 날로 이동
                 }
+                finishAuction();
+                finishRecover();
                 showGenerateDailyDeals();  // 거래 3개 생성
             } else {
                 // 대기 중인 거래가 있을 때
@@ -471,6 +478,32 @@ public class MainScreen extends BaseScreen {
             System.out.println("다음 날 진행 중 오류가 발생했습니다: " + e.getMessage());
             System.out.println("\n계속하려면 Enter를 누르세요...");
             scanner.nextLine();
+        }
+    }
+
+    private void finishAuction() {
+        showChoices(TITLE_FINISH_AUCTION, CHOICES_FINISH_AUCTION);
+        try {
+            AuctioningItems[] auctioningItems = AuctioningItems.getAuctioningItems(connection, playerSession.sessionToken);
+            for (AuctioningItems auctioningItem : auctioningItems) {
+                ExistingItemUpdater.updateItemState(connection, auctioningItem.itemKey, ItemState.SOLD.value());
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+    }
+
+    private void finishRecover() {
+        showChoices(TITLE_FINISH_RECOVER, CHOICES_FINISH_RECOVER);
+        try {
+            RestoringItems[] restoringItems = RestoringItems.getRestoringItems(connection, playerSession.sessionToken);
+            for (RestoringItems restoringItem : restoringItems) {
+                ExistingItemUpdater.updateItemState(connection, restoringItem.itemKey, ItemState.RECORVERED.value());
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
         }
     }
 

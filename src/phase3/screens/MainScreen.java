@@ -91,9 +91,8 @@ public class MainScreen extends BaseScreen {
                         }
                     }
                     showNextDayRequest(); // 다음 날로 이동
-                } else {
-                    showGenerateDailyDeals();  // 거래 3개 생성
                 }
+                showGenerateDailyDeals();  // 거래 3개 생성
             } else {
                 // 대기 중인 거래가 있을 때
                 try {
@@ -106,10 +105,10 @@ public class MainScreen extends BaseScreen {
                             dealScreen.showDealScreen(firstDrcKey);
                             break;
                         case DEBT_AND_ITEM:
-                        if (debtAndItemScreen.showDebtAndItemScreen()) {
-                            showWin();
-                            break mainLoop;
-                        }
+                            if (debtAndItemScreen.showDebtAndItemScreen()) {
+                                showWin();
+                                break mainLoop;
+                            }
                         break;
                     }
                 } catch (Exception e) {

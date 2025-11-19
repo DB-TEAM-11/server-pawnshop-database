@@ -6,7 +6,7 @@ import java.util.Scanner;
 public class MainScreen extends BaseScreen {
     private enum NextScreen {
         DEAL,
-        DEBIT_AND_ITEM,
+        DEBT_AND_ITEM,
     }
     
     private static final String TITLE_LOAD_PLAYING_GAME_SESSION_REQUEST = "게임 세션 가져오기 요청";
@@ -39,12 +39,12 @@ public class MainScreen extends BaseScreen {
 
     private int gameSessionId;
     private DealScreen dealScreen;
-    private DebitAndItemScreen debitAndItemScreen;
+    private DebtAndItemScreen debtAndItemScreen;
     
     public MainScreen(Connection connection, Scanner scanner) {
         super(connection, scanner);
         dealScreen = new DealScreen(connection, scanner);
-        debitAndItemScreen = new DebitAndItemScreen(connection, scanner);
+        debtAndItemScreen = new DebtAndItemScreen(connection, scanner);
     }
 
     public void showMainScreen() {
@@ -71,8 +71,8 @@ public class MainScreen extends BaseScreen {
                     case DEAL:
                         dealScreen.showDealScreen();
                         break;
-                    case DEBIT_AND_ITEM:
-                        debitAndItemScreen.showDebitAndItemScreen();
+                    case DEBT_AND_ITEM:
+                        debtAndItemScreen.showDebtAndItemScreen();
                         break;
                 }
             }
@@ -140,7 +140,7 @@ public class MainScreen extends BaseScreen {
             case 1:
                 return NextScreen.DEAL;
             case 2:
-                return NextScreen.DEBIT_AND_ITEM;
+                return NextScreen.DEBT_AND_ITEM;
             default:
                 throw new RuntimeException("Invalid choice");
         }

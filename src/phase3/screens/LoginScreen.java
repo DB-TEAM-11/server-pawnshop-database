@@ -5,6 +5,7 @@ import java.util.Scanner;
 import phase3.queries.HashedPwGetter;
 import phase3.queries.SessionTokenBySign;
 import phase3.queries.DuplicateIdChecker;
+import phase3.PlayerSession;
 import phase3.queries.AuthenticationCreator;
 
 public class LoginScreen extends BaseScreen {
@@ -50,6 +51,7 @@ public class LoginScreen extends BaseScreen {
         }
         
         String sessionToken = SessionTokenBySign.SessionTokenBySign(connection, username, password, hashedPw);
+        PlayerSession.getInstance().setSessionToken(sessionToken);
         
 
         if (sessionToken == null) {

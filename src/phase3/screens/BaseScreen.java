@@ -59,7 +59,7 @@ public abstract class BaseScreen {
         String line;
         int selection;
         while (true) {
-            System.out.printf("선택 (0~%d): ", choices.length);
+            System.out.printf("선택 (%d~%d): ", canExit ? 0 : 1, choices.length);
             line = scanner.nextLine();
             try {
                 selection = Integer.parseInt(line);

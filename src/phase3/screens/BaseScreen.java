@@ -15,10 +15,10 @@ public abstract class BaseScreen {
 
     public BaseScreen(Connection connection, Scanner scanner) {
         if (connection == null) {
-            throw new RuntimeException("Connection must not null");
+            throw new NullPointerException("Connection must not null");
         }
         if (scanner == null) {
-            throw new RuntimeException("Scanner must not null");
+            throw new NullPointerException("Scanner must not null");
         }
         this.connection = connection;
         this.scanner = scanner;

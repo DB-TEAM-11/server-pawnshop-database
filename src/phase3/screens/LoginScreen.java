@@ -30,7 +30,7 @@ public class LoginScreen extends BaseScreen {
                 	showSignUp();
                     break;
                 default:
-                    throw new RuntimeException("Invalid choice");
+                    throw new IllegalStateException("Invalid choice");
             }
         }
     }

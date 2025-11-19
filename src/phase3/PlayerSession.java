@@ -6,7 +6,7 @@ public class PlayerSession {
     private static PlayerSession instance; // 싱글톤 객체
     
     // 세션 토근
-    private String sessionToken;
+    public String sessionToken;
 
     // 싱글톤이므로 생성자 막음
     private PlayerSession() {}
@@ -19,10 +19,11 @@ public class PlayerSession {
         return instance;
     }
     
-    // get, set
+    // Getters and Setters
     public void setSessionToken(String sessionToken) {
         this.sessionToken = sessionToken;
     }
+
     public String getSessionToken() {
         return sessionToken;
     }

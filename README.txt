@@ -1,6 +1,13 @@
 README.txt
 전당포 운영 게임 - Phase 3 - Team 11 Project
 
+※주의 사항)
+oracle db의 한글 데이터(고객 이름 등에 쓰임)를 못 받아들이기 때문에
+ojdbc.jar 와 같은 경로로 
+oracle_jdbc_drivers/orai18n.jar를 추가로 포함해야 합니다.
+
+
+
       [ 목차 ]
   1. 개요 README
     1. 게임 개요

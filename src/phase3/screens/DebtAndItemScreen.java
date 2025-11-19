@@ -7,6 +7,7 @@ import java.util.Scanner;
 import phase3.PlayerSession;
 import phase3.constants.ItemState;
 import phase3.exceptions.CloseGameException;
+import phase3.exceptions.NotASuchRowException;
 import phase3.queries.ItemInDisplay;
 import phase3.queries.MoneyUpdater;
 import phase3.queries.PawnshopDebt;
@@ -220,7 +221,12 @@ public class DebtAndItemScreen extends BaseScreen {
         ItemInDisplay[] items = null;
         try {
             int playerId = PlayerKeyByToken.getPlayerKey(connection, session.sessionToken);
-            items = ItemInDisplay.getItemInDisplay(connection, playerId);
+            try {
+                items = ItemInDisplay.getItemInDisplay(connection, playerId);
+            } catch (NotASuchRowException e) {
+                System.out.println("진열 중인 아이템이 없습니다.");
+                return;
+            }
         } catch (SQLException e) {
             e.printStackTrace();
             throw new CloseGameException();
@@ -258,7 +264,12 @@ public class DebtAndItemScreen extends BaseScreen {
         ItemInDisplay[] items = null;
         try {
             int playerId = PlayerKeyByToken.getPlayerKey(connection, session.sessionToken);
-            items = ItemInDisplay.getItemInDisplay(connection, playerId);
+            try {
+                items = ItemInDisplay.getItemInDisplay(connection, playerId);
+            } catch (NotASuchRowException e) {
+                System.out.println("진열 중인 아이템이 없습니다.");
+                return;
+            }
         } catch (SQLException e) {
             e.printStackTrace();
             throw new CloseGameException();

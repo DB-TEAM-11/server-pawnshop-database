@@ -6,8 +6,8 @@ import java.util.Scanner;
 import java.util.regex.Pattern;
 
 import phase3.queries.HashedPwGetter;
+import phase3.queries.IdIsExist;
 import phase3.queries.SessionToken;
-import phase3.queries.DuplicateIdChecker;
 import phase3.PlayerSession;
 import phase3.exceptions.CloseGameException;
 import phase3.queries.AuthenticationCreator;
@@ -89,11 +89,20 @@ public class LoginScreen extends BaseScreen {
                 return;
             } if (!USERNAME_PATTERN.matcher(username).matches()) {
                 System.out.println("올바르지 않은 사용자명입니다.");
-            } else if (DuplicateIdChecker.CheckDuplicateId(connection, username)) {
-                System.out.println("이미 존재하는 사용자명입니다.");
             } else {
-                System.out.println("사용할 수 있는 사용자명입니다.");
-                break;
+                boolean idIsExist;
+                try {
+                    idIsExist = IdIsExist.isIdExist(connection, username);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    throw new CloseGameException();
+                }
+                if (idIsExist) {
+                    System.out.println("이미 존재하는 사용자명입니다.");
+                } else {
+                    System.out.println("사용할 수 있는 사용자명입니다.");
+                    break;
+                }
             }
         }
         

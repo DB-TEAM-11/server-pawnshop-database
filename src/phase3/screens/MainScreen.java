@@ -62,6 +62,7 @@ public class MainScreen extends BaseScreen {
     private PlayerSession playerSession;
     private DealScreen dealScreen;
     private DebtAndItemScreen debtAndItemScreen;
+    private SellScreen sellScreen;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
     
     public MainScreen(Connection connection, Scanner scanner) {
@@ -69,6 +70,7 @@ public class MainScreen extends BaseScreen {
         this.playerSession = PlayerSession.getInstance();
         dealScreen = new DealScreen(connection, scanner);
         debtAndItemScreen = new DebtAndItemScreen(connection, scanner);
+        sellScreen = new SellScreen(connection, scanner);
     }
 
     public void showMainScreen() {
@@ -113,6 +115,18 @@ public class MainScreen extends BaseScreen {
                     throw new CloseGameException();
                 }
                 int firstDrcKey = deals[0].drcKey;
+
+                // 고객 선호 Category와 Match되는 Item 존재 -> 고객 구매 시도
+                PreferableItemsInDisplay[] preferableItems;
+                try {
+                    preferableItems = PreferableItemsInDisplay.getPreferableItemsInDisplay(connection, deals[0].sellerKey, playerKey);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    throw new CloseGameException();
+                }
+                if (preferableItems.length > 0) {
+                    sellScreen.showSellScreen(preferableItems[0].itemKey);
+                }
                 
                 switch (showChoices(TITLE_MAIN_MENU, CHOICES_MAIN_MENU)) {
                     case 1:

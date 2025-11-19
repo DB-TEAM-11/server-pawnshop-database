@@ -274,6 +274,11 @@ public class MainScreen extends BaseScreen {
         ItemInDisplay[] displayedItems;
         try {
             displayedItems = ItemInDisplay.getItemInDisplay(connection, playerKey);
+        } catch (NotASuchRowException e) {
+            System.out.println("전시 중인 아이템이 없습니다.");
+            System.out.println("계속하려면 Enter를 누르세요...");
+            scanner.nextLine();
+            return;
         } catch (SQLException e) {
             e.printStackTrace();
             throw new CloseGameException();

@@ -759,7 +759,6 @@ public class MainScreen extends BaseScreen {
     
     private void showWin() {
         System.out.println("***게임 클리어***\n축하합니다!\n모든 빚을 갚으셨습니다.");
-        showGameEnd();
         
         // 게임 종료 기록
         showChoices(TITLE_RECORD_GAME_CLEAR, CHOICES_RECORD);
@@ -771,14 +770,13 @@ public class MainScreen extends BaseScreen {
             e.printStackTrace();
             throw new CloseGameException();
         }
+        showGameEnd();
         
         System.out.println("인트로 화면으로 돌아가시려면 Enter를 누르세요...");
         scanner.nextLine();
     }
     
     private void showDefeat() {
-        showGameEnd();
-        
         // 게임 종료 기록
         showChoices(TITLE_RECORD_GAME_DEFEAT, CHOICES_RECORD);
         PlayerInfo playerInfo;
@@ -789,7 +787,7 @@ public class MainScreen extends BaseScreen {
             e.printStackTrace();
             throw new CloseGameException();
         }
-        
+        showGameEnd();        
         System.out.println("인트로 화면으로 돌아가시려면 Enter를 누르세요...");
         scanner.nextLine();
     }

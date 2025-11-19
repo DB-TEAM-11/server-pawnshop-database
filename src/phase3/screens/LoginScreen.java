@@ -3,7 +3,7 @@ package phase3.screens;
 import java.sql.Connection;
 import java.util.Scanner;
 import phase3.queries.HashedPwGetter;
-import phase3.queries.SessionTokenBySign;
+import phase3.queries.SessionToken;
 import phase3.queries.DuplicateIdChecker;
 import phase3.PlayerSession;
 import phase3.queries.AuthenticationCreator;
@@ -50,7 +50,7 @@ public class LoginScreen extends BaseScreen {
         	return null;
         }
         
-        String sessionToken = SessionTokenBySign.SessionTokenBySign(connection, username, password, hashedPw);
+        String sessionToken = SessionToken.getSessionTokenByCredentials(connection, username, password, hashedPw);
         PlayerSession.getInstance().setSessionToken(sessionToken);
         
 
@@ -88,7 +88,7 @@ public class LoginScreen extends BaseScreen {
 	    	}
         System.out.print("PW: ");
         password = scanner.nextLine();
-        randSalt = SessionTokenBySign.getSalt16();
+        randSalt = SessionToken.getSalt16();
         
         try {
           String hashedPw = HashedPwGetter.sha256(password, randSalt);

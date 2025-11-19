@@ -3,33 +3,22 @@ package phase3.queries;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.sql.ResultSet;
-import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
-import phase3.queries.HashedPwGetter;
 
-public class SessionTokenBySign {
+public class SessionToken {
+    private static final String VERIFY_QUERY = "SELECT P.PLAYER_KEY FROM PLAYER P WHERE P.PLAYER_ID = '%s' AND P.HASHED_PW = '%s'";
+    private static final String UPDATE_SESSION_TOKEN_QUERY = "UPDATE PLAYER SET SESSION_TOKEN = '%s', LAST_ACTIVITY = TO_DATE('%s', 'YYYY-MM-DD HH24:MI:SS') WHERE PLAYER_ID = '%s'";
 
-    private static final String VERIFY_QUERY =
-            "SELECT P.PLAYER_KEY FROM PLAYER P WHERE P.PLAYER_ID = '%s' AND P.HASHED_PW = '%s'";
-    
-    private static final String UPDATE_SESSION_TOKEN_QUERY =
-            "UPDATE PLAYER SET SESSION_TOKEN = '%s', LAST_ACTIVITY = TO_DATE('%s', 'YYYY-MM-DD HH24:MI:SS') WHERE PLAYER_ID = '%s'";
-
-    public static String SessionTokenBySign(
-            Connection connection,
-            String id,
-            String pw,
-            String hashed_pw
-    ) {
+    public static String getSessionTokenByCredentials(Connection connection, String id, String pw, String hashed_pw) {
         try {
-	        	String[] pwAndSalt = hashed_pw.split(";");
-	          if (pwAndSalt.length < 2) return null;
-	
-	          String storedHash = pwAndSalt[0];
-	          String salt = pwAndSalt[1];
+            String[] pwAndSalt = hashed_pw.split(";");
+            if (pwAndSalt.length < 2) return null;
+
+            String storedHash = pwAndSalt[0];
+            String salt = pwAndSalt[1];
 	          
             String newHashedPw = HashedPwGetter.sha256(pw, salt);
                        
@@ -66,14 +55,12 @@ public class SessionTokenBySign {
             statement.close();
 
             return newSessionToken;
-
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         return null;
     }
-
     
     public static String getSalt16() {
       SecureRandom r = new SecureRandom();

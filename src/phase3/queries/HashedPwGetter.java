@@ -6,8 +6,7 @@ import java.sql.Statement;
 import java.sql.ResultSet;
 
 public class HashedPwGetter {
-  private static final String QUERY =
-          "SELECT P.HASHED_PW FROM PLAYER P WHERE P.PLAYER_ID = '%s'";
+  private static final String QUERY = "SELECT P.HASHED_PW FROM PLAYER P WHERE P.PLAYER_ID = '%s'";
 
   public static String GetHashedPw(Connection connection, String id) {
     String hashed_pw = null;

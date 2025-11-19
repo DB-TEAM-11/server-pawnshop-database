@@ -1,9 +1,12 @@
 package phase3.screens;
 
 import java.sql.Connection;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.Scanner;
 
 import phase3.PlayerSession;
+import phase3.exceptions.CloseGameException;
 import phase3.exceptions.NotASuchRowException;
 import phase3.queries.*;
 
@@ -72,9 +75,9 @@ public class MainScreen extends BaseScreen {
                         showFinalizeDay(); // 일 정산 시작
                     }
                     showNextDayRequest(); // 다음 날로 이동
+                } else {
+                    showGenerateDailyDeals();  // 거래 3개 생성
                 }
-                // 거래 3개 생성
-                else{showGenerateDailyDeals();}
             } else {
                 // 대기 중인 거래가 있을 때
                 try {
@@ -323,7 +326,7 @@ public class MainScreen extends BaseScreen {
             
             // 이자 차감
             if (daily.todayInterest > 0) {
-                UpdateMoney.subtractMoney(connection, playerSession.getSessionToken(), daily.todayInterest);
+                MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), daily.todayInterest);
             }
             
             // 게임 오버 확인 (돈이 음수)
@@ -333,7 +336,7 @@ public class MainScreen extends BaseScreen {
                 
                 // 게임 종료 처리 (DB에만 기록)
                 PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
-                UpdateGameSession.setGameEnd(connection, playerSession.getSessionToken(), -playerInfo.dayCount);
+                GameSessionUpdater.setGameEnd(connection, playerSession.getSessionToken(), -playerInfo.dayCount);
                 
                 System.out.println("\n계속하려면 Enter를 누르세요...");
                 scanner.nextLine();
@@ -369,7 +372,7 @@ public class MainScreen extends BaseScreen {
             // 이자 차감
             int totalInterest = weekly.todayInterest + weekly.todayPersonalInterest;
             if (totalInterest > 0) {
-                UpdateMoney.subtractMoney(connection, playerSession.getSessionToken(), totalInterest);
+                MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), totalInterest);
             }
             
             // 게임 오버 확인 (돈이 음수)
@@ -379,7 +382,7 @@ public class MainScreen extends BaseScreen {
                 
                 // 게임 종료 처리 (DB에만 기록)
                 PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
-                UpdateGameSession.setGameEnd(connection, playerSession.getSessionToken(), -playerInfo.dayCount);
+                GameSessionUpdater.setGameEnd(connection, playerSession.getSessionToken(), -playerInfo.dayCount);
                 
                 System.out.println("\n계속하려면 Enter를 누르세요...");
                 scanner.nextLine();
@@ -402,7 +405,7 @@ public class MainScreen extends BaseScreen {
 
         try {
             // DAY_COUNT 증가
-            UpdateGameSession.incrementDayCount(connection, playerSession.getSessionToken());
+            GameSessionUpdater.incrementDayCount(connection, playerSession.getSessionToken());
             
             // 업데이트된 게임 세션 정보 가져오기 (UI 표시용)
             PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);

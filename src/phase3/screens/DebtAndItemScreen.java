@@ -12,7 +12,7 @@ import phase3.queries.PawnshopDebt;
 import phase3.queries.PersonalDebt;
 import phase3.queries.PlayerInfo;
 import phase3.queries.PlayerKeyByToken;
-import phase3.queries.UpdateExistingItem;
+import phase3.queries.ExistingItemUpdater;
 
 public class DebtAndItemScreen extends BaseScreen {
     private static final String TITLE_MAIN = "빚 대출/상환 & 아이템 경매/복원";
@@ -213,7 +213,7 @@ public class DebtAndItemScreen extends BaseScreen {
             if (selection >= 1 && selection <= 8 && itemKey[selection - 1] > 0) {
                 showChoices(TITLE_AUCTION_ITEM, CHOICES_AUCTION_ITEM);
                 try {
-                    UpdateExistingItem.updateItemState(connection, itemKey[selection - 1], ItemState.IN_AUCTION.value());
+                    ExistingItemUpdater.updateItemState(connection, itemKey[selection - 1], ItemState.IN_AUCTION.value());
                 } catch (SQLException e) {
                     e.printStackTrace();
                     throw new CloseGameException();
@@ -251,7 +251,7 @@ public class DebtAndItemScreen extends BaseScreen {
             if (selection >= 1 && selection <= 8 && itemKey[selection - 1] > 0) {
                 showChoices(TITLE_REPAIR_ITEM, CHOICES_REPAIR_ITEM);
                 try {
-                    UpdateExistingItem.updateItemState(connection, itemKey[selection - 1], ItemState.IN_AUCTION.value());
+                    ExistingItemUpdater.updateItemState(connection, itemKey[selection - 1], ItemState.IN_AUCTION.value());
                 } catch (SQLException e) {
                     e.printStackTrace();
                     throw new CloseGameException();

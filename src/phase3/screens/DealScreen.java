@@ -87,7 +87,7 @@ public class DealScreen extends BaseScreen {
             DealRecordByDrcKey dealRecord = DealRecordByDrcKey.getDealRecordByDrcKey(connection, currentDrcKey);
             CustomerInfo customer = CustomerInfo.getCustomerInfo(connection, dealRecord.sellerKey);
             ItemCatalog itemCatalog = ItemCatalog.getItemByKey(connection, dealRecord.itemCatalogKey);
-            int money = UpdateMoney.getMoney(connection, playerSession.getSessionToken());
+            int money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
             
             String gradeStr = getGradeString(dealRecord.foundGrade);
             String authenticityStr = dealRecord.isAuthenticityFound 
@@ -197,7 +197,7 @@ public class DealScreen extends BaseScreen {
     
     private void openRandomItemHint() {
         try {
-            int money = UpdateMoney.getMoney(connection, playerSession.getSessionToken());
+            int money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
             if (money < 10) {
                 System.out.println("잔액이 부족합니다! (필요: 10G, 현재: " + money + "G)");
                 scanner.nextLine();
@@ -239,8 +239,8 @@ public class DealScreen extends BaseScreen {
                     break;
             }
             
-            UpdateMoney.subtractMoney(connection, playerSession.getSessionToken(), 10);
-            int newMoney = UpdateMoney.getMoney(connection, playerSession.getSessionToken());
+            MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), 10);
+            int newMoney = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
             
             System.out.println("\n[물건 힌트]");
             System.out.println("힌트: " + hintName);
@@ -273,7 +273,7 @@ public class DealScreen extends BaseScreen {
     
     private void performGradeAppraisal(int maxGrade, int cost) {
         try {
-            int money = UpdateMoney.getMoney(connection, playerSession.getSessionToken());
+            int money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
             if (money < cost) {
                 System.out.println("잔액이 부족합니다! (필요: " + cost + "G, 현재: " + money + "G)");
                 scanner.nextLine();
@@ -292,7 +292,7 @@ public class DealScreen extends BaseScreen {
             int resultGrade = determineGradeByAppraisal(maxGrade, dealRecord.grade, random);
             
             if (resultGrade > dealRecord.foundGrade) {
-                UpdateExistingItem.updateFoundGrade(connection, dealRecord.itemKey, resultGrade);
+                ExistingItemUpdater.updateFoundGrade(connection, dealRecord.itemKey, resultGrade);
             }
             
             // 이벤트 수치 적용
@@ -306,10 +306,10 @@ public class DealScreen extends BaseScreen {
                 newAppraisedPrice = (int)(newAppraisedPrice * 0.8);
             }
             
-            UpdateDealRecord.updatePrices(connection, currentDrcKey, dealRecord.purchasePrice, newAppraisedPrice);
+            DealRecordUpdater.updatePrices(connection, currentDrcKey, dealRecord.purchasePrice, newAppraisedPrice);
             
-            UpdateMoney.subtractMoney(connection, playerSession.getSessionToken(), cost);
-            int newMoney = UpdateMoney.getMoney(connection, playerSession.getSessionToken());
+            MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), cost);
+            int newMoney = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
             
             System.out.println("\n[등급 감정 결과]");
             System.out.println("발견 등급: " + getGradeString(resultGrade));
@@ -364,7 +364,7 @@ public class DealScreen extends BaseScreen {
     
     private void performFlawFind(int maxFind, int cost) {
         try {
-            int money = UpdateMoney.getMoney(connection, playerSession.getSessionToken());
+            int money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
             if (money < cost) {
                 System.out.println("잔액이 부족합니다! (필요: " + cost + "G, 현재: " + money + "G)");
                 scanner.nextLine();
@@ -382,7 +382,7 @@ public class DealScreen extends BaseScreen {
             // 업데이트 될 찾은 흠 개수
             int newFoundFlawEa = dealRecord.foundFlawEa + maxPossibleFlaws;
             
-            UpdateExistingItem.updateFoundFlaw(connection, dealRecord.itemKey, maxPossibleFlaws);
+            ExistingItemUpdater.updateFoundFlaw(connection, dealRecord.itemKey, maxPossibleFlaws);
             
             // 이벤트 수치 적용
             ItemCatalog itemCatalog = ItemCatalog.getItemByKey(connection, dealRecord.itemCatalogKey);
@@ -401,10 +401,10 @@ public class DealScreen extends BaseScreen {
                 newAppraisedPrice = (int)(newAppraisedPrice * 0.8);
             }
             
-            UpdateDealRecord.updatePrices(connection, currentDrcKey, newPurchasePrice, newAppraisedPrice);
+            DealRecordUpdater.updatePrices(connection, currentDrcKey, newPurchasePrice, newAppraisedPrice);
             
-            UpdateMoney.subtractMoney(connection, playerSession.getSessionToken(), cost);
-            int newMoney = UpdateMoney.getMoney(connection, playerSession.getSessionToken());
+            MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), cost);
+            int newMoney = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
             
             System.out.println("\n[흠 찾기 결과]");
             System.out.println("발견한 흠: " + maxPossibleFlaws + "개");
@@ -423,7 +423,7 @@ public class DealScreen extends BaseScreen {
 
     private void showItemAuthenticationScreen() {
         try {
-            int money = UpdateMoney.getMoney(connection, playerSession.getSessionToken());
+            int money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
             if (money < 200) {
                 System.out.println("잔액이 부족합니다! (필요: 200G, 현재: " + money + "G)");
                 scanner.nextLine();
@@ -439,7 +439,7 @@ public class DealScreen extends BaseScreen {
                 return;
             }
             
-            UpdateExistingItem.updateAuthenticityFound(connection, dealRecord.itemKey);
+            ExistingItemUpdater.updateAuthenticityFound(connection, dealRecord.itemKey);
             
             int oldPurchasePrice = dealRecord.purchasePrice;
             int oldAppraisedPrice = dealRecord.appraisedPrice;
@@ -454,11 +454,11 @@ public class DealScreen extends BaseScreen {
                 newPurchasePrice = (int)(dealRecord.askingPrice * (1 - dealRecord.foundFlawEa * 0.05) * 0.5 * eventMultiplier);
                 double gradeMultiplier = getGradeMultiplier(dealRecord.foundGrade);
                 newAppraisedPrice = (int)(dealRecord.askingPrice * (1 - dealRecord.foundFlawEa * 0.05) * gradeMultiplier * 0.8 * eventMultiplier);
-                UpdateDealRecord.updatePrices(connection, currentDrcKey, newPurchasePrice, newAppraisedPrice);
+                DealRecordUpdater.updatePrices(connection, currentDrcKey, newPurchasePrice, newAppraisedPrice);
             }
             
-            UpdateMoney.subtractMoney(connection, playerSession.getSessionToken(), 200);
-            int newMoney = UpdateMoney.getMoney(connection, playerSession.getSessionToken());
+            MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), 200);
+            int newMoney = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
             
             System.out.println("\n[진위 판정 결과]");
             System.out.println("결과: " + (dealRecord.authenticity ? "진품" : "가품"));
@@ -495,7 +495,7 @@ public class DealScreen extends BaseScreen {
     
     private void openCustomerHint(int hintIndex, String hintName) {
         try {
-            int money = UpdateMoney.getMoney(connection, playerSession.getSessionToken());
+            int money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
             if (money < 50) {
                 System.out.println("잔액이 부족합니다! (필요: 50G, 현재: " + money + "G)");
                 scanner.nextLine();
@@ -534,8 +534,8 @@ public class DealScreen extends BaseScreen {
             int newHintRevealedFlag = hintRevealedFlag | bitMask;
             CustomerHiddenDiscovered.upsertHintRevealedFlag(connection, gameSessionKey, dealRecord.sellerKey, newHintRevealedFlag);
             
-            UpdateMoney.subtractMoney(connection, playerSession.getSessionToken(), 50);
-            int newMoney = UpdateMoney.getMoney(connection, playerSession.getSessionToken());
+            MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), 50);
+            int newMoney = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
             
             System.out.println("\n[고객 힌트]");
             System.out.println("고객: " + customer.customerName);
@@ -554,7 +554,7 @@ public class DealScreen extends BaseScreen {
     private boolean showAcceptDealScreen() {
         try {
             DealRecordByDrcKey dealRecord = DealRecordByDrcKey.getDealRecordByDrcKey(connection, currentDrcKey);
-            int money = UpdateMoney.getMoney(connection, playerSession.getSessionToken());
+            int money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
             
             showChoices(TITLE_ACCEPT_DEAL__CHECK_BALANCE, 
                 String.format("구매가: %,dG\n현재 잔액: %,dG\n\n구매 가능 여부: %s", 
@@ -600,12 +600,12 @@ public class DealScreen extends BaseScreen {
                 String.format("구매를 확정하고 전시대 %d번 위치에 배치합니다.", emptyPos),
                 CHOICES_ACCEPT_DEAL__SAVE, false);
             
-            UpdateDealRecord.updateBoughtDate(connection, playerSession.getSessionToken(), currentDrcKey);
-            UpdateExistingItem.updateItemState(connection, dealRecord.itemKey, 1);
+            DealRecordUpdater.updateBoughtDate(connection, playerSession.getSessionToken(), currentDrcKey);
+            ExistingItemUpdater.updateItemState(connection, dealRecord.itemKey, 1);
             DisplayManagement.addToDisplay(connection, gameSessionKey, emptyPos, dealRecord.itemKey);
             
-            UpdateMoney.subtractMoney(connection, playerSession.getSessionToken(), dealRecord.purchasePrice);
-            int newMoney = UpdateMoney.getMoney(connection, playerSession.getSessionToken());
+            MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), dealRecord.purchasePrice);
+            int newMoney = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
             
             System.out.println("\n구매가 완료되었습니다!");
             System.out.println("전시 위치: " + emptyPos + "번");

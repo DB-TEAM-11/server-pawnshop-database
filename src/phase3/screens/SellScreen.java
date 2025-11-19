@@ -72,8 +72,8 @@ public class SellScreen extends BaseScreen {
         switch (showChoices(TITLE, String.format(DETAIL, itemInfo.itemCatalogName, price), CHOICES)) {
             case 1:
                 try {
-                    UpdateExistingItem.updateItemState(connection, itemId, ItemState.SOLD.value());
-                    UpdateMoney.addMoney(connection, session.sessionToken, price);
+                    ExistingItemUpdater.updateItemState(connection, itemId, ItemState.SOLD.value());
+                    MoneyUpdater.addMoney(connection, session.sessionToken, price);
                     connection.commit();
                 } catch (SQLException e) {
                     e.printStackTrace();

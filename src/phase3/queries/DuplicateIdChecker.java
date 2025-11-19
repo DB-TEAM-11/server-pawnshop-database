@@ -5,8 +5,7 @@ import java.sql.Statement;
 import java.sql.ResultSet;
 
 public class DuplicateIdChecker {
-	 private static final String QUERY =
-       "SELECT P.PLAYER_ID FROM PLAYER P WHERE P.PLAYER_ID = '%s'";
+	 private static final String QUERY = "SELECT P.PLAYER_ID FROM PLAYER P WHERE P.PLAYER_ID = '%s'";
 	 
 	 public static boolean CheckDuplicateId(
        Connection connection,

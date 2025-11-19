@@ -44,9 +44,15 @@ public class LoginScreen extends BaseScreen {
         // TODO: Do actual login
         
         String hashedPw = HashedPwGetter.GetHashedPw(connection, username);
+        if (hashedPw == null) {
+        	System.out.println("계정이 존재하지 않습니다.");
+        	return null;
+        }
+        
         String sessionToken = SessionTokenBySign.SessionTokenBySign(connection, username, password, hashedPw);
         
-        if (sessionToken.equals("false")) {
+
+        if (sessionToken == null) {
         	System.out.println("계정이 존재하지 않습니다.");
           return null;
         } else {
@@ -61,10 +67,13 @@ public class LoginScreen extends BaseScreen {
     		String password = "";
     		String randSalt = "";
     		
+    		
 	    	while(true) {
 	        System.out.print("ID(영문 최대 30글자): ");
 	        username = scanner.nextLine();
-	        if(DuplicateIdChecker.CheckDuplicateId(connection, username)) {
+	        if (username.length() > 30) {
+	        	System.out.println("30글자 이내로 입력해주세요.");
+	        } else if(DuplicateIdChecker.CheckDuplicateId(connection, username)) {
 	        	System.out.println("이미 존재하는 사용자명입니다.");
 	        } else {
 	        	if (AuthenticationCreator.IsEnglishOnly(username)) {

@@ -21,7 +21,7 @@ public class AuthenticationCreator {
 			 String id,
 			 String hashedPwWithSalt
 	 ) {
-		 
+
 		 PreparedStatement statement;
 		 try {
 			 statement = connection.prepareStatement(QUERY);
@@ -31,7 +31,7 @@ public class AuthenticationCreator {
 			 statement.setString(3, MakeRandToken());
 			 java.util.Date now = new java.util.Date();
 			 java.sql.Date sqlDate = new java.sql.Date(now.getTime());
-			 statement.setDate(4, sqlDate);			 
+			 statement.setDate(4, sqlDate);
 			 
 			 statement.executeUpdate();
 			 System.out.println("회원가입에 성공하였습니다. 로그인 기능으로 이동합니다.");

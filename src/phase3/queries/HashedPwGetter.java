@@ -30,14 +30,13 @@ public class HashedPwGetter {
   }
   
   public static String sha256(String pw, String salt) throws Exception {
-    MessageDigest md = MessageDigest.getInstance("SHA-256");
+    MessageDigest md = MessageDigest.getInstance("MD5");
     byte[] hashed = md.digest((pw + salt).getBytes("UTF-8"));
-
+    
     StringBuilder sb = new StringBuilder();
     for (byte b : hashed) {
         sb.append(String.format("%02x", b));
     }
     return sb.toString();
-}
-  
+  }
 }

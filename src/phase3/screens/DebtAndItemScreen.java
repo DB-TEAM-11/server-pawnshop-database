@@ -93,7 +93,7 @@ public class DebtAndItemScreen extends BaseScreen {
         int amount;
 
         while (true) {
-            switch (showChoices(TITLE_PERSONAL_DEBT, String.format(MESSAGE_DEBT), CHOICES_PERSONAL_DEBT)) {
+            switch (showChoices(TITLE_PERSONAL_DEBT, String.format(MESSAGE_DEBT, playerInfo.money, playerInfo.personalDebt), CHOICES_PERSONAL_DEBT)) {
                 case 1:
                     amount = -2000;
                     break;
@@ -122,7 +122,6 @@ public class DebtAndItemScreen extends BaseScreen {
         showChoices(TITLE_PERSONAL_DEBT_EXECUTE, CHOICES_PERSONAL_DEBT_EXECUTE, false);
         try {
             PersonalDebt.addToPersonalDebt(connection, session.sessionToken, amount);
-            connection.commit();
         } catch (SQLException e) {
             e.printStackTrace();
             throw new CloseGameException();
@@ -135,7 +134,7 @@ public class DebtAndItemScreen extends BaseScreen {
         int amount;
 
         while (true) {
-            switch (showChoices(TITLE_PAWNSHOP_DEBT, String.format(MESSAGE_DEBT), CHOICES_PAWNSHOP_DEBT)) {
+            switch (showChoices(TITLE_PAWNSHOP_DEBT, String.format(MESSAGE_DEBT, playerInfo.money, playerInfo.pawnshopDebt), CHOICES_PAWNSHOP_DEBT)) {
                 case 1:
                     amount = -2000;
                     break;
@@ -176,7 +175,6 @@ public class DebtAndItemScreen extends BaseScreen {
         showChoices(TITLE_PAWNSHOP_DEBT_EXECUTE, CHOICES_PAWNSHOP_DEBT_EXECUTE, false);
         try {
             PawnshopDebt.addToShopDebt(connection, session.sessionToken, amount);
-            connection.commit();
         } catch (SQLException e) {
             e.printStackTrace();
             throw new CloseGameException();

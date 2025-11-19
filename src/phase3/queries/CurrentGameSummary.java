@@ -25,7 +25,7 @@ public class CurrentGameSummary {
 
     public static CurrentGameSummary retrieveGameSummary(Connection connection, String sessionToken) throws SQLException {
         Statement statement = connection.createStatement();
-        ResultSet record = statement.executeQuery(QUERY);
+        ResultSet record = statement.executeQuery(String.format(QUERY, sessionToken));
         if (!record.next()) {
             throw new NotASuchRowException();
         }

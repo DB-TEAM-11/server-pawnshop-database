@@ -8,7 +8,7 @@ import java.util.ArrayList;
 
 import phase3.exceptions.NotASuchRowException;
 
-public class TodaysEvent {
+public class TodaysEvent { // 기존 쿼리
     private static final String QUERY = "SELECT * FROM EXISTING_NEWS N, NEWS_CATALOG NC WHERE N.GAME_SESSION_KEY = ( SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = %d ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY ) AND N.NCAT_KEY = NC.NCT_KEY ORDER BY NC.NCT_KEY";
     
     public int gameSessionKey;
@@ -40,9 +40,9 @@ public class TodaysEvent {
         this.plusMinus = plusMinus;
     }
 
-    public static TodaysEvent[] getTodaysEvent(Connection connection, int playerId) throws SQLException {
+    public static TodaysEvent[] getTodaysEvent(Connection connection, int playerKey) throws SQLException {
         Statement statement = connection.createStatement();
-        ResultSet queryResult = statement.executeQuery(String.format(QUERY, playerId));
+        ResultSet queryResult = statement.executeQuery(String.format(QUERY, playerKey));
         if (!queryResult.next()) {
             throw new NotASuchRowException();
         }

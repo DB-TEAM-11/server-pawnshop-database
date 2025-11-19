@@ -503,7 +503,19 @@ public class MainScreen extends BaseScreen {
         try {
             AuctioningItems[] auctioningItems = AuctioningItems.getAuctioningItems(connection, playerSession.sessionToken);
             for (AuctioningItems auctioningItem : auctioningItems) {
+                // 아이템 스테이트 판매 완료
                 ExistingItemUpdater.updateItemState(connection, auctioningItem.itemKey, ItemState.SOLD.value());
+                // // 세션토큰 키로 플레이어 키 받아오기 PlayerKeyByToken - getPlayerKey
+                // int playerKey = PlayerKeyByToken.getPlayerKey(connection, PlayerSession.getInstance().getSessionToken());
+                // // 현재 진행 중인 이벤트 가져오기[기존 쿼리 활용] TodaysEvent - getTodaysEvent
+                // TodaysEvent[] events = TodaysEvent.getTodaysEvent(connection, playerKey);
+                // // 경매 완료 - 판매 날짜 및 최종 판매가 기록 DealRecordUpdater - updateSoldInfo
+                // // itemKey, sellingPrice, buyerKey
+                // DealRecordUpdater.updateSoldInfo(connection, playerSession.getSessionToken(), );
+                // // 경매 수익금 입금 MoneyUpdater -  addMoney
+                // MoneyUpdater.addMoney(connection, playerSession.getSessionToken(),); // amount
+                // // 전시장에서 제거 DisplayManagement - removeFromDisplay
+                // DisplayManagement.removeFromDisplay();
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -516,7 +528,14 @@ public class MainScreen extends BaseScreen {
         try {
             RestoringItems[] restoringItems = RestoringItems.getRestoringItems(connection, playerSession.sessionToken);
             for (RestoringItems restoringItem : restoringItems) {
+                // 아이템 스테이트 복원 완료
                 ExistingItemUpdater.updateItemState(connection, restoringItem.itemKey, ItemState.RECORVERED.value());
+                // 세션토큰으로 플레이어 키 받아오기 PlayerKeyByToken - getPlayerKey
+                // 현재 진행 중인 이벤트 가져오기[기존 쿼리 활용] TodaysEvent - getTodaysEvent
+                // 복원 완료 - 진위 확정  ExistingItemUpdater - updateAuthenticityFound
+                // 복원 완료 - 감정가 업데이트 DealRecordUpdater - updateAppraisedPrice
+                // 복원 비용 차감 MoneyUpdater - subtractMoney
+
             }
         } catch (SQLException e) {
             e.printStackTrace();

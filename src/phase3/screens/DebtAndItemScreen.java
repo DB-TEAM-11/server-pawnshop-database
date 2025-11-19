@@ -237,7 +237,7 @@ public class DebtAndItemScreen extends BaseScreen {
 
         while (true) {
             int selection = showChoices(TITLE_AUCTION_ITEM, MESSAGE_ITEM_SELECT, itemNames);
-            if (selection == 9) {
+            if (selection == 9 || selection == 0) {
                 break; // 취소
             }
             if (selection >= 1 && selection <= 8 && itemKey[selection - 1] > 0) {
@@ -275,13 +275,13 @@ public class DebtAndItemScreen extends BaseScreen {
 
         while (true) {
             int selection = showChoices(TITLE_REPAIR_ITEM, MESSAGE_ITEM_SELECT, itemNames);
-            if (selection == 9) {
+            if (selection == 9 || selection == 0) {
                 break; // 취소
             }
             if (selection >= 1 && selection <= 8 && itemKey[selection - 1] > 0) {
                 showChoices(TITLE_REPAIR_ITEM, CHOICES_REPAIR_ITEM);
                 try {
-                    ExistingItemUpdater.updateItemState(connection, itemKey[selection - 1], ItemState.IN_AUCTION.value());
+                    ExistingItemUpdater.updateItemState(connection, itemKey[selection - 1], ItemState.RECOVERING.value());
                 } catch (SQLException e) {
                     e.printStackTrace();
                     throw new CloseGameException();

@@ -516,6 +516,21 @@ public class MainScreen extends BaseScreen {
             for (AuctioningItems auctioningItem : auctioningItems) {
                 // 아이템 스테이트 판매 완료
                 ExistingItemUpdater.updateItemState(connection, auctioningItem.itemKey, ItemState.SOLD.value());
+
+                double multiplier = 1.0;
+                TodaysEvent[] events = TodaysEvent.getTodaysEvent(connection, playerKey);
+                for (TodaysEvent event : events) {
+                    if (event.affectedPrice == 3 && event.categoryKey == auctioningItem.itemCategory) {
+                        multiplier += event.amount * event.plusMinus * 0.01;
+                    }
+                }
+
+                int soldPrice = (int)(auctioningItem.appraisedPrice * (Math.random() * 0.3 + 1.2) * multiplier);
+
+                DealRecordUpdater.updateSoldInfo(connection, playerSession.sessionToken, auctioningItem.itemKey, soldPrice);
+                MoneyUpdater.addMoney(connection, playerSession.getSessionToken(), soldPrice);
+                DisplayManagement.removeFromDisplay(connection, auctioningItem.itemKey);
+
                 // // 세션토큰 키로 플레이어 키 받아오기 PlayerKeyByToken - getPlayerKey
                 // int playerKey = PlayerKeyByToken.getPlayerKey(connection, PlayerSession.getInstance().getSessionToken());
                 // // 현재 진행 중인 이벤트 가져오기[기존 쿼리 활용] TodaysEvent - getTodaysEvent

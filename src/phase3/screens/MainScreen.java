@@ -25,7 +25,11 @@ public class MainScreen extends BaseScreen {
     private static final String TITLE_FINALIZE_WEEK = "주간 정산 요청";
     private static final String TITLE_NEXT_DAY_REQUEST = "다음 날로 진행 요청";
     private static final String TITLE_MAIN_MENU = "메인 게임";
-
+    private static final String TITLE_GET_CURRENT_GAME_SUMMARY = "현재 게임 결과 가져오기";
+    private static final String TITLE_GET_NOT_FOUND_ITEM = "발견하지 못한 아이템 가져오기";
+    private static final String TITLE_RECORD_GAME_CLEAR = "게임 클리어 기록하기";
+    private static final String TITLE_RECORD_GAME_DEFEAT = "게임 패배 기록하기";
+    
     private static final String MESSAGE_LOAD_PLAYING_GAME_SESSION_REQUEST = "진행 중인 게임 세션이 있는지 확인하고, 있다면 불러와야 합니다.";
     private static final String MESSAGE_CREATE_GAME_SESSION_REQUEST = "진행 중인 게임이 없습니다. 새 게임을 시작해야 합니다.";
     private static final String MESSAGE_DIPLAY_ITEM_REQUEST = "게임 진행을 위해서는 전시 중인 아이템을 가져와야 합니다.";
@@ -33,7 +37,9 @@ public class MainScreen extends BaseScreen {
     private static final String MESSAGE_FINALIZE_DAY = "하루가 모두 끝났습니다. 다음 날로 넘어가기 전에, 일일 정산을 수행해야 합니다.";
     private static final String MESSAGE_FINALIZE_WEEK = "한 주가 모두 끝났습니다. 다음 주로 넘어가기 전에, 주간 정산을 수행해야 합니다.";
     private static final String MESSAGE_NEXT_DAY_REQUEST = "계속 진행하기 위해서는, 다음 날로 넘어가야 합니다.";
-
+    private static final String MESSAGE_GET_CURRENT_GAME_SUMMARY = "게임 결과 출력을 위해서, 현재 게임 결과를 가져와야 합니다.";
+    private static final String MESSAGE_GET_NOT_FOUND_ITEM = "게임 결과 출력을 위해서, 발견하지 못한 아이템들을 가져와야 합니다.";
+    
     private static final String[] CHOICES_LOAD_PLAYING_GAME_SESSION_REQUEST = { "게임 세션 가져오기" };
     private static final String[] CHOICES_CREATE_GAME_SESSION_REQUEST = { "새 게임 세션 생성" };
     private static final String[] CHOICES_DIPLAY_ITEM_REQUEST = { "전시 중인 아이템 가져오기" };
@@ -43,12 +49,15 @@ public class MainScreen extends BaseScreen {
     private static final String[] CHOICES_FINALIZE_WEEK = { "주간 정산하기" };
     private static final String[] CHOICES_NEXT_DAY_REQUEST = { "다음 날로 넘어가기" };
     private static final String[] CHOICES_MAIN_MENU = { "거래 (재개)하기", "빛 상환 / 아이템 처리" };
-
+    private static final String[] CHOICES_GET = { "가져오기" };
+    private static final String[] CHOICES_RECORD = { "기록하기" };
+    
     private int gameSessionId;
     private int playerKey;
     private PlayerSession playerSession;
     private DealScreen dealScreen;
     private DebtAndItemScreen debtAndItemScreen;
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
     
     public MainScreen(Connection connection, Scanner scanner) {
         super(connection, scanner);
@@ -65,14 +74,21 @@ public class MainScreen extends BaseScreen {
         showDiplayItemRequest();
 
         boolean isFirst = true;
+        mainLoop:
         while (true) {
             int remaingDealCount = showCheckRemaingDealRequest();
             if (remaingDealCount == 0) { // 대기 중인 거래가 없음
                 if (!isFirst) { // 들어와서 첫 루프 아님. 정산 할 시간
                     if (showCheckIsEndOfWeekRequest()) { // 7일차 배수인지 체크 
-                        showFinalizeWeek(); // 주 정산 시작
+                        if (showFinalizeWeek()) {  // 주간 정산
+                            showDefeat();
+                            break mainLoop;
+                        }
                     } else {
-                        showFinalizeDay(); // 일 정산 시작
+                        if (showFinalizeDay()) {  // 일간 정산
+                            showDefeat();
+                            break mainLoop;
+                        }
                     }
                     showNextDayRequest(); // 다음 날로 이동
                 } else {
@@ -90,8 +106,11 @@ public class MainScreen extends BaseScreen {
                             dealScreen.showDealScreen(firstDrcKey);
                             break;
                         case DEBT_AND_ITEM:
-                            debtAndItemScreen.showDebtAndItemScreen();
-                            break;
+                        if (debtAndItemScreen.showDebtAndItemScreen()) {
+                            showWin();
+                            break mainLoop;
+                        }
+                        break;
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -102,7 +121,7 @@ public class MainScreen extends BaseScreen {
             isFirst = false;
         }
     }
-
+    
     private int showLoadPlayingGameSessionRequest() {
         showChoices(TITLE_LOAD_PLAYING_GAME_SESSION_REQUEST, MESSAGE_LOAD_PLAYING_GAME_SESSION_REQUEST, CHOICES_LOAD_PLAYING_GAME_SESSION_REQUEST, false);
 
@@ -223,13 +242,27 @@ public class MainScreen extends BaseScreen {
                     // 아이템 상태
                     String itemStateStr = "";
                     switch (detailInfo.itemState) {
-                        case 0: itemStateStr = "생성됨"; break;
-                        case 1: itemStateStr = "전시 중"; break;
-                        case 2: itemStateStr = "복원 중"; break;
-                        case 3: itemStateStr = "경매 중"; break;
-                        case 4: itemStateStr = "판매 됨"; break;
-                        case 5: itemStateStr = "복원 완료"; break;
-                        default: itemStateStr = "알 수 없음"; break;
+                        case 0:
+                            itemStateStr = "생성됨";
+                            break;
+                        case 1:
+                            itemStateStr = "전시 중";
+                            break;
+                        case 2:
+                            itemStateStr = "복원 중";
+                            break;
+                        case 3:
+                            itemStateStr = "경매 중";
+                            break;
+                        case 4:
+                            itemStateStr = "판매 됨";
+                            break;
+                        case 5:
+                            itemStateStr = "복원 완료";
+                            break;
+                        default:
+                            itemStateStr = "알 수 없음";
+                            break;
                     }
                     System.out.println("상태: " + itemStateStr);
                     System.out.println();
@@ -310,7 +343,7 @@ public class MainScreen extends BaseScreen {
         }
     }
 
-    private void showFinalizeDay() {
+    private boolean showFinalizeDay() {
         showChoices(TITLE_FINALIZE_DAY, MESSAGE_FINALIZE_DAY, CHOICES_FINALIZE_DAY, false);
 
         try {
@@ -331,16 +364,7 @@ public class MainScreen extends BaseScreen {
             
             // 게임 오버 확인 (돈이 음수)
             if (daily.todayFinal < 0) {
-                System.out.println("\n*** 게임 오버! ***");
-                System.out.println("이자를 내지 못해 파산했습니다.");
-                
-                // 게임 종료 처리 (DB에만 기록)
-                PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
-                GameSessionUpdater.setGameEnd(connection, playerSession.getSessionToken(), -playerInfo.dayCount);
-                
-                System.out.println("\n계속하려면 Enter를 누르세요...");
-                scanner.nextLine();
-                System.exit(0);
+                return true;
             }
             
             System.out.println("\n계속하려면 Enter를 누르세요...");
@@ -352,9 +376,10 @@ public class MainScreen extends BaseScreen {
             System.out.println("\n계속하려면 Enter를 누르세요...");
             scanner.nextLine();
         }
+        return false;
     }
 
-    private void showFinalizeWeek() {
+    private boolean showFinalizeWeek() {
         showChoices(TITLE_FINALIZE_WEEK, MESSAGE_FINALIZE_WEEK, CHOICES_FINALIZE_WEEK, false);
 
         try {
@@ -377,16 +402,7 @@ public class MainScreen extends BaseScreen {
             
             // 게임 오버 확인 (돈이 음수)
             if (weekly.todayFinal < 0) {
-                System.out.println("\n*** 게임 오버! ***");
-                System.out.println("이자를 내지 못해 파산했습니다.");
-                
-                // 게임 종료 처리 (DB에만 기록)
-                PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
-                GameSessionUpdater.setGameEnd(connection, playerSession.getSessionToken(), -playerInfo.dayCount);
-                
-                System.out.println("\n계속하려면 Enter를 누르세요...");
-                scanner.nextLine();
-                System.exit(0);
+                return true;
             }
             
             System.out.println("\n계속하려면 Enter를 누르세요...");
@@ -398,6 +414,7 @@ public class MainScreen extends BaseScreen {
             System.out.println("\n계속하려면 Enter를 누르세요...");
             scanner.nextLine();
         }
+        return false;
     }
 
     private void showNextDayRequest() {
@@ -590,6 +607,75 @@ public class MainScreen extends BaseScreen {
                 return NextScreen.DEBT_AND_ITEM;
             default:
                 throw new RuntimeException("Invalid choice");
+        }
+    }
+    
+    private void showWin() {
+        System.out.println("***게임 클리어***\n축하합니다!\n모든 빚을 갚으셨습니다.");
+        showGameEnd();
+        
+        // 게임 종료 기록
+        showChoices(TITLE_RECORD_GAME_CLEAR, CHOICES_RECORD);
+        PlayerInfo playerInfo;
+        try {
+            playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
+            GameSessionUpdater.setGameEnd(connection, playerSession.getSessionToken(), playerInfo.dayCount);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        System.out.println("인트로 화면으로 돌아가시려면 Enter를 누르세요...");
+        scanner.nextLine();
+    }
+    
+    private void showDefeat() {
+        System.out.println("***게임 오버***\n이자를 내지 못해 파산했습니다...");
+        showGameEnd();
+        
+        // 게임 종료 기록
+        showChoices(TITLE_RECORD_GAME_DEFEAT, CHOICES_RECORD);
+        PlayerInfo playerInfo;
+        try {
+            playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
+            GameSessionUpdater.setGameEnd(connection, playerSession.getSessionToken(), -playerInfo.dayCount);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        System.out.println("인트로 화면으로 돌아가시려면 Enter를 누르세요...");
+        scanner.nextLine();
+    }
+    
+    private void showGameEnd() {
+        CurrentGameSummary gameSummary = null;
+        String[] notFoundItemNames = null;
+        
+        showChoices(TITLE_GET_CURRENT_GAME_SUMMARY, MESSAGE_GET_CURRENT_GAME_SUMMARY, CHOICES_GET, false);
+        try {
+            gameSummary = CurrentGameSummary.retrieveGameSummary(connection, playerSession.sessionToken);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        showChoices(TITLE_GET_NOT_FOUND_ITEM, MESSAGE_GET_NOT_FOUND_ITEM, CHOICES_GET, false);
+        try {
+            notFoundItemNames = NotFoundItem.getNotFoundItemName(connection, playerKey);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        System.out.println("          닉네임: " + gameSummary.nickName);
+        System.out.println("       가게 이름: " + gameSummary.shopName);
+        System.out.println("게임 진행한 날짜: " + gameSummary.gameEndDayCount);
+        System.out.println("    게임 끝난 날: " + gameSummary.gameEndDate);
+        
+        System.out.println("현재까지 발견하지 못한 아이템");
+        for (String notFoundItemName : notFoundItemNames) {
+            System.out.println("  " + notFoundItemName);
         }
     }
 }

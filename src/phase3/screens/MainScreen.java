@@ -48,7 +48,7 @@ public class MainScreen extends BaseScreen {
     private static final String[] CHOICES_FINALIZE_DAY = { "일일 정산하기" };
     private static final String[] CHOICES_FINALIZE_WEEK = { "주간 정산하기" };
     private static final String[] CHOICES_NEXT_DAY_REQUEST = { "다음 날로 넘어가기" };
-    private static final String[] CHOICES_MAIN_MENU = { "거래 (재개)하기", "빛 상환 / 아이템 처리" };
+    private static final String[] CHOICES_MAIN_MENU = { "거래 (재개)하기", "빛 상환 / 아이템 처리", "게임 포기하기" };
     private static final String[] CHOICES_GET = { "가져오기" };
     private static final String[] CHOICES_RECORD = { "기록하기" };
     
@@ -81,11 +81,13 @@ public class MainScreen extends BaseScreen {
                 if (!isFirst) { // 들어와서 첫 루프 아님. 정산 할 시간
                     if (showCheckIsEndOfWeekRequest()) { // 7일차 배수인지 체크 
                         if (showFinalizeWeek()) {  // 주간 정산
+                            System.out.println("***게임 오버***\n이자를 내지 못해 파산했습니다...");
                             showDefeat();
                             break mainLoop;
                         }
                     } else {
                         if (showFinalizeDay()) {  // 일간 정산
+                            System.out.println("***게임 오버***\n이자를 내지 못해 파산했습니다...");
                             showDefeat();
                             break mainLoop;
                         }
@@ -100,16 +102,22 @@ public class MainScreen extends BaseScreen {
                     DealRecordByItemState[] deals = DealRecordByItemState.getDealRecordByItemState(connection, playerKey, 0);
                     int firstDrcKey = deals[0].drcKey;
                     
-                    switch (showMainMenu()) {
-                        case DEAL:
+                    switch (showChoices(TITLE_MAIN_MENU, CHOICES_MAIN_MENU)) {
+                        case 1:
                             dealScreen.showDealScreen(firstDrcKey);
                             break;
-                        case DEBT_AND_ITEM:
+                        case 2:
                             if (debtAndItemScreen.showDebtAndItemScreen()) {
                                 showWin();
                                 break mainLoop;
                             }
-                        break;
+                            break;
+                        case 3:
+                            System.out.println("***게임 오버***\n게임을 포기하셨습니다...");
+                            showDefeat();
+                            break mainLoop;
+                        default:
+                            throw new IllegalStateException("Invalid choice");
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -622,17 +630,6 @@ public class MainScreen extends BaseScreen {
             default: return "알 수 없음";
         }
     }
-
-    private NextScreen showMainMenu() {
-        switch (showChoices(TITLE_MAIN_MENU, CHOICES_MAIN_MENU)) {
-            case 1:
-                return NextScreen.DEAL;
-            case 2:
-                return NextScreen.DEBT_AND_ITEM;
-            default:
-                throw new RuntimeException("Invalid choice");
-        }
-    }
     
     private void showWin() {
         System.out.println("***게임 클리어***\n축하합니다!\n모든 빚을 갚으셨습니다.");
@@ -654,7 +651,6 @@ public class MainScreen extends BaseScreen {
     }
     
     private void showDefeat() {
-        System.out.println("***게임 오버***\n이자를 내지 못해 파산했습니다...");
         showGameEnd();
         
         // 게임 종료 기록
@@ -694,7 +690,7 @@ public class MainScreen extends BaseScreen {
         
         System.out.println("          닉네임: " + gameSummary.nickName);
         System.out.println("       가게 이름: " + gameSummary.shopName);
-        System.out.println("게임 진행한 날짜: " + gameSummary.gameEndDayCount);
+        System.out.println("게임 진행한 날짜: " + Math.abs(gameSummary.gameEndDayCount));
         System.out.println("    게임 끝난 날: " + gameSummary.gameEndDate);
         
         System.out.println("현재까지 발견하지 못한 아이템");

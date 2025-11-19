@@ -55,7 +55,7 @@ public class IntroScreen extends BaseScreen {
         System.out.println("플레이어명 | 닉네임 | 가게 이름 | 게임 진행한 날짜 | 게임 끝난 날");
         for (WorldRecord worldRecord : worldRecords) {
             System.out.printf(
-                "%s %s %s %d %s\n",
+                "%6s %6s %6s %13d %6s\n",
                 worldRecord.playerId,
                 worldRecord.nickName,
                 worldRecord.shopName,

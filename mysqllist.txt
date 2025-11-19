@@ -26,7 +26,7 @@ Response: { "dayCount": 1, "money": 50000, ... }
 Request: {}
 Response: { "dayCount": 25, "money": 128000, ... }
     4-1. 플레이어 정보 조회 [기존 쿼리 활용]
-        SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = 1 ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY;
+        SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = ? ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY;
 
 5. 초기 카탈로그 데이터 불러오기 (GET /catalog/initialData)
 Request: {}

@@ -93,29 +93,29 @@ public class DisplayedItemInfo {
         }
 
         DisplayedItemInfo itemInfo = new DisplayedItemInfo(
-            queryResult.getInt(1),
-            queryResult.getInt(2),
-            queryResult.getInt(3),
-            queryResult.getInt(4),
-            queryResult.getInt(5),
-            queryResult.getInt(6),
-            queryResult.getInt(7),
-            queryResult.getInt(8),
-            queryResult.getFloat(9),
-            queryResult.getString(10).equals("Y"),
-            queryResult.getString(11).equals("Y"),
-            queryResult.getInt(12),
-            queryResult.getString(13),
-            queryResult.getString(14),
-            queryResult.getInt(15),
-            queryResult.getInt(16),
-            queryResult.getInt(17),
-            queryResult.getInt(18),
-            queryResult.getInt(19),
-            queryResult.getInt(20),
-            queryResult.getInt(21),
-            queryResult.getString(22),
-            queryResult.getInt(23)
+            queryResult.getInt(1),   // DISPLAY_POS
+            queryResult.getInt(2),   // ITEM_KEY
+            queryResult.getInt(3),   // GAME_SESSION_KEY
+            queryResult.getInt(4),   // ITEM_CATALOG_KEY
+            queryResult.getInt(5),   // GRADE
+            queryResult.getInt(6),   // FOUND_GRADE
+            queryResult.getInt(7),   // FLAW_EA
+            queryResult.getInt(8),   // FOUND_FLAW_EA
+            queryResult.getFloat(9), // SUSPICIOUS_FLAW_AURA
+            queryResult.getString(10).equals("Y"), // AUTHENTICITY (A/Y/N 문자)
+            queryResult.getString(11).equals("Y"), // IS_AUTHENTICITY_FOUND (I 문자는 'Y'가 아님)
+            queryResult.getInt(12),  // ITEM_STATE
+            queryResult.getString(14), // ITEM_CATALOG_NAME (IC.* 두번째 컬럼)
+            queryResult.getString(15), // IMG_ID (IC.* 세번째 컬럼)
+            queryResult.getInt(16),  // CATEGORY_KEY (IC.* 네번째 컬럼)
+            queryResult.getInt(17),  // BASE_PRICE (IC.* 다섯번째 컬럼)
+            queryResult.getInt(18),  // DRC_KEY
+            queryResult.getInt(19),  // PURCHASE_PRICE
+            queryResult.getInt(20),  // ASKING_PRICE
+            queryResult.getInt(21),  // APPRAISED_PRICE
+            queryResult.getInt(22),  // BOUGHT_DATE
+            queryResult.getString(23), // CUSTOMER_NAME (CUS 부분)
+            queryResult.getInt(24)   // MONEY
         );
 
         statement.close();

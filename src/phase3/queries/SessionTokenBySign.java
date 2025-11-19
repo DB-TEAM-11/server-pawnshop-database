@@ -5,12 +5,18 @@ import java.sql.Statement;
 import java.sql.ResultSet;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 import phase3.queries.HashedPwGetter;
 
 public class SessionTokenBySign {
 
-    private static final String QUERY =
-            "SELECT P.SESSION_TOKEN FROM PLAYER P WHERE P.PLAYER_ID = '%s' AND P.HASHED_PW = '%s'";
+    private static final String VERIFY_QUERY =
+            "SELECT P.PLAYER_KEY FROM PLAYER P WHERE P.PLAYER_ID = '%s' AND P.HASHED_PW = '%s'";
+    
+    private static final String UPDATE_SESSION_TOKEN_QUERY =
+            "UPDATE PLAYER SET SESSION_TOKEN = '%s', LAST_ACTIVITY = TO_DATE('%s', 'YYYY-MM-DD HH24:MI:SS') WHERE PLAYER_ID = '%s'";
 
     public static String SessionTokenBySign(
             Connection connection,
@@ -18,8 +24,6 @@ public class SessionTokenBySign {
             String pw,
             String hashed_pw
     ) {
-        String session_token = null;
-
         try {
 	        	String[] pwAndSalt = hashed_pw.split(";");
 	          if (pwAndSalt.length < 2) return null;
@@ -33,15 +37,35 @@ public class SessionTokenBySign {
 
             Statement statement = connection.createStatement();
 
-            String query = String.format(QUERY, id, hashed_pw);
-            ResultSet rs = statement.executeQuery(query);
+            // 사용자 인증 확인
+            String verifyQuery = String.format(VERIFY_QUERY, id, hashed_pw);
+            ResultSet rs = statement.executeQuery(verifyQuery);
 
-            if (rs.next()) {
-                return rs.getString(1);
+            if (!rs.next()) {
+                rs.close();
+                statement.close();
+                return null;
             }
-
             rs.close();
+
+            // 새 세션 토큰 생성 (Base64 64바이트)
+            SecureRandom random = new SecureRandom();
+            byte[] tokenBytes = new byte[48]; // 48바이트를 Base64 인코딩하면 64자리
+            random.nextBytes(tokenBytes);
+            String newSessionToken = Base64.getEncoder().encodeToString(tokenBytes);
+            
+            // 현재 시간
+            LocalDateTime now = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            String datetime = now.format(formatter);
+            
+            // 세션 토큰 업데이트
+            String updateQuery = String.format(UPDATE_SESSION_TOKEN_QUERY, newSessionToken, datetime, id);
+            statement.executeUpdate(updateQuery);
+            
             statement.close();
+
+            return newSessionToken;
 
         } catch (Exception e) {
             e.printStackTrace();

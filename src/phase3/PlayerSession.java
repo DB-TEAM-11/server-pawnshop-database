@@ -5,11 +5,14 @@ package phase3;
 public class PlayerSession {
     private static PlayerSession instance; // 싱글톤 객체
     
-    // 세션 토근
-    public String sessionToken;
+    public String sessionToken; // 세션 토큰
+    private int currentDrcKey;  // 현재 처리 중인 거래
 
     // 싱글톤이므로 생성자 막음
-    private PlayerSession() {}
+    private PlayerSession() {
+        this.sessionToken = null;
+        this.currentDrcKey = 0;
+    }
     
     // 인스턴스 전달
     public static PlayerSession getInstance() {
@@ -19,12 +22,26 @@ public class PlayerSession {
         return instance;
     }
     
-    // Getters and Setters
+    // 게임 세션 초기화 (로그아웃 할 때 사용하기)
+    public void reset() {
+        this.sessionToken = null;
+        this.currentDrcKey = 0;
+    }
+    
+    // get, set
+    public String getSessionToken() {
+        return sessionToken;
+    }
+    
     public void setSessionToken(String sessionToken) {
         this.sessionToken = sessionToken;
     }
-
-    public String getSessionToken() {
-        return sessionToken;
+    
+    public int getCurrentDrcKey() {
+        return currentDrcKey;
+    }
+    
+    public void setCurrentDrcKey(int currentDrcKey) {
+        this.currentDrcKey = currentDrcKey;
     }
 }

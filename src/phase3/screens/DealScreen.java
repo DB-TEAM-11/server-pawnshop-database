@@ -121,7 +121,7 @@ public class DealScreen extends BaseScreen {
         int playerKey;
         PlayerInfo playerInfo;
         int gameSessionKey;
-        int hintRevealedFlag;
+        int hintRevealedFlag=0;
         try {
             playerKey = PlayerKeyByToken.getPlayerKey(connection, playerSession.getSessionToken());
             playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);

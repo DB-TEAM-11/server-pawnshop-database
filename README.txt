@@ -17,25 +17,6 @@ README.txt
   [ PHASE 2 쿼리 활용 ]
 
 
-README
-
-1) 시작 화면
-################################################################################
-#                               전당포 운영 게임                               #
-################################################################################
-1. 로그인
-2. 회원가입
-0. 게임 종료
-선택 (0~2):
-
-
-1) 회원가입 진행 
-   SELECT P.HASHED_PW FROM PLAYER P WHERE P.PLAYER_ID = '%s'
-   설명: 플레이어 아이디를 가지고, 해당 패스워드가 있는지 체크하는 쿼리문
-   
-
-2) 로그인 진행
-
 
 <시작 화면>
 ################################################################################
@@ -60,6 +41,9 @@ README
 회원가입 실패 시 다시 [시작] 창을 보여줌.
 
 회원가입에 성공하였다면,
+- PLAYER 테이블에 새로운 row를 생성
+"INSERT INTO PLAYER P ( P.PLAYER_ID,  P.HASHED_PW,  P.SESSION_TOKEN,  P.LAST_ACTIVITY ) VALUES (?, ?, ?, ?)"
+
 1번을 눌러서, 로그인 기능으로 이동
 
 회원가입 시 생성한 아이디 및 비밀번호 입력
@@ -82,6 +66,107 @@ README
 [2] 월드 레코드
 [3] 로그아웃
 [0] 게임 종료
+
+[2]
+	월드 레코드 불러오는 쿼리
+	- "SELECT * FROM (SELECT p.player_id, gs.nickname, gs.shop_name, gs.game_end_day_count, gs.game_end_date FROM PLAYER P, GAME_SESSION GS WHERE p.player_key = gs.player_key AND gs.game_end_day_count > 0 ORDER BY gs.game_end_day_count ASC) WHERE ROWNUM <= 10";
+
+게임 시작
+	사용되는 쿼리
+	- 기존에 진행하던 게임 세션이 있는지 확인하기 위해 로그인이 할당 받은 세션토큰으로 PLAYER 테이블의 PLAYER_KEY를 불러온 후,
+	"SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'";
+	- 해당 PLAYER_KEY가 가지고 있는 게임 세션이 있는지 확인
+	"SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY";
+	
+	- 기존에 진행하던 게임이 없는 경우 새로운 게임을 생성
+	"INSERT INTO GAME_SESSION (PLAYER_KEY, NICKNAME, SHOP_NAME) VALUES ((SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'), '%s', '%s')";
+	
+	- 생성된 게임을 불러오기 위해, 로그인 시 할당 받은 세션 토큰을 통해 PLAYER 테이블에서 PLAYER_KEY를 가져옴
+	"SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s'";
+	- 가져온 PLAYER_KEY를 통해 이에 맞는 게임 세션을 불러옴
+	"SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY";
+
+	전시중인 아이템 목록을 불러옴
+	"SELECT D.DISPLAY_POS, I.*, IC.* 
+	FROM GAME_SESSION_ITEM_DISPLAY D, 
+		EXISTING_ITEM I, 
+		ITEM_CATALOG IC 
+	WHERE D.GAME_SESSION_KEY = ( 
+		SELECT GAME_SESSION_KEY 
+		FROM GAME_SESSION 
+		WHERE PLAYER_KEY = %d 
+		ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY 
+	) AND D.ITEM_KEY = I.ITEM_KEY 
+		AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY 
+		ORDER BY D.DISPLAY_POS";
+
+	전시중인 아이템이 있다면, 해당 아이템의 자세한 정보를 불러옴
+	- "SELECT 
+		D.DISPLAY_POS, I.*, IC.*, DR.DRC_KEY, 
+		DR.PURCHASE_PRICE, DR.ASKING_PRICE, 
+		DR.APPRAISED_PRICE, DR.BOUGHT_DATE, 
+		CC.CUSTOMER_NAME, GS.MONEY 
+	FROM GAME_SESSION_ITEM_DISPLAY D, 
+		EXISTING_ITEM I, ITEM_CATALOG IC, 
+		DEAL_RECORD DR, CUSTOMER_CATALOG CC, 
+		GAME_SESSION GS 
+	WHERE D.ITEM_KEY = %d 
+	AND D.ITEM_KEY = I.ITEM_KEY 
+	AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY 
+	AND I.ITEM_KEY = DR.ITEM_KEY 
+	AND DR.SELLER_KEY = CC.CUSTOMER_KEY 
+	AND GS.GAME_SESSION_KEY = DR.GAME_SESSION_KEY"
+
+	이전에 하던 거래가 있는지 확인
+	"SELECT DR.* 
+	FROM DEAL_RECORD DR, EXISTING_ITEM I 
+	WHERE DR.GAME_SESSION_KEY = (
+		SELECT GAME_SESSION_KEY 
+		FROM GAME_SESSION 
+		WHERE PLAYER_KEY = %d 
+		ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY
+	) AND DR.ITEM_KEY = I.ITEM_KEY 
+	AND I.ITEM_STATE = %d 
+	ORDER BY DR.DRC_KEY"
+
+	거래가 없다면
+	- 7일차인지 확인
+	"SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY";
+	- 주간 정산 정보 가져오기
+	"SELECT 
+		G.MONEY + SUM(BOUGHT.PURCHASE_PRICE) 
+		- SUM(SOLD.SELLING_PRICE) AS TODAY_START, 
+		G.MONEY AS TODAY_END, 
+		FLOOR(G.PAWNSHOP_DEBT * 0.05) AS TODAY_INTEREST, 
+		FLOOR(G.PERSONAL_DEBT * 0.0005) AS TODAY_INTEREST_PERSONAL, 
+		G.MONEY 
+		- FLOOR(G.PAWNSHOP_DEBT * 0.05) 
+		- FLOOR(G.PERSONAL_DEBT * 0.0005) AS TODAY_FINAL 
+		FROM (( 
+				GAME_SESSION G 
+				LEFT OUTER JOIN DEAL_RECORD BOUGHT 
+				ON G.GAME_SESSION_KEY = BOUGHT.GAME_SESSION_KEY 
+				AND G.DAY_COUNT = BOUGHT.BOUGHT_DATE 
+			) LEFT OUTER JOIN DEAL_RECORD SOLD 
+				ON G.GAME_SESSION_KEY = SOLD.GAME_SESSION_KEY 
+				AND G.DAY_COUNT = SOLD.SOLD_DATE 
+			) WHERE G.GAME_SESSION_KEY = ( 
+				SELECT GAME_SESSION_KEY 
+				FROM GAME_SESSION 
+				WHERE PLAYER_KEY = %d 
+				ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY 
+			) GROUP BY G.MONEY, G.PAWNSHOP_DEBT, G.PERSONAL_DEBT";
+    
+
+
+
+	거래가 있다면
+
+
+
+로그아웃
+	- 사용자의 session_token을 null로, 변경하며 세션을 무효화
+	"UPDATE PLAYER SET SESSION_TOKEN = NULL WHERE SESSION_TOKEN = '%s'";
 
 1. 1번을 누르면 게임이 시작되고,
 2. 2번을 누르면 해당 게임을 클리어한 사용자 10명의 리스트, 즉 세계 기록 리스트가 뜬다

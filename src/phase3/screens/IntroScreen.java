@@ -68,6 +68,8 @@ public class IntroScreen extends BaseScreen {
     private void doLogout() {
         try {
             PlayerUpdater.logout(connection, session.sessionToken);
+            PlayerSession.getInstance().reset();
+            
         } catch (SQLException e) {
             e.printStackTrace();
             throw new CloseGameException();

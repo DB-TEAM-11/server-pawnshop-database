@@ -26,20 +26,6 @@ public class RandomCustomersWithDetails {
     }
 
     public static RandomCustomersWithDetails[] getRandomCustomersWithDetails(Connection connection, int count) throws SQLException {
-
-    // 연결 정보 확인
-    System.out.println("Connection User: " + connection.getMetaData().getUserName());
-    System.out.println("Connection Catalog: " + connection.getCatalog());
-    
-    // 전체 데이터 개수 먼저 확인
-    Statement countStatement = connection.createStatement();
-    ResultSet countRs = countStatement.executeQuery("SELECT COUNT(*) FROM CUSTOMER_CATALOG");
-    if (countRs.next()) {
-        System.out.println("CUSTOMER_CATALOG 전체 행 수: " + countRs.getInt(1));
-    }
-    countRs.close();
-    countStatement.close();
-
         Statement statement = connection.createStatement();
         ResultSet rs = statement.executeQuery(String.format(QUERY, count));
         
@@ -53,7 +39,6 @@ public class RandomCustomersWithDetails {
                 rs.getInt(5)       // CATEGORY_KEY
             ));
         }
-        System.out.println(customers.size());
 
         statement.close();
         rs.close();

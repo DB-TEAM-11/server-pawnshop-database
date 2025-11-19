@@ -75,7 +75,7 @@ public class DebitAndItemScreen extends BaseScreen {
                 case 5:
                     return;
                 default:
-                    throw new RuntimeException("Invalid index");
+                    throw new IllegalStateException("Invalid index returned");
             }
 
             showChoices(TITLE_CHECK_DEBIT, CHOICES_CHECK_DEBIT);
@@ -120,7 +120,7 @@ public class DebitAndItemScreen extends BaseScreen {
                 case 9:
                     return;
                 default:
-                    throw new RuntimeException("Invalid index");
+                    throw new IllegalStateException("Invalid index returned");
             }
 
             if (amount < 0) {

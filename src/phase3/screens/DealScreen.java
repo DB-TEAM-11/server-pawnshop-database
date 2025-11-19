@@ -576,7 +576,7 @@ public class DealScreen extends BaseScreen {
             int[] usedPositions = DisplayManagement.getUsedDisplayPositions(connection, playerSession.getSessionToken());
             int unlockedShowcaseCount = playerInfo.unlockedShowcaseCount;
             int emptyPos = -1;
-            for (int i = 1; i <= unlockedShowcaseCount; i++) {
+            for (int i = 0; i < unlockedShowcaseCount; i++) {
                 boolean isUsed = false;
                 for (int used : usedPositions) {
                     if (used == i) {

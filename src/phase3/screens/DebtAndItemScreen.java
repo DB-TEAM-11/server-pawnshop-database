@@ -180,7 +180,10 @@ public class DebtAndItemScreen extends BaseScreen {
             throw new CloseGameException();
         }
 
-        return showCheckRemainingDebtIsExistRequest();
+        if(amount <0){ // 게임 끝 검사
+            return showCheckRemainingDebtIsExistRequest();
+        }
+        return false; // 게임 끝 검사 안 함
     }
 
     private void showItemAuctionScreen() {
@@ -193,21 +196,24 @@ public class DebtAndItemScreen extends BaseScreen {
             throw new CloseGameException();
         }
 
-        String[] itemNames = {"-", "-", "-", "-", "-", "-", "-", "-"};
+        String[] itemNames = {"-", "-", "-", "-", "-", "-", "-", "-", "취소"};
         int[] itemKey = {0, 0, 0, 0, 0, 0, 0, 0};
         for (ItemInDisplay item : items) {
             if (item.itemState == ItemState.DISPLAYING.value() || item.itemState == ItemState.RECORVERED.value()) {
-                itemNames[item.displayPos] = item.itemCatalogName;
+                itemNames[item.displayPos] = String.format("%d번 인덱스: %s", item.displayPos, item.itemCatalogName);
                 itemKey[item.displayPos] = item.itemKey;
             }
         }
 
         while (true) {
             int selection = showChoices(TITLE_AUCTION_ITEM, MESSAGE_ITEM_SELECT, itemNames);
-            if (itemKey[selection] > 0) {
+            if (selection == 9) {
+                break; // 취소
+            }
+            if (selection >= 1 && selection <= 8 && itemKey[selection - 1] > 0) {
                 showChoices(TITLE_AUCTION_ITEM, CHOICES_AUCTION_ITEM);
                 try {
-                    UpdateExistingItem.updateItemState(connection, itemKey[selection], ItemState.IN_AUCTION.value());
+                    UpdateExistingItem.updateItemState(connection, itemKey[selection - 1], ItemState.IN_AUCTION.value());
                 } catch (SQLException e) {
                     e.printStackTrace();
                     throw new CloseGameException();
@@ -228,21 +234,24 @@ public class DebtAndItemScreen extends BaseScreen {
             throw new CloseGameException();
         }
 
-        String[] itemNames = {"-", "-", "-", "-", "-", "-", "-", "-"};
+        String[] itemNames = {"-", "-", "-", "-", "-", "-", "-", "-", "취소"};
         int[] itemKey = {0, 0, 0, 0, 0, 0, 0, 0};
         for (ItemInDisplay item : items) {
             if (item.itemState == ItemState.DISPLAYING.value()) {
-                itemNames[item.displayPos] = item.itemCatalogName;
+                itemNames[item.displayPos] = String.format("%d번 인덱스: %s", item.displayPos, item.itemCatalogName);
                 itemKey[item.displayPos] = item.itemKey;
             }
         }
 
         while (true) {
             int selection = showChoices(TITLE_REPAIR_ITEM, MESSAGE_ITEM_SELECT, itemNames);
-            if (itemKey[selection] > 0) {
+            if (selection == 9) {
+                break; // 취소
+            }
+            if (selection >= 1 && selection <= 8 && itemKey[selection - 1] > 0) {
                 showChoices(TITLE_REPAIR_ITEM, CHOICES_REPAIR_ITEM);
                 try {
-                    UpdateExistingItem.updateItemState(connection, itemKey[selection], ItemState.IN_AUCTION.value());
+                    UpdateExistingItem.updateItemState(connection, itemKey[selection - 1], ItemState.IN_AUCTION.value());
                 } catch (SQLException e) {
                     e.printStackTrace();
                     throw new CloseGameException();

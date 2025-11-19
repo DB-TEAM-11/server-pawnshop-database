@@ -1,10 +1,13 @@
 package phase3.screens;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Random;
 import java.util.Scanner;
 
 import phase3.PlayerSession;
+import phase3.exceptions.CloseGameException;
+import phase3.exceptions.NotASuchRowException;
 import phase3.queries.*;
 
 public class DealScreen extends BaseScreen {
@@ -16,9 +19,9 @@ public class DealScreen extends BaseScreen {
     private static String TITLE_ACCEPT_DEAL__CHECK_BALANCE = "구매 전 잔고 확인";
     private static String TITLE_ACCEPT_DEAL__SAVE = "구매 기록 저장";
     private static String TITLE_DENY_DEAL__REMOVE_DEAL = "거래 삭제";
-
+    
     private static String MESSAGE_DENY_DEAL__REMOVE_DEAL = "거래를 거절하였으므로, 해당 거래 기록을 삭제합니다.";
-
+    
     private static String[] CHOICES_MAIN = {
         "물건 조사",
         "등급 감정",
@@ -42,113 +45,118 @@ public class DealScreen extends BaseScreen {
     
     // 현재 처리 중인 거래 키
     private int currentDrcKey;
-
+    
     public DealScreen(Connection connection, Scanner scanner) {
         super(connection, scanner);
         this.playerSession = PlayerSession.getInstance();
     }
-
+    
     public void showDealScreen(int drcKey) {
         this.currentDrcKey = drcKey;
         playerSession.setCurrentDrcKey(drcKey);
         while (true) {
             switch (showChoices(TITLE_MAIN, formatMainMessage(), CHOICES_MAIN)) {
                 case 1:
-                    showItemInspectionScreen();
-                    break;
+                showItemInspectionScreen();
+                break;
                 case 2:
-                    showGradeFindScreen();
-                    break;
+                showGradeFindScreen();
+                break;
                 case 3:
-                    showFlawFindScreen();
-                    break;
+                showFlawFindScreen();
+                break;
                 case 4:
-                    showItemAuthenticationScreen();
-                    break;
+                showItemAuthenticationScreen();
+                break;
                 case 5:
-                    showOpenCustomerHintScreen();
-                    break;
+                showOpenCustomerHintScreen();
+                break;
                 case 6:
-                    if (showAcceptDealScreen()) {
-                        return;
-                    }
-                    break;
+                if (showAcceptDealScreen()) {
+                    return;
+                }
+                break;
                 case 7:
-                    showDenyDealScreen();
-                    return;
+                showDenyDealScreen();
+                return;
                 case 8:
-                    return;
+                return;
             }
         }
     }
-
+    
     private String formatMainMessage() {
+        DealRecordByDrcKey dealRecord;
+        CustomerInfo customer;
+        ItemCatalog itemCatalog;
+        int money;
         try {
-            DealRecordByDrcKey dealRecord = DealRecordByDrcKey.getDealRecordByDrcKey(connection, currentDrcKey);
-            CustomerInfo customer = CustomerInfo.getCustomerInfo(connection, dealRecord.sellerKey);
-            ItemCatalog itemCatalog = ItemCatalog.getItemByKey(connection, dealRecord.itemCatalogKey);
-            int money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
-            
-            String gradeStr = getGradeString(dealRecord.foundGrade);
-            String authenticityStr = dealRecord.isAuthenticityFound 
-                ? (dealRecord.authenticity ? "진품 (확정)" : "가품 (확정)")
-                : "미확인";
-            
-            StringBuilder sb = new StringBuilder();
-            sb.append("=====================================\n");
-            sb.append(String.format("고객: %s (%s)\n", customer.customerName, customer.imgId));
-            sb.append(String.format("아이템: %s\n", itemCatalog.itemCatalogName));
-            sb.append(String.format("발견 등급: %s\n", gradeStr));
-            sb.append(String.format("발견 흠: %d개\n", dealRecord.foundFlawEa));
-            sb.append(String.format("진위 판정: %s\n", authenticityStr));
-            sb.append("\n");
-            sb.append(String.format("최초 제시가: %,dG\n", dealRecord.askingPrice));
-            sb.append(String.format("현재 구매가: %,dG\n", dealRecord.purchasePrice));
-            sb.append(String.format("현재 감정가: %,dG\n", dealRecord.appraisedPrice));
-            sb.append("\n");
-            sb.append(String.format("---공개된 고객 힌트---\n"));
-            
-            // 공개된 힌트 조회
-            try {
-                int playerKey = PlayerKeyByToken.getPlayerKey(connection, playerSession.getSessionToken());
-                PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
-                int gameSessionKey = playerInfo.gameSessionKey;
-                
-                int hintRevealedFlag = CustomerHiddenDiscovered.getHintRevealedFlag(connection, gameSessionKey, dealRecord.sellerKey);
-                
-                boolean hasRevealedHint = false;
-                
-                // 000 중에서 [FRAUD][WELL-COLLECT][CLUMSY] 순으로 저장 되어있음
-                // Bit 0: 사기칠 거 같은 비율 (FRAUD)
-                if ((hintRevealedFlag & (1 << 2)) != 0) {
-                    sb.append(String.format("사기칠 거 같은 비율: %.2f%%\n", customer.fraud * 100));
-                    hasRevealedHint = true;
-                }
-                // Bit 1: 수집가 능력 (WELL_COLLECT)
-                if ((hintRevealedFlag & (1 << 1)) != 0) {
-                    sb.append(String.format("수집가 능력: %.2f%%\n", customer.wellCollect * 100));
-                    hasRevealedHint = true;
-                }
-                // Bit 2: 대충 관리함 (CLUMSY)
-                if ((hintRevealedFlag & (1 << 0)) != 0) {
-                    sb.append(String.format("대충 관리함: %.2f%%\n", customer.clumsy * 100));
-                    hasRevealedHint = true;
-                }
-                if (!hasRevealedHint) {
-                    sb.append("(공개된 힌트 없음)\n");
-                }
-            } catch (Exception e) {
-                // 힌트가 없거나 오류 발생 시
-                sb.append("(공개된 힌트 없음)\n");
-            }
-            sb.append("\n");
-            sb.append(String.format("현재 잔액: %,dG\n", money));
-            sb.append("=====================================");
-            return sb.toString();
-        } catch (Exception e) {
+            dealRecord = DealRecordByDrcKey.getDealRecordByDrcKey(connection, currentDrcKey);
+            customer = CustomerInfo.getCustomerInfo(connection, dealRecord.sellerKey);
+            itemCatalog = ItemCatalog.getItemByKey(connection, dealRecord.itemCatalogKey);
+            money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
+        } catch (SQLException e) {
             e.printStackTrace();
-            return "거래 정보를 불러오는 중 오류가 발생했습니다: " + e.getMessage();
+            throw new CloseGameException();
         }
+        
+        String gradeStr = getGradeString(dealRecord.foundGrade);
+        String authenticityStr = dealRecord.isAuthenticityFound ? (dealRecord.authenticity ? "진품 (확정)" : "가품 (확정)") : "미확인";
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append("=====================================\n");
+        sb.append(String.format("고객: %s (%s)\n", customer.customerName, customer.imgId));
+        sb.append(String.format("아이템: %s\n", itemCatalog.itemCatalogName));
+        sb.append(String.format("발견 등급: %s\n", gradeStr));
+        sb.append(String.format("발견 흠: %d개\n", dealRecord.foundFlawEa));
+        sb.append(String.format("진위 판정: %s\n", authenticityStr));
+        sb.append("\n");
+        sb.append(String.format("최초 제시가: %,dG\n", dealRecord.askingPrice));
+        sb.append(String.format("현재 구매가: %,dG\n", dealRecord.purchasePrice));
+        sb.append(String.format("현재 감정가: %,dG\n", dealRecord.appraisedPrice));
+        sb.append("\n");
+        sb.append(String.format("---공개된 고객 힌트---\n"));
+        
+        // 공개된 힌트 조회
+        int playerKey;
+        PlayerInfo playerInfo;
+        int gameSessionKey;
+        int hintRevealedFlag;
+        try {
+            playerKey = PlayerKeyByToken.getPlayerKey(connection, playerSession.getSessionToken());
+            playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
+            gameSessionKey = playerInfo.gameSessionKey;
+            hintRevealedFlag = CustomerHiddenDiscovered.getHintRevealedFlag(connection, gameSessionKey, dealRecord.sellerKey);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        boolean hasRevealedHint = false;
+        
+        // 000 중에서 [FRAUD][WELL-COLLECT][CLUMSY] 순으로 저장 되어있음
+        // Bit 0: 사기칠 거 같은 비율 (FRAUD)
+        if ((hintRevealedFlag & (1 << 2)) != 0) {
+            sb.append(String.format("사기칠 거 같은 비율: %.2f%%\n", customer.fraud * 100));
+            hasRevealedHint = true;
+        }
+        // Bit 1: 수집가 능력 (WELL_COLLECT)
+        if ((hintRevealedFlag & (1 << 1)) != 0) {
+            sb.append(String.format("수집가 능력: %.2f%%\n", customer.wellCollect * 100));
+            hasRevealedHint = true;
+        }
+        // Bit 2: 대충 관리함 (CLUMSY)
+        if ((hintRevealedFlag & (1 << 0)) != 0) {
+            sb.append(String.format("대충 관리함: %.2f%%\n", customer.clumsy * 100));
+            hasRevealedHint = true;
+        }
+        if (!hasRevealedHint) {
+            sb.append("(공개된 힌트 없음)\n");
+        }
+        sb.append("\n");
+        sb.append(String.format("현재 잔액: %,dG\n", money));
+        sb.append("=====================================");
+        return sb.toString();
     }
     
     private String getGradeString(int grade) {
@@ -163,28 +171,33 @@ public class DealScreen extends BaseScreen {
     
     // 이벤트 수치 반영 가격 배율 계산 함수
     private double getEventMultiplier(int itemCategoryKey) {
+        int playerKey;
+        TodaysEvent[] events;
         try {
-            int playerKey = PlayerKeyByToken.getPlayerKey(connection, playerSession.getSessionToken());
-            TodaysEvent[] events = TodaysEvent.getTodaysEvent(connection, playerKey);
-            
-            double multiplier = 1.0;
-            for (TodaysEvent event : events) {
-                if (event.categoryKey == itemCategoryKey) {
-                    double change = event.affectedPrice / 100.0;
-                    if (event.plusMinus == 1) {
-                        multiplier += change;
-                    } else {
-                        multiplier -= change;
-                    }
+            playerKey = PlayerKeyByToken.getPlayerKey(connection, playerSession.getSessionToken());
+            events = TodaysEvent.getTodaysEvent(connection, playerKey);
+        } catch (NotASuchRowException e) {
+            // 이벤트가 없으면 기본값 1.0 반환
+            return 1.0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        double multiplier = 1.0;
+        for (TodaysEvent event : events) {
+            if (event.categoryKey == itemCategoryKey) {
+                double change = event.affectedPrice / 100.0;
+                if (event.plusMinus == 1) {
+                    multiplier += change;
+                } else {
+                    multiplier -= change;
                 }
             }
-            return multiplier;
-        } catch (Exception e) {
-            // 이벤트가 없거나 오류 발생 시 기본값 1.0 반환
-            return 1.0;
         }
+        return multiplier;
     }
-
+    
     private void showItemInspectionScreen() {
         switch (showChoices(TITLE_ITEM_INSPECTION, CHOICES_ITEM_INSPECTION)) {
             case 1:
@@ -196,132 +209,168 @@ public class DealScreen extends BaseScreen {
     }
     
     private void openRandomItemHint() {
+        int money;
         try {
-            int money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
-            if (money < 10) {
-                System.out.println("잔액이 부족합니다! (필요: 10G, 현재: " + money + "G)");
-                scanner.nextLine();
-                return;
-            }
-            
-            DealRecordByDrcKey dealRecord = DealRecordByDrcKey.getDealRecordByDrcKey(connection, currentDrcKey);
-            CustomerProperty customerProp = CustomerProperty.getCustomerProperty(connection, dealRecord.sellerKey);
-            
-            Random random = new Random();
-            int hintChoice = random.nextInt(6);
-            String hintName = "";
-            String hintValue = "";
-            
-            switch (hintChoice) {
-                case 0:
-                    hintName = "흠이 있을 거 같은 느낌";
-                    hintValue = String.format("%.2f", dealRecord.suspiciousFlawAura);
-                    break;
-                case 1:
-                    hintName = "레전더리 확률";
-                    hintValue = String.format("%.2f%%", customerProp.legendaryProbability);
-                    break;
-                case 2:
-                    hintName = "유니크 확률";
-                    hintValue = String.format("%.2f%%", customerProp.uniqueProbability);
-                    break;
-                case 3:
-                    hintName = "레어 확률";
-                    hintValue = String.format("%.2f%%", customerProp.rareProbability);
-                    break;
-                case 4:
-                    hintName = "진품 확률";
-                    hintValue = String.format("%.2f%%", customerProp.geniueProbability);
-                    break;
-                case 5:
-                    hintName = "최소 흠 개수 추정";
-                    hintValue = String.format("%.1f개 이상", customerProp.flawBase * 0.8);
-                    break;
-            }
-            
-            MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), 10);
-            int newMoney = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
-            
-            System.out.println("\n[물건 힌트]");
-            System.out.println("힌트: " + hintName);
-            System.out.println("값: " + hintValue);
-            System.out.println("\n잔액: " + String.format("%,dG -> %,dG (-10G)", money, newMoney));
-            System.out.println("\nEnter를 눌러 계속...");
-            scanner.nextLine();
-        } catch (Exception e) {
+            money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
+        } catch (SQLException e) {
             e.printStackTrace();
-            System.out.println("힌트 열기 중 오류 발생: " + e.getMessage());
-            scanner.nextLine();
+            throw new CloseGameException();
         }
+        if (money < 10) {
+            System.out.println("잔액이 부족합니다! (필요: 10G, 현재: " + money + "G)");
+            scanner.nextLine();
+            return;
+        }
+        
+        DealRecordByDrcKey dealRecord;
+        CustomerProperty customerProp;
+        try {
+            dealRecord = DealRecordByDrcKey.getDealRecordByDrcKey(connection, currentDrcKey);
+            customerProp = CustomerProperty.getCustomerProperty(connection, dealRecord.sellerKey);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        Random random = new Random();
+        int hintChoice = random.nextInt(6);
+        String hintName = "";
+        String hintValue = "";
+        
+        switch (hintChoice) {
+            case 0:
+            hintName = "흠이 있을 거 같은 느낌";
+            hintValue = String.format("%.2f", dealRecord.suspiciousFlawAura);
+            break;
+            case 1:
+            hintName = "레전더리 확률";
+            hintValue = String.format("%.2f%%", customerProp.legendaryProbability);
+            break;
+            case 2:
+            hintName = "유니크 확률";
+            hintValue = String.format("%.2f%%", customerProp.uniqueProbability);
+            break;
+            case 3:
+            hintName = "레어 확률";
+            hintValue = String.format("%.2f%%", customerProp.rareProbability);
+            break;
+            case 4:
+            hintName = "진품 확률";
+            hintValue = String.format("%.2f%%", customerProp.geniueProbability);
+            break;
+            case 5:
+            hintName = "최소 흠 개수 추정";
+            hintValue = String.format("%.1f개 이상", customerProp.flawBase * 0.8);
+            break;
+        }
+        
+        int newMoney;
+        try {
+            MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), 10);
+            newMoney = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        System.out.println("\n[물건 힌트]");
+        System.out.println("힌트: " + hintName);
+        System.out.println("값: " + hintValue);
+        System.out.println("\n잔액: " + String.format("%,dG -> %,dG (-10G)", money, newMoney));
+        System.out.println("\nEnter를 눌러 계속...");
+        scanner.nextLine();
     }
-
+    
     private void showGradeFindScreen() {
         switch (showChoices(TITLE_GRADE_FIND, CHOICES_GRADE_FIND)) {
             case 1:
-                performGradeAppraisal(1, 20);
-                return;
+            performGradeAppraisal(1, 20);
+            return;
             case 2:
-                performGradeAppraisal(2, 30);
-                return;
+            performGradeAppraisal(2, 30);
+            return;
             case 3:
-                performGradeAppraisal(3, 50);
-                return;
+            performGradeAppraisal(3, 50);
+            return;
             case 4:
-                return;
+            return;
         }
     }
     
     private void performGradeAppraisal(int maxGrade, int cost) {
+        int money;
         try {
-            int money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
-            if (money < cost) {
-                System.out.println("잔액이 부족합니다! (필요: " + cost + "G, 현재: " + money + "G)");
-                scanner.nextLine();
-                return;
-            }
-            
-            DealRecordByDrcKey dealRecord = DealRecordByDrcKey.getDealRecordByDrcKey(connection, currentDrcKey);
-            
-            if (dealRecord.foundGrade >= maxGrade) {
-                System.out.println("이미 " + getGradeString(dealRecord.foundGrade) + " 등급을 발견하였습니다!");
-                scanner.nextLine();
-                return;
-            }
-            
-            Random random = new Random();
-            int resultGrade = determineGradeByAppraisal(maxGrade, dealRecord.grade, random);
-            
-            if (resultGrade > dealRecord.foundGrade) {
-                ExistingItemUpdater.updateFoundGrade(connection, dealRecord.itemKey, resultGrade);
-            }
-            
-            // 이벤트 수치 적용
-            ItemCatalog itemCatalog = ItemCatalog.getItemByKey(connection, dealRecord.itemCatalogKey);
-            double eventMultiplier = getEventMultiplier(itemCatalog.categoryKey);
-            
-            double gradeMultiplier = getGradeMultiplier(resultGrade);
-            int newAppraisedPrice = (int)(dealRecord.askingPrice * (1 - dealRecord.foundFlawEa * 0.05) * gradeMultiplier * eventMultiplier);
-            
-            if (dealRecord.isAuthenticityFound && !dealRecord.authenticity) {
-                newAppraisedPrice = (int)(newAppraisedPrice * 0.8);
-            }
-            
-            DealRecordUpdater.updatePrices(connection, currentDrcKey, dealRecord.purchasePrice, newAppraisedPrice);
-            
-            MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), cost);
-            int newMoney = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
-            
-            System.out.println("\n[등급 감정 결과]");
-            System.out.println("발견 등급: " + getGradeString(resultGrade));
-            System.out.println("감정가 변경: " + String.format("%,dG -> %,dG", dealRecord.appraisedPrice, newAppraisedPrice));
-            System.out.println("잔액: " + String.format("%,dG -> %,dG (-%dG)", money, newMoney, cost));
-            System.out.println("\nEnter를 눌러 계속...");
-            scanner.nextLine();
-        } catch (Exception e) {
+            money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
+        } catch (SQLException e) {
             e.printStackTrace();
-            System.out.println("등급 감정 중 오류 발생: " + e.getMessage());
-            scanner.nextLine();
+            throw new CloseGameException();
         }
+        if (money < cost) {
+            System.out.println("잔액이 부족합니다! (필요: " + cost + "G, 현재: " + money + "G)");
+            scanner.nextLine();
+            return;
+        }
+        
+        DealRecordByDrcKey dealRecord;
+        try {
+            dealRecord = DealRecordByDrcKey.getDealRecordByDrcKey(connection, currentDrcKey);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        if (dealRecord.foundGrade >= maxGrade) {
+            System.out.println("이미 " + getGradeString(dealRecord.foundGrade) + " 등급을 발견하였습니다!");
+            scanner.nextLine();
+            return;
+        }
+        
+        Random random = new Random();
+        int resultGrade = determineGradeByAppraisal(maxGrade, dealRecord.grade, random);
+        
+        if (resultGrade > dealRecord.foundGrade) {
+            try {
+                ExistingItemUpdater.updateFoundGrade(connection, dealRecord.itemKey, resultGrade);
+            } catch (SQLException e) {
+                e.printStackTrace();
+                throw new CloseGameException();
+            }
+        }
+        
+        // 이벤트 수치 적용
+        ItemCatalog itemCatalog;
+        try {
+            itemCatalog = ItemCatalog.getItemByKey(connection, dealRecord.itemCatalogKey);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        double eventMultiplier = getEventMultiplier(itemCatalog.categoryKey);
+        
+        double gradeMultiplier = getGradeMultiplier(resultGrade);
+        int newAppraisedPrice = (int)(dealRecord.askingPrice * (1 - dealRecord.foundFlawEa * 0.05) * gradeMultiplier * eventMultiplier);
+        
+        if (dealRecord.isAuthenticityFound && !dealRecord.authenticity) {
+            newAppraisedPrice = (int)(newAppraisedPrice * 0.8);
+        }
+        
+        int newMoney;
+        try {
+            DealRecordUpdater.updatePrices(connection, currentDrcKey, dealRecord.purchasePrice, newAppraisedPrice);
+            MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), cost);
+            newMoney = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        
+        System.out.println("\n[등급 감정 결과]");
+        System.out.println("발견 등급: " + getGradeString(resultGrade));
+        System.out.println("감정가 변경: " + String.format("%,dG -> %,dG", dealRecord.appraisedPrice, newAppraisedPrice));
+        System.out.println("잔액: " + String.format("%,dG -> %,dG (-%dG)", money, newMoney, cost));
+        System.out.println("\nEnter를 눌러 계속...");
+        scanner.nextLine();
     }
     
     private double getGradeMultiplier(int grade) {
@@ -345,300 +394,399 @@ public class DealScreen extends BaseScreen {
             return maxGrade;
         }
     }
-
+    
     private void showFlawFindScreen() {
         switch (showChoices(TITLE_FLAW_FIND, CHOICES_FLAW_FIND)) {
             case 1:
-                performFlawFind(1, 20);
-                return;
+            performFlawFind(1, 20);
+            return;
             case 2:
-                performFlawFind(4, 60);
-                return;
+            performFlawFind(4, 60);
+            return;
             case 3:
-                performFlawFind(7, 100);
-                return;
+            performFlawFind(7, 100);
+            return;
             case 4:
-                return;
+            return;
         }
     }
     
-    private void performFlawFind(int maxFind, int cost) {
+private void performFlawFind(int maxFind, int cost) {
+        int money;
         try {
-            int money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
-            if (money < cost) {
-                System.out.println("잔액이 부족합니다! (필요: " + cost + "G, 현재: " + money + "G)");
-                scanner.nextLine();
-                return;
-            }
-            
-            DealRecordByDrcKey dealRecord = DealRecordByDrcKey.getDealRecordByDrcKey(connection, currentDrcKey);
-            
-            // 실제 존재하는 흠 중 아직 발견하지 못한 흠의 개수
-            int remainingFlaws = dealRecord.flawEa - dealRecord.foundFlawEa;
-            
-            // 최대로 찾을 수 있는 개수. 남은 거만큼만 찾을 수 있음
-            int maxPossibleFlaws = Math.min(14 - dealRecord.foundFlawEa, remainingFlaws);
-            
-            // 업데이트 될 찾은 흠 개수
-            int newFoundFlawEa = dealRecord.foundFlawEa + maxPossibleFlaws;
-            
+            money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        if (money < cost) {
+            System.out.println("잔액이 부족합니다! (필요: " + cost + "G, 현재: " + money + "G)");
+            scanner.nextLine();
+            return;
+        }
+        
+        DealRecordByDrcKey dealRecord;
+        try {
+            dealRecord = DealRecordByDrcKey.getDealRecordByDrcKey(connection, currentDrcKey);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        // 실제 존재하는 흠 중 아직 발견하지 못한 흠의 개수
+        int remainingFlaws = dealRecord.flawEa - dealRecord.foundFlawEa;
+        
+        // 최대로 찾을 수 있는 개수. 남은 거만큼만 찾을 수 있음
+        int maxPossibleFlaws = Math.min(14 - dealRecord.foundFlawEa, remainingFlaws);
+        
+        // 업데이트 될 찾은 흠 개수
+        int newFoundFlawEa = dealRecord.foundFlawEa + maxPossibleFlaws;
+        
+        try {
             ExistingItemUpdater.updateFoundFlaw(connection, dealRecord.itemKey, maxPossibleFlaws);
-            
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        // 이벤트 수치 적용
+        ItemCatalog itemCatalog;
+        try {
+            itemCatalog = ItemCatalog.getItemByKey(connection, dealRecord.itemCatalogKey);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        double eventMultiplier = getEventMultiplier(itemCatalog.categoryKey);
+        
+        int newPurchasePrice = (int)(dealRecord.askingPrice * (1 - newFoundFlawEa * 0.05) * eventMultiplier);
+        
+        if (dealRecord.isAuthenticityFound && !dealRecord.authenticity) {
+            newPurchasePrice = (int)(newPurchasePrice * 0.5);
+        }
+        
+        double gradeMultiplier = getGradeMultiplier(dealRecord.foundGrade);
+        int newAppraisedPrice = (int)(dealRecord.askingPrice * (1 - newFoundFlawEa * 0.05) * gradeMultiplier * eventMultiplier);
+        
+        if (dealRecord.isAuthenticityFound && !dealRecord.authenticity) {
+            newAppraisedPrice = (int)(newAppraisedPrice * 0.8);
+        }
+        int newMoney;
+        
+        try {
+            DealRecordUpdater.updatePrices(connection, currentDrcKey, newPurchasePrice, newAppraisedPrice);
+            MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), cost);
+            newMoney = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        System.out.println("\n[흠 찾기 결과]");
+        System.out.println("발견한 흠: " + maxPossibleFlaws + "개");
+        System.out.println("총 발견 흠: " + newFoundFlawEa + "개");
+        System.out.println("구매가 변경: " + String.format("%,dG -> %,dG", dealRecord.purchasePrice, newPurchasePrice));
+        System.out.println("감정가 변경: " + String.format("%,dG -> %,dG", dealRecord.appraisedPrice, newAppraisedPrice));
+        System.out.println("잔액: " + String.format("%,dG -> %,dG (-%dG)", money, newMoney, cost));
+        System.out.println("\nEnter를 눌러 계속...");
+        scanner.nextLine();
+    }
+    
+private void showItemAuthenticationScreen() {
+        int money;
+        try {
+            money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        if (money < 200) {
+            System.out.println("잔액이 부족합니다! (필요: 200G, 현재: " + money + "G)");
+            scanner.nextLine();
+            return;
+        }
+        
+        DealRecordByDrcKey dealRecord;
+        try {
+            dealRecord = DealRecordByDrcKey.getDealRecordByDrcKey(connection, currentDrcKey);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        if (dealRecord.isAuthenticityFound) {
+            System.out.println("이미 진위 판정을 완료했습니다!");
+            System.out.println("결과: " + (dealRecord.authenticity ? "진품" : "가품"));
+            scanner.nextLine();
+            return;
+        }
+        
+        try {
+            ExistingItemUpdater.updateAuthenticityFound(connection, dealRecord.itemKey);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        int oldPurchasePrice = dealRecord.purchasePrice;
+        int oldAppraisedPrice = dealRecord.appraisedPrice;
+        int newPurchasePrice = dealRecord.purchasePrice;
+        int newAppraisedPrice = dealRecord.appraisedPrice;
+        
+        if (!dealRecord.authenticity) {
             // 이벤트 수치 적용
-            ItemCatalog itemCatalog = ItemCatalog.getItemByKey(connection, dealRecord.itemCatalogKey);
+            ItemCatalog itemCatalog;
+            try {
+                itemCatalog = ItemCatalog.getItemByKey(connection, dealRecord.itemCatalogKey);
+            } catch (SQLException e) {
+                e.printStackTrace();
+                throw new CloseGameException();
+            }
             double eventMultiplier = getEventMultiplier(itemCatalog.categoryKey);
             
-            int newPurchasePrice = (int)(dealRecord.askingPrice * (1 - newFoundFlawEa * 0.05) * eventMultiplier);
-            
-            if (dealRecord.isAuthenticityFound && !dealRecord.authenticity) {
-                newPurchasePrice = (int)(newPurchasePrice * 0.5);
-            }
-            
+            newPurchasePrice = (int)(dealRecord.askingPrice * (1 - dealRecord.foundFlawEa * 0.05) * 0.5 * eventMultiplier);
             double gradeMultiplier = getGradeMultiplier(dealRecord.foundGrade);
-            int newAppraisedPrice = (int)(dealRecord.askingPrice * (1 - newFoundFlawEa * 0.05) * gradeMultiplier * eventMultiplier);
-            
-            if (dealRecord.isAuthenticityFound && !dealRecord.authenticity) {
-                newAppraisedPrice = (int)(newAppraisedPrice * 0.8);
-            }
-            
-            DealRecordUpdater.updatePrices(connection, currentDrcKey, newPurchasePrice, newAppraisedPrice);
-            
-            MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), cost);
-            int newMoney = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
-            
-            System.out.println("\n[흠 찾기 결과]");
-            System.out.println("발견한 흠: " + maxPossibleFlaws + "개");
-            System.out.println("총 발견 흠: " + newFoundFlawEa + "개");
-            System.out.println("구매가 변경: " + String.format("%,dG -> %,dG", dealRecord.purchasePrice, newPurchasePrice));
-            System.out.println("감정가 변경: " + String.format("%,dG -> %,dG", dealRecord.appraisedPrice, newAppraisedPrice));
-            System.out.println("잔액: " + String.format("%,dG -> %,dG (-%dG)", money, newMoney, cost));
-            System.out.println("\nEnter를 눌러 계속...");
-            scanner.nextLine();
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("흠 찾기 중 오류 발생: " + e.getMessage());
-            scanner.nextLine();
-        }
-    }
-
-    private void showItemAuthenticationScreen() {
-        try {
-            int money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
-            if (money < 200) {
-                System.out.println("잔액이 부족합니다! (필요: 200G, 현재: " + money + "G)");
-                scanner.nextLine();
-                return;
-            }
-            
-            DealRecordByDrcKey dealRecord = DealRecordByDrcKey.getDealRecordByDrcKey(connection, currentDrcKey);
-            
-            if (dealRecord.isAuthenticityFound) {
-                System.out.println("이미 진위 판정을 완료했습니다!");
-                System.out.println("결과: " + (dealRecord.authenticity ? "진품" : "가품"));
-                scanner.nextLine();
-                return;
-            }
-            
-            ExistingItemUpdater.updateAuthenticityFound(connection, dealRecord.itemKey);
-            
-            int oldPurchasePrice = dealRecord.purchasePrice;
-            int oldAppraisedPrice = dealRecord.appraisedPrice;
-            int newPurchasePrice = dealRecord.purchasePrice;
-            int newAppraisedPrice = dealRecord.appraisedPrice;
-            
-            if (!dealRecord.authenticity) {
-                // 이벤트 수치 적용
-                ItemCatalog itemCatalog = ItemCatalog.getItemByKey(connection, dealRecord.itemCatalogKey);
-                double eventMultiplier = getEventMultiplier(itemCatalog.categoryKey);
-                
-                newPurchasePrice = (int)(dealRecord.askingPrice * (1 - dealRecord.foundFlawEa * 0.05) * 0.5 * eventMultiplier);
-                double gradeMultiplier = getGradeMultiplier(dealRecord.foundGrade);
-                newAppraisedPrice = (int)(dealRecord.askingPrice * (1 - dealRecord.foundFlawEa * 0.05) * gradeMultiplier * 0.8 * eventMultiplier);
+            newAppraisedPrice = (int)(dealRecord.askingPrice * (1 - dealRecord.foundFlawEa * 0.05) * gradeMultiplier * 0.8 * eventMultiplier);
+            try {
                 DealRecordUpdater.updatePrices(connection, currentDrcKey, newPurchasePrice, newAppraisedPrice);
+            } catch (SQLException e) {
+                e.printStackTrace();
+                throw new CloseGameException();
             }
-            
-            MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), 200);
-            int newMoney = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
-            
-            System.out.println("\n[진위 판정 결과]");
-            System.out.println("결과: " + (dealRecord.authenticity ? "진품" : "가품"));
-            if (!dealRecord.authenticity) {
-                System.out.println("가품이므로 구매가 50%, 감정가 20% 감소합니다.");
-                System.out.println("구매가 변경: " + String.format("%,dG -> %,dG (%+,dG)", oldPurchasePrice, newPurchasePrice, newPurchasePrice - oldPurchasePrice));
-                System.out.println("감정가 변경: " + String.format("%,dG -> %,dG (%+,dG)", oldAppraisedPrice, newAppraisedPrice, newAppraisedPrice - oldAppraisedPrice));
-            }
-            System.out.println("잔액: " + String.format("%,dG -> %,dG (-200G)", money, newMoney));
-            System.out.println("\nEnter를 눌러 계속...");
-            scanner.nextLine();
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("진위 판정 중 오류 발생: " + e.getMessage());
-            scanner.nextLine();
         }
+        
+        int newMoney;
+        try {
+            MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), 200);
+            newMoney = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        System.out.println("\n[진위 판정 결과]");
+        System.out.println("결과: " + (dealRecord.authenticity ? "진품" : "가품"));
+        if (!dealRecord.authenticity) {
+            System.out.println("가품이므로 구매가 50%, 감정가 20% 감소합니다.");
+            System.out.println("구매가 변경: " + String.format("%,dG -> %,dG (%+,dG)", oldPurchasePrice, newPurchasePrice, newPurchasePrice - oldPurchasePrice));
+            System.out.println("감정가 변경: " + String.format("%,dG -> %,dG (%+,dG)", oldAppraisedPrice, newAppraisedPrice, newAppraisedPrice - oldAppraisedPrice));
+        }
+        System.out.println("잔액: " + String.format("%,dG -> %,dG (-200G)", money, newMoney));
+        System.out.println("\nEnter를 눌러 계속...");
+        scanner.nextLine();
     }
-
+    
     private void showOpenCustomerHintScreen() {
         switch (showChoices(TITLE_OPEN_CUSTOMER_HINT, CHOICES_OPEN_CUSTOMER_HINT)) {
             case 1:
-                openCustomerHint(2, "사기칠 거 같은 비율 (FRAUD)");
-                return;
+            openCustomerHint(2, "사기칠 거 같은 비율 (FRAUD)");
+            return;
             case 2:
-                openCustomerHint(1, "수집가 능력 (WELL_COLLECT)");
-                return;
+            openCustomerHint(1, "수집가 능력 (WELL_COLLECT)");
+            return;
             case 3:
-                openCustomerHint(0, "대충 관리함 (CLUMSY)");
-                return;
+            openCustomerHint(0, "대충 관리함 (CLUMSY)");
+            return;
             case 4:
-                return;
+            return;
         }
     }
     
     private void openCustomerHint(int hintIndex, String hintName) {
+        int money;
         try {
-            int money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
-            if (money < 50) {
-                System.out.println("잔액이 부족합니다! (필요: 50G, 현재: " + money + "G)");
-                scanner.nextLine();
-                return;
-            }
-            
-            DealRecordByDrcKey dealRecord = DealRecordByDrcKey.getDealRecordByDrcKey(connection, currentDrcKey);
+            money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        if (money < 50) {
+            System.out.println("잔액이 부족합니다! (필요: 50G, 현재: " + money + "G)");
+            scanner.nextLine();
+            return;
+        }
+        
+        DealRecordByDrcKey dealRecord;
+        PlayerInfo playerInfo;
+        try {
+            dealRecord = DealRecordByDrcKey.getDealRecordByDrcKey(connection, currentDrcKey);
             int playerKey = PlayerKeyByToken.getPlayerKey(connection, playerSession.getSessionToken());
-            PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
-            int gameSessionKey = playerInfo.gameSessionKey;
-            
-            int bitMask = 1 << hintIndex;
-            int hintRevealedFlag;
-            try {
-                hintRevealedFlag = CustomerHiddenDiscovered.getHintRevealedFlag(connection, gameSessionKey, dealRecord.sellerKey);
-            } catch (Exception e) {
-                hintRevealedFlag = 0;
-            }
-            
-            if ((hintRevealedFlag & bitMask) != 0) {
-                System.out.println("이미 공개한 힌트입니다!");
-                System.out.println("\nEnter를 눌러 계속...");
-                scanner.nextLine();
-                return;
-            }
-            
-            CustomerInfo customer = CustomerInfo.getCustomerInfo(connection, dealRecord.sellerKey);
-            double hintValue;
-            switch (hintIndex) {
-                case 0: hintValue = customer.fraud; break;
-                case 1: hintValue = customer.wellCollect; break;
-                case 2: hintValue = customer.clumsy; break;
-                default: hintValue = 0.0;
-            }
-            
-            int newHintRevealedFlag = hintRevealedFlag | bitMask;
-            CustomerHiddenDiscovered.upsertHintRevealedFlag(connection, gameSessionKey, dealRecord.sellerKey, newHintRevealedFlag);
-            
-            MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), 50);
-            int newMoney = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
-            
-            System.out.println("\n[고객 힌트]");
-            System.out.println("고객: " + customer.customerName);
-            System.out.println("힌트: " + hintName);
-            System.out.println("값: " + String.format("%.2f%%", hintValue * 100));
-            System.out.println("잔액: " + String.format("%,dG -> %,dG (-50G)", money, newMoney));
+            playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        int gameSessionKey = playerInfo.gameSessionKey;
+        
+        int bitMask = 1 << hintIndex;
+        int hintRevealedFlag;
+        try {
+            hintRevealedFlag = CustomerHiddenDiscovered.getHintRevealedFlag(connection, gameSessionKey, dealRecord.sellerKey);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        if ((hintRevealedFlag & bitMask) != 0) {
+            System.out.println("이미 공개한 힌트입니다!");
             System.out.println("\nEnter를 눌러 계속...");
             scanner.nextLine();
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("고객 힌트 열기 중 오류 발생: " + e.getMessage());
-            scanner.nextLine();
+            return;
         }
-    }
-
-    private boolean showAcceptDealScreen() {
+        
+        CustomerInfo customer;
         try {
-            DealRecordByDrcKey dealRecord = DealRecordByDrcKey.getDealRecordByDrcKey(connection, currentDrcKey);
-            int money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
+            customer = CustomerInfo.getCustomerInfo(connection, dealRecord.sellerKey);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        double hintValue;
+        switch (hintIndex) {
+            case 0: hintValue = customer.fraud; break;
+            case 1: hintValue = customer.wellCollect; break;
+            case 2: hintValue = customer.clumsy; break;
+            default: hintValue = 0.0;
+        }
+        
+        int newHintRevealedFlag = hintRevealedFlag | bitMask;
+        try {
+            CustomerHiddenDiscovered.upsertHintRevealedFlag(connection, gameSessionKey, dealRecord.sellerKey, newHintRevealedFlag);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        int newMoney;
+        try {
+            MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), 50);
+            newMoney = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        System.out.println("\n[고객 힌트]");
+        System.out.println("고객: " + customer.customerName);
+        System.out.println("힌트: " + hintName);
+        System.out.println("값: " + String.format("%.2f%%", hintValue * 100));
+        System.out.println("잔액: " + String.format("%,dG -> %,dG (-50G)", money, newMoney));
+        System.out.println("\nEnter를 눌러 계속...");
+        scanner.nextLine();
+    }
+    
+    private boolean showAcceptDealScreen() {
+        DealRecordByDrcKey dealRecord;
+        int money;
+        try {
+            dealRecord = DealRecordByDrcKey.getDealRecordByDrcKey(connection, currentDrcKey);
+            money = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        showChoices(TITLE_ACCEPT_DEAL__CHECK_BALANCE, 
+            String.format("구매가: %,dG\n현재 잔액: %,dG\n\n구매 가능 여부: %s", 
+            dealRecord.purchasePrice, money, 
+            money >= dealRecord.purchasePrice ? "가능" : "불가능 (잔액 부족)"),
+            CHOICES_ACCEPT_DEAL__CHECK_BALANCE, false);
             
-            showChoices(TITLE_ACCEPT_DEAL__CHECK_BALANCE, 
-                String.format("구매가: %,dG\n현재 잔액: %,dG\n\n구매 가능 여부: %s", 
-                    dealRecord.purchasePrice, money, 
-                    money >= dealRecord.purchasePrice ? "가능" : "불가능 (잔액 부족)"),
-                CHOICES_ACCEPT_DEAL__CHECK_BALANCE, false);
-            
-            if (money < dealRecord.purchasePrice) {
-                System.out.println("잔액이 부족하여 구매할 수 없습니다!");
-                scanner.nextLine();
-                return false;
-            }
-            
+        if (money < dealRecord.purchasePrice) {
+            System.out.println("잔액이 부족하여 구매할 수 없습니다!");
+            scanner.nextLine();
+            return false;
+        }
+        
+        PlayerInfo playerInfo;
+        try {
             int playerKey = PlayerKeyByToken.getPlayerKey(connection, playerSession.getSessionToken());
-            PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
-            int gameSessionKey = playerInfo.gameSessionKey;
-            
-            // 빈 전시대 위치 찾기
-            int[] usedPositions = DisplayManagement.getUsedDisplayPositions(connection, playerSession.getSessionToken());
-            int unlockedShowcaseCount = playerInfo.unlockedShowcaseCount;
-            int emptyPos = -1;
-            for (int i = 0; i < unlockedShowcaseCount; i++) {
-                boolean isUsed = false;
-                for (int used : usedPositions) {
-                    if (used == i) {
-                        isUsed = true;
-                        break;
-                    }
-                }
-                if (!isUsed) {
-                    emptyPos = i;
+            playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        int gameSessionKey = playerInfo.gameSessionKey;
+        
+        // 빈 전시대 위치 찾기
+        int[] usedPositions;
+        try {
+            usedPositions = DisplayManagement.getUsedDisplayPositions(connection, playerSession.getSessionToken());
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        int unlockedShowcaseCount = playerInfo.unlockedShowcaseCount;
+        int emptyPos = -1;
+        for (int i = 0; i < unlockedShowcaseCount; i++) {
+            boolean isUsed = false;
+            for (int used : usedPositions) {
+                if (used == i) {
+                    isUsed = true;
                     break;
                 }
             }
-            
-            if (emptyPos == -1) {
-                System.out.println("전시대가 가득 찼습니다! 먼저 아이템을 판매하거나 처리하세요.");
-                scanner.nextLine();
-                return false;
+            if (!isUsed) {
+                emptyPos = i;
+                break;
             }
+        }
+        
+        if (emptyPos == -1) {
+            System.out.println("전시대가 가득 찼습니다! 먼저 아이템을 판매하거나 처리하세요.");
+            scanner.nextLine();
+            return false;
+        }
+        
+        showChoices(TITLE_ACCEPT_DEAL__SAVE, 
+            String.format("구매를 확정하고 전시대 %d번 위치에 배치합니다.", emptyPos),
+            CHOICES_ACCEPT_DEAL__SAVE, false);
             
-            showChoices(TITLE_ACCEPT_DEAL__SAVE, 
-                String.format("구매를 확정하고 전시대 %d번 위치에 배치합니다.", emptyPos),
-                CHOICES_ACCEPT_DEAL__SAVE, false);
-            
+        int newMoney;
+        try {
             DealRecordUpdater.updateBoughtDate(connection, playerSession.getSessionToken(), currentDrcKey);
             ExistingItemUpdater.updateItemState(connection, dealRecord.itemKey, 1);
             DisplayManagement.addToDisplay(connection, gameSessionKey, emptyPos, dealRecord.itemKey);
             
             MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), dealRecord.purchasePrice);
-            int newMoney = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
-            
-            System.out.println("\n구매가 완료되었습니다!");
-            System.out.println("전시 위치: " + emptyPos + "번");
-            System.out.println("잔액: " + String.format("%,dG -> %,dG", money, newMoney));
-            System.out.println("\nEnter를 눌러 계속...");
-            scanner.nextLine();
-            
-            return true;
-        } catch (Exception e) {
+            newMoney = MoneyUpdater.getMoney(connection, playerSession.getSessionToken());
+        } catch (SQLException e) {
             e.printStackTrace();
-            System.out.println("구매 처리 중 오류 발생: " + e.getMessage());
-            scanner.nextLine();
-            return false;
+            throw new CloseGameException();
         }
+        
+        System.out.println("\n구매가 완료되었습니다!");
+        System.out.println("전시 위치: " + emptyPos + "번");
+        System.out.println("잔액: " + String.format("%,dG -> %,dG", money, newMoney));
+        System.out.println("\nEnter를 눌러 계속...");
+        scanner.nextLine();
+        
+        return true;
     }
-
+            
     private void showDenyDealScreen() {
+        DealRecordByDrcKey dealRecord;
         try {
-            DealRecordByDrcKey dealRecord = DealRecordByDrcKey.getDealRecordByDrcKey(connection, currentDrcKey);
-            
-            showChoices(TITLE_DENY_DEAL__REMOVE_DEAL, MESSAGE_DENY_DEAL__REMOVE_DEAL, CHOICES_DENY_DEAL__REMOVE_DEAL, false);
-            
-            // 무결성 제약 조건 방지를 위해 거래 먼저 삭제
+            dealRecord = DealRecordByDrcKey.getDealRecordByDrcKey(connection, currentDrcKey);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        showChoices(TITLE_DENY_DEAL__REMOVE_DEAL, MESSAGE_DENY_DEAL__REMOVE_DEAL, CHOICES_DENY_DEAL__REMOVE_DEAL, false);
+        
+        // 무결성 제약 조건 방지를 위해 거래 먼저 삭제
+        try {
             DeleteDeal.deleteDealRecord(connection, currentDrcKey);
             DeleteDeal.deleteItem(connection, dealRecord.itemKey);
-            
-            System.out.println("\n거래가 거절되었습니다. 기록이 삭제되었습니다.");
-            System.out.println("\nEnter를 눌러 메인으로 돌아갑니다...");
-            scanner.nextLine();
-        } catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
-            System.out.println("거래 거절 처리 중 오류 발생: " + e.getMessage());
-            scanner.nextLine();
+            throw new CloseGameException();
         }
+        
+        System.out.println("\n거래가 거절되었습니다. 기록이 삭제되었습니다.");
+        System.out.println("\nEnter를 눌러 메인으로 돌아갑니다...");
+        scanner.nextLine();
     }
 }
+        

@@ -25,26 +25,28 @@ public class SellScreen extends BaseScreen {
 
     // 이벤트 수치 반영 가격 배율 계산 함수
     private double getEventMultiplier(int itemCategoryKey) {
+        int playerKey;
+        TodaysEvent[] events;
         try {
-            int playerKey = PlayerKeyByToken.getPlayerKey(connection, session.sessionToken);
-            TodaysEvent[] events = TodaysEvent.getTodaysEvent(connection, playerKey);
-            
-            double multiplier = 1.0;
-            for (TodaysEvent event : events) {
-                if (event.categoryKey == itemCategoryKey) {
-                    double change = event.affectedPrice / 100.0;
-                    if (event.plusMinus == 1) {
-                        multiplier += change;
-                    } else {
-                        multiplier -= change;
-                    }
+            playerKey = PlayerKeyByToken.getPlayerKey(connection, session.sessionToken);
+            events = TodaysEvent.getTodaysEvent(connection, playerKey);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        double multiplier = 1.0;
+        for (TodaysEvent event : events) {
+            if (event.categoryKey == itemCategoryKey) {
+                double change = event.affectedPrice / 100.0;
+                if (event.plusMinus == 1) {
+                    multiplier += change;
+                } else {
+                    multiplier -= change;
                 }
             }
-            return multiplier;
-        } catch (Exception e) {
-            // 이벤트가 없거나 오류 발생 시 기본값 1.0 반환
-            return 1.0;
         }
+        return multiplier;
     }
 
     public void showSellScreen(int itemId) {

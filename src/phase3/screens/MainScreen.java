@@ -104,32 +104,32 @@ public class MainScreen extends BaseScreen {
                 showGenerateDailyDeals();  // 거래 3개 생성
             } else {
                 // 대기 중인 거래가 있을 때
+                // 첫 번째 거래 가져오기
+                DealRecordByItemState[] deals;
                 try {
-                    // 첫 번째 거래 가져오기
-                    DealRecordByItemState[] deals = DealRecordByItemState.getDealRecordByItemState(connection, playerKey, 0);
-                    int firstDrcKey = deals[0].drcKey;
-                    
-                    switch (showChoices(TITLE_MAIN_MENU, CHOICES_MAIN_MENU)) {
-                        case 1:
-                            dealScreen.showDealScreen(firstDrcKey);
-                            break;
-                        case 2:
-                            if (debtAndItemScreen.showDebtAndItemScreen()) {
-                                showWin();
-                                break mainLoop;
-                            }
-                            break;
-                        case 3:
-                            System.out.println("***게임 오버***\n게임을 포기하셨습니다...");
-                            showDefeat();
-                            break mainLoop;
-                        default:
-                            throw new IllegalStateException("Invalid choice");
-                    }
-                } catch (Exception e) {
+                    deals = DealRecordByItemState.getDealRecordByItemState(connection, playerKey, 0);
+                } catch (SQLException e) {
                     e.printStackTrace();
-                    System.out.println("거래 처리 중 오류가 발생했습니다: " + e.getMessage());
-                    scanner.nextLine();
+                    throw new CloseGameException();
+                }
+                int firstDrcKey = deals[0].drcKey;
+                
+                switch (showChoices(TITLE_MAIN_MENU, CHOICES_MAIN_MENU)) {
+                    case 1:
+                        dealScreen.showDealScreen(firstDrcKey);
+                        break;
+                    case 2:
+                        if (debtAndItemScreen.showDebtAndItemScreen()) {
+                            showWin();
+                            break mainLoop;
+                        }
+                        break;
+                    case 3:
+                        System.out.println("***게임 오버***\n게임을 포기하셨습니다...");
+                        showDefeat();
+                        break mainLoop;
+                    default:
+                        throw new IllegalStateException("Invalid choice");
                 }
             }
             isFirst = false;
@@ -142,39 +142,48 @@ public class MainScreen extends BaseScreen {
         try {
             // 세션 토큰으로 플레이어 키 가져오기
             playerKey = PlayerKeyByToken.getPlayerKey(connection, playerSession.getSessionToken());
-            
-            // 가장 최근 게임 세션 정보 가져오기
-            PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
-            
-            // 게임이 이미 종료되었는지 확인
-            if (playerInfo.gameEndDayCount != 0) {
-                // 종료된 게임이므로 새 게임 필요
-                gameSessionId = 0;
-                return 0;
-            }
-            
-            gameSessionId = playerInfo.gameSessionKey;
-            
-            System.out.println("\n=== 게임 세션 로드 완료 ===");
-            System.out.println("닉네임: " + playerInfo.nickname);
-            System.out.println("상점명: " + playerInfo.shopName);
-            System.out.println("현재 일수: " + playerInfo.dayCount + "일");
-            System.out.println("현재 잔액: " + String.format("%,dG", playerInfo.money));
-            System.out.println("개인 빚: " + String.format("%,dG", playerInfo.personalDebt));
-            System.out.println("전당포 빚: " + String.format("%,dG", playerInfo.pawnshopDebt));
-            System.out.println("=======================");
-            System.out.println("\n계속하려면 Enter를 누르세요...");
-            scanner.nextLine();
-            
-            return gameSessionId;
-        } catch (Exception e) {
+        } catch (NotASuchRowException e) {
             // 진행 중인 게임이 없거나 오류 발생
             gameSessionId = 0;
-            System.out.println("\n진행 중인 게임 세션이 없습니다.");
-            System.out.println("\n계속하려면 Enter를 누르세요...");
+            System.out.println("진행 중인 게임 세션이 없습니다.");
+            System.out.println("계속하려면 Enter를 누르세요...");
             scanner.nextLine();
             return 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
         }
+        
+        // 가장 최근 게임 세션 정보 가져오기
+        PlayerInfo playerInfo;
+        try {
+            playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        // 게임이 이미 종료되었는지 확인
+        if (playerInfo.gameEndDayCount != 0) {
+            // 종료된 게임이므로 새 게임 필요
+            gameSessionId = 0;
+            return 0;
+        }
+        
+        gameSessionId = playerInfo.gameSessionKey;
+        
+        System.out.println("\n=== 게임 세션 로드 완료 ===");
+        System.out.println("닉네임: " + playerInfo.nickname);
+        System.out.println("상점명: " + playerInfo.shopName);
+        System.out.println("현재 일수: " + playerInfo.dayCount + "일");
+        System.out.println("현재 잔액: " + String.format("%,dG", playerInfo.money));
+        System.out.println("개인 빚: " + String.format("%,dG", playerInfo.personalDebt));
+        System.out.println("전당포 빚: " + String.format("%,dG", playerInfo.pawnshopDebt));
+        System.out.println("=======================");
+        System.out.println("\n계속하려면 Enter를 누르세요...");
+        scanner.nextLine();
+        
+        return gameSessionId;
     }
 
     private void showCreateGameSessionRequest() {
@@ -211,274 +220,275 @@ public class MainScreen extends BaseScreen {
             break;
         }
 
+        PlayerInfo playerInfo;
         try {
             // 새 게임 세션 생성
             InsertGameSession.insertGameSession(connection, playerSession.getSessionToken(), nickname, shopName);
-            
             // 생성된 게임 세션 정보 가져오기
             playerKey = PlayerKeyByToken.getPlayerKey(connection, playerSession.getSessionToken());
-            PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
-            gameSessionId = playerInfo.gameSessionKey;
-            
-            System.out.println("\n=== 새 게임 세션 생성 완료 ===");
-            System.out.println("닉네임: " + playerInfo.nickname);
-            System.out.println("상점명: " + playerInfo.shopName);
-            System.out.println("시작 일수: " + playerInfo.dayCount + "일");
-            System.out.println("시작 잔액: " + String.format("%,dG", playerInfo.money));
-            System.out.println("개인 빚: " + String.format("%,dG", playerInfo.personalDebt));
-            System.out.println("전당포 빚: " + String.format("%,dG", playerInfo.pawnshopDebt));
-            System.out.println("===========================");
-            System.out.println("\n계속하려면 Enter를 누르세요...");
-            scanner.nextLine();
-            
-        } catch (Exception e) {
+            playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
+        } catch (SQLException e) {
             e.printStackTrace();
-            System.out.println("게임 세션 생성 중 오류가 발생했습니다: " + e.getMessage());
-            System.out.println("\n계속하려면 Enter를 누르세요...");
-            scanner.nextLine();
+            throw new CloseGameException();
         }
+        
+        gameSessionId = playerInfo.gameSessionKey;
+        
+        System.out.println("\n=== 새 게임 세션 생성 완료 ===");
+        System.out.println("닉네임: " + playerInfo.nickname);
+        System.out.println("상점명: " + playerInfo.shopName);
+        System.out.println("시작 일수: " + playerInfo.dayCount + "일");
+        System.out.println("시작 잔액: " + String.format("%,dG", playerInfo.money));
+        System.out.println("개인 빚: " + String.format("%,dG", playerInfo.personalDebt));
+        System.out.println("전당포 빚: " + String.format("%,dG", playerInfo.pawnshopDebt));
+        System.out.println("===========================");
+        System.out.println("\n계속하려면 Enter를 누르세요...");
+        scanner.nextLine();
     }
 
     private void showDiplayItemRequest() {
         showChoices(TITLE_DIPLAY_ITEM_REQUEST, MESSAGE_DIPLAY_ITEM_REQUEST, CHOICES_DIPLAY_ITEM_REQUEST, false);
 
+        // 전시 중인 아이템 목록 가져오기
+        ItemInDisplay[] displayedItems;
         try {
-            // 전시 중인 아이템 목록 가져오기
-            ItemInDisplay[] displayedItems = ItemInDisplay.getItemInDisplay(connection, playerKey);
+            displayedItems = ItemInDisplay.getItemInDisplay(connection, playerKey);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        System.out.println("\n=== 전시장 아이템 목록 ===");
+        System.out.println("전시 중인 아이템 수: " + displayedItems.length + "개\n");
+        
+        // 각 아이템의 상세 정보 가져오기
+        for (ItemInDisplay item : displayedItems) {
+            DisplayedItemInfo detailInfo = null;
+            try {
+                // DisplayedItemInfo로 거래 정보 포함 상세 정보 가져오기
+                detailInfo = DisplayedItemInfo.getDisplayedItemInfo(connection, item.itemKey);
+            } catch (NotASuchRowException e) {
+                // 상세 정보를 가져올 수 없는 경우 기본 정보만 표시
+                System.out.println("위치 " + item.displayPos + ": " + item.itemCatalogName);
+                System.out.println("  - 기본 정보만 표시 (상세 정보 없음)");
+                System.out.println();
+            } catch (SQLException e) {
+                e.printStackTrace();
+                throw new CloseGameException();
+            }
+                
+            System.out.println("위치 " + detailInfo.displayPos + ": " + detailInfo.itemCatalogName);
             
-            System.out.println("\n=== 전시장 아이템 목록 ===");
-            System.out.println("전시 중인 아이템 수: " + displayedItems.length + "개\n");
+            // 거래 정보
+            System.out.println("판매자: " + detailInfo.customerName);
+            System.out.println("최초 제시가: " + String.format("%,dG", detailInfo.askingPrice));
+            System.out.println("구매가: " + String.format("%,dG", detailInfo.purchasePrice));
+            System.out.println("감정가: " + String.format("%,dG", detailInfo.appraisedPrice));
+            System.out.println("구매일: " + detailInfo.boughtDate + "일차");
             
-            // 각 아이템의 상세 정보 가져오기
-            for (ItemInDisplay item : displayedItems) {
-                try {
-                    // DisplayedItemInfo로 거래 정보 포함 상세 정보 가져오기
-                    DisplayedItemInfo detailInfo = DisplayedItemInfo.getDisplayedItemInfo(connection, item.itemKey);
-                    
-                    System.out.println("위치 " + detailInfo.displayPos + ": " + detailInfo.itemCatalogName);
-                    
-                    // 거래 정보
-                    System.out.println("판매자: " + detailInfo.customerName);
-                    System.out.println("최초 제시가: " + String.format("%,dG", detailInfo.askingPrice));
-                    System.out.println("구매가: " + String.format("%,dG", detailInfo.purchasePrice));
-                    System.out.println("감정가: " + String.format("%,dG", detailInfo.appraisedPrice));
-                    System.out.println("구매일: " + detailInfo.boughtDate + "일차");
-                    
-                    // 아이템 상태 정보
-                    System.out.println("\n[아이템 정보]");
-                    System.out.println("발견한 등급: " + detailInfo.foundGrade);
-                    System.out.println("발견한 결함: " + detailInfo.foundFlawEa);
-                    
-                    // 진위 여부 표시 (JSON용: 1=진품, 0=가품, -1=미발견)
-                    if (detailInfo.isAuthenticityFound) {
-                        // int authenticityStatus = detailInfo.authenticity ? 1 : 0;
-                        System.out.println("진위 여부: " + (detailInfo.authenticity ? "진품" : "가품") + " (감정 완료 상태)");
-                    } else {
-                        // int authenticityStatus = -1;
-                        System.out.println("진위 여부: 미감정");
-                    }
-                    
-                    // 아이템 상태
-                    String itemStateStr = "";
-                    switch (detailInfo.itemState) {
-                        case 0:
-                            itemStateStr = "생성됨";
-                            break;
-                        case 1:
-                            itemStateStr = "전시 중";
-                            break;
-                        case 2:
-                            itemStateStr = "복원 중";
-                            break;
-                        case 3:
-                            itemStateStr = "경매 중";
-                            break;
-                        case 4:
-                            itemStateStr = "판매 됨";
-                            break;
-                        case 5:
-                            itemStateStr = "복원 완료";
-                            break;
-                        default:
-                            itemStateStr = "알 수 없음";
-                            break;
-                    }
-                    System.out.println("상태: " + itemStateStr);
-                    System.out.println();
-                } catch (NotASuchRowException e) {
-                    // 상세 정보를 가져올 수 없는 경우 기본 정보만 표시
-                    System.out.println("위치 " + item.displayPos + ": " + item.itemCatalogName);
-                    System.out.println("  - 기본 정보만 표시 (상세 정보 없음)");
-                    System.out.println();
-                }
+            // 아이템 상태 정보
+            System.out.println("\n[아이템 정보]");
+            System.out.println("발견한 등급: " + detailInfo.foundGrade);
+            System.out.println("발견한 결함: " + detailInfo.foundFlawEa);
+            
+            // 진위 여부 표시 (JSON용: 1=진품, 0=가품, -1=미발견)
+            if (detailInfo.isAuthenticityFound) {
+                // int authenticityStatus = detailInfo.authenticity ? 1 : 0;
+                System.out.println("진위 여부: " + (detailInfo.authenticity ? "진품" : "가품") + " (감정 완료 상태)");
+            } else {
+                // int authenticityStatus = -1;
+                System.out.println("진위 여부: 미감정");
             }
             
-            System.out.println("========================");
-            System.out.println("\n계속하려면 Enter를 누르세요...");
-            scanner.nextLine();
-            
-        } catch (NotASuchRowException e) {
-            System.out.println("\n전시 중인 아이템이 없습니다.");
-            System.out.println("\n계속하려면 Enter를 누르세요...");
-            scanner.nextLine();
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("전시 아이템 조회 중 오류가 발생했습니다: " + e.getMessage());
-            System.out.println("\n계속하려면 Enter를 누르세요...");
-            scanner.nextLine();
+            // 아이템 상태
+            String itemStateStr = "";
+            switch (detailInfo.itemState) {
+                case 0:
+                    itemStateStr = "생성됨";
+                    break;
+                case 1:
+                    itemStateStr = "전시 중";
+                    break;
+                case 2:
+                    itemStateStr = "복원 중";
+                    break;
+                case 3:
+                    itemStateStr = "경매 중";
+                    break;
+                case 4:
+                    itemStateStr = "판매 됨";
+                    break;
+                case 5:
+                    itemStateStr = "복원 완료";
+                    break;
+                default:
+                    itemStateStr = "알 수 없음";
+                    break;
+            }
+            System.out.println("상태: " + itemStateStr);
+            System.out.println();
         }
+        
+        System.out.println("========================");
+        System.out.println("\n계속하려면 Enter를 누르세요...");
+        scanner.nextLine();
     }
 
     private int showCheckRemaingDealRequest() {
         showChoices(TITLE_CHECK_REMAING_DEAL_REQUEST, MESSAGE_CHECK_REMAING_DEAL_REQUEST, CHOICES_CHECK_REMAING_DEAL_REQUEST, false);
 
+        // ITEM_STATE = 0 (생성됨) 상태인 거래 조회
+        DealRecordByItemState[] deals;
         try {
-            // ITEM_STATE = 0 (생성됨) 상태인 거래 조회
-            DealRecordByItemState[] deals = DealRecordByItemState.getDealRecordByItemState(connection, playerKey, 0);
-            
-            System.out.println("\n=== 대기 중인 거래 ===");
-            System.out.println("대기 중인 거래 수: " + deals.length + "개");
-            System.out.println("====================");
-            System.out.println("\n계속하려면 Enter를 누르세요...");
-            scanner.nextLine();
-            
-            return deals.length;
-            
-        } catch (Exception e) {
-            // 대기 중인 거래가 없음
-            System.out.println("\n대기 중인 거래가 없습니다.");
-            System.out.println("\n계속하려면 Enter를 누르세요...");
-            scanner.nextLine();
-            return 0;
+            deals = DealRecordByItemState.getDealRecordByItemState(connection, playerKey, 0);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
         }
+        
+        System.out.println("\n=== 대기 중인 거래 ===");
+        System.out.println("대기 중인 거래 수: " + deals.length + "개");
+        System.out.println("====================");
+        System.out.println("\n계속하려면 Enter를 누르세요...");
+        scanner.nextLine();
+        
+        return deals.length;
     }
 
     private boolean showCheckIsEndOfWeekRequest() {
         showChoices(TITLE_CHECK_IS_END_OF_WEEK_REQUEST, CHOICES_CHECK_IS_END_OF_WEEK_REQUEST, false);
 
+        // 현재 게임 세션 정보 가져오기
+        PlayerInfo playerInfo;
         try {
-            // 현재 게임 세션 정보 가져오기
-            PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
-            
-            // 7의 배수인지 확인 (1일차는 제외)
-            boolean isEndOfWeek = (playerInfo.dayCount > 1) && (playerInfo.dayCount % 7 == 0);
-            
-            if (isEndOfWeek) {
-                System.out.println("\n주간 정산이 필요합니다! (현재: " + playerInfo.dayCount + "일차)");
-            } else {
-                System.out.println("\n일일 정산만 진행합니다. (현재: " + playerInfo.dayCount + "일차)");
-            }
-            System.out.println("\n계속하려면 Enter를 누르세요...");
-            scanner.nextLine();
-            
-            return isEndOfWeek;
-            
-        } catch (Exception e) {
+            playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
+        } catch (SQLException e) {
             e.printStackTrace();
-            System.out.println("일자 확인 중 오류가 발생했습니다: " + e.getMessage());
-            System.out.println("\n계속하려면 Enter를 누르세요...");
-            scanner.nextLine();
-            return false;
+            throw new CloseGameException();
         }
+        
+        // 7의 배수인지 확인 (1일차는 제외)
+        boolean isEndOfWeek = (playerInfo.dayCount > 1) && (playerInfo.dayCount % 7 == 0);
+        
+        if (isEndOfWeek) {
+            System.out.println("\n주간 정산이 필요합니다! (현재: " + playerInfo.dayCount + "일차)");
+        } else {
+            System.out.println("\n일일 정산만 진행합니다. (현재: " + playerInfo.dayCount + "일차)");
+        }
+        System.out.println("\n계속하려면 Enter를 누르세요...");
+        scanner.nextLine();
+        
+        return isEndOfWeek;
     }
 
     private boolean showFinalizeDay() {
         showChoices(TITLE_FINALIZE_DAY, MESSAGE_FINALIZE_DAY, CHOICES_FINALIZE_DAY, false);
 
+        // 일일 정산 정보 가져오기
+        DailyCalculate daily;
         try {
-            // 일일 정산 정보 가져오기
-            DailyCalculate daily = DailyCalculate.getDailyCalculate(connection, playerKey);
-            
-            System.out.println("\n=== 일일 정산 ===");
-            System.out.println("오늘 시작 잔액: " + String.format("%,dG", daily.todayStart));
-            System.out.println("오늘 종료 잔액: " + String.format("%,dG", daily.todayEnd));
-            System.out.println("전당포 이자: " + String.format("-%,dG", daily.todayInterest));
-            System.out.println("최종 잔액: " + String.format("%,dG", daily.todayFinal));
-            System.out.println("================");
-            
-            // 이자 차감
-            if (daily.todayInterest > 0) {
-                MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), daily.todayInterest);
-            }
-            
-            // 게임 오버 확인 (돈이 음수)
-            if (daily.todayFinal < 0) {
-                return true;
-            }
-            
-            System.out.println("\n계속하려면 Enter를 누르세요...");
-            scanner.nextLine();
-            
-        } catch (Exception e) {
+            daily = DailyCalculate.getDailyCalculate(connection, playerKey);
+        } catch (SQLException e) {
             e.printStackTrace();
-            System.out.println("일일 정산 중 오류가 발생했습니다: " + e.getMessage());
-            System.out.println("\n계속하려면 Enter를 누르세요...");
-            scanner.nextLine();
+            throw new CloseGameException();
         }
+        
+        System.out.println("\n=== 일일 정산 ===");
+        System.out.println("오늘 시작 잔액: " + String.format("%,dG", daily.todayStart));
+        System.out.println("오늘 종료 잔액: " + String.format("%,dG", daily.todayEnd));
+        System.out.println("전당포 이자: " + String.format("-%,dG", daily.todayInterest));
+        System.out.println("최종 잔액: " + String.format("%,dG", daily.todayFinal));
+        System.out.println("================");
+        
+        // 이자 차감
+        if (daily.todayInterest > 0) {
+            try {
+                MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), daily.todayInterest);
+            } catch (SQLException e) {
+                e.printStackTrace();
+                throw new CloseGameException();
+            }
+        }
+        
+        // 게임 오버 확인 (돈이 음수)
+        if (daily.todayFinal < 0) {
+            return true;
+        }
+        
+        System.out.println("\n계속하려면 Enter를 누르세요...");
+        scanner.nextLine();
+
         return false;
     }
 
     private boolean showFinalizeWeek() {
         showChoices(TITLE_FINALIZE_WEEK, MESSAGE_FINALIZE_WEEK, CHOICES_FINALIZE_WEEK, false);
 
+        // 주간 정산 정보 가져오기
+        WeeklyCaluclate weekly;
         try {
-            // 주간 정산 정보 가져오기
-            WeeklyCaluclate weekly = WeeklyCaluclate.getWeeklyCaluclate(connection, playerKey);
-            
-            System.out.println("\n=== 주간 정산 ===");
-            System.out.println("오늘 시작 잔액: " + String.format("%,dG", weekly.todayStart));
-            System.out.println("오늘 종료 잔액: " + String.format("%,dG", weekly.todayEnd));
-            System.out.println("전당포 이자: " + String.format("-%,dG", weekly.todayInterest));
-            System.out.println("개인 빚 이자: " + String.format("-%,dG", weekly.todayPersonalInterest));
-            System.out.println("최종 잔액: " + String.format("%,dG", weekly.todayFinal));
-            System.out.println("================");
-            
-            // 이자 차감
-            int totalInterest = weekly.todayInterest + weekly.todayPersonalInterest;
-            if (totalInterest > 0) {
-                MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), totalInterest);
-            }
-            
-            // 게임 오버 확인 (돈이 음수)
-            if (weekly.todayFinal < 0) {
-                return true;
-            }
-            
-            System.out.println("\n계속하려면 Enter를 누르세요...");
-            scanner.nextLine();
-            
-        } catch (Exception e) {
+            weekly = WeeklyCaluclate.getWeeklyCaluclate(connection, playerKey);
+        } catch (SQLException e) {
             e.printStackTrace();
-            System.out.println("주간 정산 중 오류가 발생했습니다: " + e.getMessage());
-            System.out.println("\n계속하려면 Enter를 누르세요...");
-            scanner.nextLine();
+            throw new CloseGameException();
         }
+        
+        System.out.println("\n=== 주간 정산 ===");
+        System.out.println("오늘 시작 잔액: " + String.format("%,dG", weekly.todayStart));
+        System.out.println("오늘 종료 잔액: " + String.format("%,dG", weekly.todayEnd));
+        System.out.println("전당포 이자: " + String.format("-%,dG", weekly.todayInterest));
+        System.out.println("개인 빚 이자: " + String.format("-%,dG", weekly.todayPersonalInterest));
+        System.out.println("최종 잔액: " + String.format("%,dG", weekly.todayFinal));
+        System.out.println("================");
+        
+        // 이자 차감
+        int totalInterest = weekly.todayInterest + weekly.todayPersonalInterest;
+        if (totalInterest > 0) {
+            try {
+                MoneyUpdater.subtractMoney(connection, playerSession.getSessionToken(), totalInterest);
+            } catch (SQLException e) {
+                e.printStackTrace();
+                throw new CloseGameException();
+            }
+        }
+        
+        // 게임 오버 확인 (돈이 음수)
+        if (weekly.todayFinal < 0) {
+            return true;
+        }
+        
+        System.out.println("\n계속하려면 Enter를 누르세요...");
+        scanner.nextLine();
+
         return false;
     }
 
     private void showNextDayRequest() {
         showChoices(TITLE_NEXT_DAY_REQUEST, MESSAGE_NEXT_DAY_REQUEST, CHOICES_NEXT_DAY_REQUEST, false);
 
+        // DAY_COUNT 증가
         try {
-            // DAY_COUNT 증가
             GameSessionUpdater.incrementDayCount(connection, playerSession.getSessionToken());
-            
-            // 업데이트된 게임 세션 정보 가져오기 (UI 표시용)
-            PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
-            
-            System.out.println("\n=== 다음 날로 진행 ===");
-            System.out.println("현재 일수: " + playerInfo.dayCount + "일차");
-            System.out.println("현재 잔액: " + String.format("%,dG", playerInfo.money));
-            System.out.println("====================");
-            System.out.println("\n계속하려면 Enter를 누르세요...");
-            scanner.nextLine();
-            
-        } catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
-            System.out.println("다음 날 진행 중 오류가 발생했습니다: " + e.getMessage());
-            System.out.println("\n계속하려면 Enter를 누르세요...");
-            scanner.nextLine();
+            throw new CloseGameException();
         }
+        
+        // 업데이트된 게임 세션 정보 가져오기 (UI 표시용)
+        PlayerInfo playerInfo;
+        try {
+            playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        System.out.println("\n=== 다음 날로 진행 ===");
+        System.out.println("현재 일수: " + playerInfo.dayCount + "일차");
+        System.out.println("현재 잔액: " + String.format("%,dG", playerInfo.money));
+        System.out.println("====================");
+        System.out.println("\n계속하려면 Enter를 누르세요...");
+        scanner.nextLine();
     }
 
     private void finishAuction() {
@@ -507,85 +517,114 @@ public class MainScreen extends BaseScreen {
         }
     }
 
-    private void showGenerateDailyDeals() {
+private void showGenerateDailyDeals() {
+        System.out.println("\n=== 오늘의 거래 생성 ===");
+        
+        // 게임 세션 키 가져오기
+        int gameSessionKey;
         try {
-            System.out.println("\n=== 오늘의 거래 생성 ===");
-            
-            // 게임 세션 키 가져오기
-            int gameSessionKey = GameSessionByToken.getGameSessionKey(connection, playerSession.getSessionToken());
-            
-            // 현재 적용 중인 이벤트(뉴스) 가져오기
-            TodaysEvent[] events = null;
-            try {
-                events = TodaysEvent.getTodaysEvent(connection, playerKey);
-                System.out.println("현재 적용 중인 이벤트: " + events.length + "개");
-            } catch (NotASuchRowException e) {
-                System.out.println("현재 적용 중인 이벤트 없음");
-                events = new TodaysEvent[0];
-            }
-            
-            // 1. 랜덤 고객 3명 선택
-            RandomCustomersWithDetails[] customers = RandomCustomersWithDetails.getRandomCustomersWithDetails(connection, 3);
-            System.out.println("고객 3명 선택 완료");
-            
-            // 2. 각 고객별로 거래 생성
-            for (int i = 0; i < customers.length; i++) {
-                RandomCustomersWithDetails customer = customers[i];
-                
-                // 랜덤 아이템 카탈로그 선택 (고객의 선호 카테고리)
-                ItemCatalog itemCatalog = ItemCatalog.getRandomItemByCategory(connection, customer.categoryKey);
-                
-                // 흠이 있을 삘 (랜덤 변수)
-                float suspiciousFlawAura = (float) Math.random();
-                
-                // 흠 개수 계산: (0 + 10 * 부주의함) + (0 + 4 * 흠이 있을 삘)
-                int flawEa = (int) Math.round((10 * customer.clumsy) + (4 * suspiciousFlawAura));
-                flawEa = Math.min(14, Math.max(0, flawEa)); // 0~14 범위 제한
-                
-                // 진품/가품 결정
-                // 가품 확률: 10 + 90 * 사기정도
-                double fakeProbability = 10 + (90 * customer.fraud);
-                boolean isAuthentic = (Math.random() * 100) >= fakeProbability;
-                char authenticity = isAuthentic ? 'Y' : 'N';
-                
-                // 등급 결정
-                int grade = determineGradeByCustomer(customer.wellCollect);
-                
-                // EXISTING_ITEM 생성
-                InsertExistingItem.insertItem(connection, gameSessionKey, itemCatalog.itemCatalogKey, 
-                                              grade, flawEa, suspiciousFlawAura, authenticity);
-                
-                // 방금 생성한 아이템의 키 가져오기
-                int itemKey = GetLastInsertedItemKey.getLastInsertedItemKey(connection, gameSessionKey);
-                
-                // 거래 기준가 계산
-                int basePrice = itemCatalog.basePrice;
-                int askingPrice = calculateTradingBasePrice(basePrice, flawEa, fakeProbability, grade, 
-                                                            customer.fraud, customer.wellCollect, 
-                                                            events, itemCatalog.categoryKey);
-                int purchasePrice = askingPrice; // 초기 구매가 = 최초 제시가
-                int appraisedPrice = askingPrice; // 초기 감정가 = 최초 제시가
-                
-                // DEAL_RECORD 생성
-                InsertDealRecord.insertDealRecord(connection, gameSessionKey, customer.customerKey, 
-                                                 itemKey, askingPrice, purchasePrice, appraisedPrice);
-                
-                System.out.println((i + 1) + "번 거래 생성: " + itemCatalog.itemCatalogName + 
-                                 " (등급: " + getGradeString(grade) + ", 흠: " + flawEa + "개, " + 
-                                 (isAuthentic ? "진품" : "가품") + ", 제시가: " + String.format("%,dG", askingPrice) + ")");
-            }
-            
-            System.out.println("\n총 " + customers.length + "개의 거래가 생성되었습니다!");
-            System.out.println("======================");
-            System.out.println("\n계속하려면 Enter를 누르세요...");
-            scanner.nextLine();
-            
-        } catch (Exception e) {
+            gameSessionKey = GameSessionByToken.getGameSessionKey(connection, playerSession.getSessionToken());
+        } catch (SQLException e) {
             e.printStackTrace();
-            System.out.println("거래 생성 중 오류가 발생했습니다: " + e.getMessage());
-            System.out.println("\n계속하려면 Enter를 누르세요...");
-            scanner.nextLine();
+            throw new CloseGameException();
         }
+        
+        // 현재 적용 중인 이벤트(뉴스) 가져오기
+        TodaysEvent[] events = null;
+        try {
+            events = TodaysEvent.getTodaysEvent(connection, playerKey);
+            System.out.println("현재 적용 중인 이벤트: " + events.length + "개");
+        } catch (NotASuchRowException e) {
+            System.out.println("현재 적용 중인 이벤트 없음");
+            events = new TodaysEvent[0];
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        
+        // 1. 랜덤 고객 3명 선택
+        RandomCustomersWithDetails[] customers;
+        try {
+            customers = RandomCustomersWithDetails.getRandomCustomersWithDetails(connection, 3);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new CloseGameException();
+        }
+        System.out.println("고객 3명 선택 완료");
+        
+        // 2. 각 고객별로 거래 생성
+        for (int i = 0; i < customers.length; i++) {
+            RandomCustomersWithDetails customer = customers[i];
+            
+            // 랜덤 아이템 카탈로그 선택 (고객의 선호 카테고리)
+            ItemCatalog itemCatalog;
+            try {
+                itemCatalog = ItemCatalog.getRandomItemByCategory(connection, customer.categoryKey);
+            } catch (SQLException e) {
+                e.printStackTrace();
+                throw new CloseGameException();
+            }
+            
+            // 흠이 있을 삘 (랜덤 변수)
+            float suspiciousFlawAura = (float) Math.random();
+            
+            // 흠 개수 계산: (0 + 10 * 부주의함) + (0 + 4 * 흠이 있을 삘)
+            int flawEa = (int) Math.round((10 * customer.clumsy) + (4 * suspiciousFlawAura));
+            flawEa = Math.min(14, Math.max(0, flawEa)); // 0~14 범위 제한
+            
+            // 진품/가품 결정
+            // 가품 확률: 10 + 90 * 사기정도
+            double fakeProbability = 10 + (90 * customer.fraud);
+            boolean isAuthentic = (Math.random() * 100) >= fakeProbability;
+            char authenticity = isAuthentic ? 'Y' : 'N';
+            
+            // 등급 결정
+            int grade = determineGradeByCustomer(customer.wellCollect);
+            
+            // EXISTING_ITEM 생성
+            try {
+                InsertExistingItem.insertItem(connection, gameSessionKey, itemCatalog.itemCatalogKey, 
+                                                grade, flawEa, suspiciousFlawAura, authenticity);
+            } catch (SQLException e) {
+                e.printStackTrace();
+                throw new CloseGameException();
+            }
+            
+            // 방금 생성한 아이템의 키 가져오기
+            int itemKey;
+            try {
+                itemKey = GetLastInsertedItemKey.getLastInsertedItemKey(connection, gameSessionKey);
+            } catch (SQLException e) {
+                e.printStackTrace();
+                throw new CloseGameException();
+            }
+            
+            // 거래 기준가 계산
+            int basePrice = itemCatalog.basePrice;
+            int askingPrice = calculateTradingBasePrice(basePrice, flawEa, fakeProbability, grade, 
+                                                        customer.fraud, customer.wellCollect, 
+                                                        events, itemCatalog.categoryKey);
+            int purchasePrice = askingPrice; // 초기 구매가 = 최초 제시가
+            int appraisedPrice = askingPrice; // 초기 감정가 = 최초 제시가
+            
+            // DEAL_RECORD 생성
+            try {
+                InsertDealRecord.insertDealRecord(connection, gameSessionKey, customer.customerKey, 
+                                                    itemKey, askingPrice, purchasePrice, appraisedPrice);
+            } catch (SQLException e) {
+                e.printStackTrace();
+                throw new CloseGameException();
+            }
+            
+            System.out.println((i + 1) + "번 거래 생성: " + itemCatalog.itemCatalogName + 
+                                " (등급: " + getGradeString(grade) + ", 흠: " + flawEa + "개, " + 
+                                (isAuthentic ? "진품" : "가품") + ", 제시가: " + String.format("%,dG", askingPrice) + ")");
+        }
+        
+        System.out.println("\n총 " + customers.length + "개의 거래가 생성되었습니다!");
+        System.out.println("======================");
+        System.out.println("\n계속하려면 Enter를 누르세요...");
+        scanner.nextLine();
     }
     
     private int determineGradeByCustomer(float wellCollect) {

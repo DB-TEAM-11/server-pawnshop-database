@@ -1,6 +1,7 @@
 package phase3.screens;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
@@ -8,6 +9,7 @@ import phase3.queries.HashedPwGetter;
 import phase3.queries.SessionToken;
 import phase3.queries.DuplicateIdChecker;
 import phase3.PlayerSession;
+import phase3.exceptions.CloseGameException;
 import phase3.queries.AuthenticationCreator;
 
 public class LoginScreen extends BaseScreen {
@@ -109,14 +111,10 @@ public class LoginScreen extends BaseScreen {
         }
         
         randSalt = SessionToken.getSalt16();
-        try {
-            String hashedPw = HashedPwGetter.sha256(password, randSalt);
-            String hashedPwWithSalt = hashedPw + ";" + randSalt;
-            
-            AuthenticationCreator.createAuthentication(connection, username, hashedPwWithSalt);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        String hashedPw = HashedPwGetter.sha256(password, randSalt);
+        String hashedPwWithSalt = hashedPw + ";" + randSalt;
+        
+        AuthenticationCreator.createAuthentication(connection, username, hashedPwWithSalt);
         return;
     }
 }

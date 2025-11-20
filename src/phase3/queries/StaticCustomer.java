@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import phase3.exceptions.NotASuchRowException;
 
 public class StaticCustomer {
-    private static String QUERY = "SELECT * FROM CUSTOMER_CATALOG";
+    private static final String QUERY = "SELECT * FROM CUSTOMER_CATALOG";
 
     public static StaticCustomer[] customerCatalog;
 

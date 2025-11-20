@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import phase3.exceptions.NotASuchRowException;
 
 public class StaticItem {
-    private static String QUERY = "SELECT * FROM ITEM_CATALOG";
+    private static final String QUERY = "SELECT * FROM ITEM_CATALOG";
 
     public static StaticItem[] itemCatalog;
 

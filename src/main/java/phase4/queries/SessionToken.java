@@ -84,7 +84,7 @@ public class SessionToken {
         return newSessionToken;
     }
     
-    private static String calculateHashedPassword(String password, String salt) {
+    public static String calculateHashedPassword(String password, String salt) {
         MessageDigest digest;
         byte[] hashed;
 
@@ -110,7 +110,7 @@ public class SessionToken {
         return sb.toString();
     }
     
-    private static String getSalt16() {
+    public static String getSalt16() {
         SecureRandom r = new SecureRandom();
         byte[] salt = new byte[8]; // 8바이트 * 2 hex = 16자리
         r.nextBytes(salt);

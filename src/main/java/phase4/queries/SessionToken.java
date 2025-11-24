@@ -1,0 +1,125 @@
+package phase4.queries;
+
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Base64;
+
+import phase4.exceptions.NotASuchRowException;
+
+public class SessionToken {
+    private static final String QUERY_GET_HASHEDPW = "SELECT P.HASHED_PW FROM PLAYER P WHERE P.PLAYER_ID = '%s'";
+    private static final String UPDATE_SESSION_TOKEN_QUERY = "UPDATE PLAYER SET SESSION_TOKEN = '%s', LAST_ACTIVITY = TO_DATE('%s', 'YYYY-MM-DD HH24:MI:SS') WHERE PLAYER_ID = '%s'";
+    
+    public static String generateSessionToken(Connection connection, String username, String password) throws SQLException {
+        String hashedPassword = getHashedPw(connection, username);
+        if (!verifyPassword(hashedPassword, password)) {
+            throw new IllegalArgumentException("Invalid password");
+        }
+        return setNewSessionToken(connection, username);
+    }
+    
+    private static String getHashedPw(Connection connection, String username) throws SQLException {
+        Statement statement = connection.createStatement();
+        ResultSet queryResult = statement.executeQuery(String.format(QUERY_GET_HASHEDPW, username));
+        if (!queryResult.next()) {
+            throw new NotASuchRowException();
+        }
+        
+        String hashedPassword = queryResult.getString(1);
+        
+        statement.close();
+        queryResult.close();
+        
+        return hashedPassword;
+    }
+    
+    private static boolean verifyPassword(String hashedPassword, String password) {
+        String[] passwordSalt = hashedPassword.split(";");
+        if (passwordSalt.length != 2)
+            throw new IllegalStateException("Invalid hashed password detected: " + hashedPassword);
+        String passwordPart = passwordSalt[0];
+        String salt = passwordSalt[1];
+        
+        String inputPasswordHashed = calculateHashedPassword(password, salt);
+        return passwordPart.equals(inputPasswordHashed);
+    }
+    
+    private static String setNewSessionToken(Connection connection, String username) throws SQLException {
+        Statement statement = connection.createStatement();
+        
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String datetime = now.format(formatter);
+        
+        // Update session token
+        byte[] tokenBytes;
+        String newSessionToken;
+        while (true) {
+            // Create new session token (Base64, 64 chars)
+            tokenBytes = new byte[48]; // 48byte --Base64-> 64 chars
+            new SecureRandom().nextBytes(tokenBytes);
+            newSessionToken = Base64.getEncoder().encodeToString(tokenBytes);
+            
+            try {
+                statement.executeUpdate(String.format(UPDATE_SESSION_TOKEN_QUERY, newSessionToken, datetime, username));
+                break;
+            } catch (SQLException e) {
+                if (e.getErrorCode() != 1) {
+                    // Not a 'unique constraint' violation
+                    throw e;
+                }
+            }
+        }
+        
+        statement.close();
+        
+        return newSessionToken;
+    }
+    
+    private static String calculateHashedPassword(String password, String salt) {
+        MessageDigest digest;
+        byte[] hashed;
+
+        try {
+            digest = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Unsupported: MD5");
+        }
+
+        try {
+            hashed = digest.digest((password + salt).getBytes("UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Unsupported: UTF-8");
+        }
+        
+        StringBuilder sb = new StringBuilder();
+        for (byte b : hashed) {
+            sb.append(String.format("%02x", b));
+        }
+
+        return sb.toString();
+    }
+    
+    private static String getSalt16() {
+        SecureRandom r = new SecureRandom();
+        byte[] salt = new byte[8]; // 8바이트 * 2 hex = 16자리
+        r.nextBytes(salt);
+        
+        StringBuilder sb = new StringBuilder();
+        for (byte b : salt) {
+            sb.append(String.format("%02x", b));
+        }
+        
+        return sb.toString();
+    }
+}

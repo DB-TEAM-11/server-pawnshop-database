@@ -13,20 +13,21 @@ import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 
 import phase4.exceptions.NotASuchRowException;
+import phase4.utils.PasswordHasher;
 
 public class SessionToken {
     private static final String QUERY_GET_HASHEDPW = "SELECT P.HASHED_PW FROM PLAYER P WHERE P.PLAYER_ID = '%s'";
     private static final String UPDATE_SESSION_TOKEN_QUERY = "UPDATE PLAYER SET SESSION_TOKEN = '%s', LAST_ACTIVITY = TO_DATE('%s', 'YYYY-MM-DD HH24:MI:SS') WHERE PLAYER_ID = '%s'";
     
-    public static String generateSessionToken(Connection connection, String username, String password) throws SQLException {
-        String hashedPassword = getHashedPw(connection, username);
+    public static String setNewSessionToken(Connection connection, String username, String password) throws SQLException {
+        String hashedPassword = getHashedPassword(connection, username);
         if (!verifyPassword(hashedPassword, password)) {
             throw new IllegalArgumentException("Invalid password");
         }
         return setNewSessionToken(connection, username);
     }
     
-    private static String getHashedPw(Connection connection, String username) throws SQLException {
+    private static String getHashedPassword(Connection connection, String username) throws SQLException {
         Statement statement = connection.createStatement();
         ResultSet queryResult = statement.executeQuery(String.format(QUERY_GET_HASHEDPW, username));
         if (!queryResult.next()) {
@@ -48,7 +49,7 @@ public class SessionToken {
         String passwordPart = passwordSalt[0];
         String salt = passwordSalt[1];
         
-        String inputPasswordHashed = calculateHashedPassword(password, salt);
+        String inputPasswordHashed = PasswordHasher.calculateHashedPassword(password, salt);
         return passwordPart.equals(inputPasswordHashed);
     }
     
@@ -82,44 +83,5 @@ public class SessionToken {
         statement.close();
         
         return newSessionToken;
-    }
-    
-    public static String calculateHashedPassword(String password, String salt) {
-        MessageDigest digest;
-        byte[] hashed;
-
-        try {
-            digest = MessageDigest.getInstance("MD5");
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            throw new RuntimeException("Unsupported: MD5");
-        }
-
-        try {
-            hashed = digest.digest((password + salt).getBytes("UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-            throw new RuntimeException("Unsupported: UTF-8");
-        }
-        
-        StringBuilder sb = new StringBuilder();
-        for (byte b : hashed) {
-            sb.append(String.format("%02x", b));
-        }
-
-        return sb.toString();
-    }
-    
-    public static String getSalt16() {
-        SecureRandom r = new SecureRandom();
-        byte[] salt = new byte[8]; // 8바이트 * 2 hex = 16자리
-        r.nextBytes(salt);
-        
-        StringBuilder sb = new StringBuilder();
-        for (byte b : salt) {
-            sb.append(String.format("%02x", b));
-        }
-        
-        return sb.toString();
     }
 }

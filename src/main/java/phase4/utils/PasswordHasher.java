@@ -1,54 +1,46 @@
 package phase4.utils;
+import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
 public class PasswordHasher {
-	public String hashPasswordAndAppendSalt(String pwd) {
-		
-		String salt = this.getSalt();
-		
-		String hashed_pw = this.getHashed(pwd, salt);
-		
-		String res = hashed_pw + ";" + salt;
-		
-		return res;
-	}
+    public static String calculateHashedPassword(String password, String salt) {
+        MessageDigest digest;
+        byte[] hashed;
 
-	private String getSalt() {
-		SecureRandom r = new SecureRandom();
-		byte[] salt = new byte[8];
-		
-		r.nextBytes(salt);
-		
-		StringBuffer sb = new StringBuffer();
-		for (byte b : salt) {
-			sb.append(String.format("%02x", b));
-		}
-		
-		return sb.toString();
-	}
-	
-	public String getHashed(String pwd, String salt) {
-		String result = "";
-		
-		try {
-			MessageDigest md = MessageDigest.getInstance("SHA-256");
-			
-			md.update((pwd + salt).getBytes());
-			byte[] digest = md.digest();
-			
-			StringBuffer sb = new StringBuffer();
-			for (byte b: digest) {
-				sb.append(String.format("%02x", b));
-			}
-			
-			result = sb.toString();
-		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
-		}
-		
-		return result;
-	}
+        try {
+            digest = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Unsupported: MD5");
+        }
 
+        try {
+            hashed = digest.digest((password + salt).getBytes("UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Unsupported: UTF-8");
+        }
+        
+        StringBuilder sb = new StringBuilder();
+        for (byte b : hashed) {
+            sb.append(String.format("%02x", b));
+        }
+
+        return sb.toString();
+    }
+    
+    public static String getSalt16() {
+        SecureRandom r = new SecureRandom();
+        byte[] salt = new byte[8]; // 8바이트 * 2 hex = 16자리
+        r.nextBytes(salt);
+        
+        StringBuilder sb = new StringBuilder();
+        for (byte b : salt) {
+            sb.append(String.format("%02x", b));
+        }
+        
+        return sb.toString();
+    }
 }

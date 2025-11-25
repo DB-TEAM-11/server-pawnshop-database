@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -38,7 +39,13 @@ public class Register extends JsonServlet {
     
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        RequestData requestData = gson.fromJson(request.getReader().lines().collect(Collectors.joining("\n")), RequestData.class);
+        RequestData requestData;
+        try {
+            requestData = gson.fromJson(request.getReader().lines().collect(Collectors.joining("\n")), RequestData.class);
+        } catch (JsonSyntaxException e) {
+            sendErrorResponse(response, "invalid_data", "Received malformed data");
+            return;
+        }
         
         if (!USERNAME_PATTERN.matcher(requestData.playerId).matches()) {
             sendErrorResponse(response, "invalid_username", "The username is invalid.");
@@ -59,18 +66,10 @@ public class Register extends JsonServlet {
             sendErrorResponse(response, "already_exists", "The username already exists.");
             return;
         } catch (SQLException e) {
-            response.setContentType("text/plain");
-            response.setStatus(500);
-            PrintWriter writer = response.getWriter();
-            writer.println("Unexpected SQLException occured:");
-            writer.println("----------------------------------------");
-            e.printStackTrace(writer);
-            writer.close();
+            sendStackTrace(response, "SQLException", e);
             return;
         }
         
-        response.setContentType("application/json");
-        response.setStatus(200);
-        response.getWriter().append("{}").close();
+        sendEmptyJsonResponse(response);
     }
 }

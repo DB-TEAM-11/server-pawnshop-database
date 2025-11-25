@@ -1,6 +1,8 @@
 package phase4.servlets;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+
 import com.google.gson.Gson;
 
 import jakarta.servlet.http.HttpServlet;
@@ -36,5 +38,34 @@ public class JsonServlet extends HttpServlet {
         response.setContentType("application/json");
         response.setStatus(status);
         response.getWriter().append(gson.toJson(data)).close();
+    }
+    
+    public void sendStackTrace(HttpServletResponse response, String exceptionClassName, Exception e) throws IOException {
+        response.setContentType("text/plain");
+        response.setStatus(500);
+        PrintWriter writer = response.getWriter();
+        writer.println("Unexpected" + exceptionClassName + "occured. Traceback:");
+        writer.println("----------------------------------------");
+        e.printStackTrace(writer);
+        writer.close();
+    }
+    
+    public void sendEmptyJsonResponse(HttpServletResponse response) throws IOException {
+        sendEmptyJsonResponse(response, 200);
+    }
+    
+    public void sendEmptyJsonResponse(HttpServletResponse response, int status) throws IOException {
+        response.setContentType("application/json");
+        response.setStatus(status);
+        response.getWriter().append("{}").close();
+    }
+    
+    public void sendEmptyResponse(HttpServletResponse response) throws IOException {
+        sendEmptyResponse(response, 200);
+    }
+    
+    public void sendEmptyResponse(HttpServletResponse response, int status) throws IOException {
+        response.setContentType("application/json");
+        response.setStatus(status);
     }
 }

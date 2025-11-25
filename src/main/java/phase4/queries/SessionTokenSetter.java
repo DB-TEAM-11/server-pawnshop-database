@@ -15,7 +15,7 @@ import java.util.Base64;
 import phase4.exceptions.NotASuchRowException;
 import phase4.utils.PasswordHasher;
 
-public class SessionToken {
+public class SessionTokenSetter {
     private static final String QUERY_GET_HASHEDPW = "SELECT P.HASHED_PW FROM PLAYER P WHERE P.PLAYER_ID = '%s'";
     private static final String UPDATE_SESSION_TOKEN_QUERY = "UPDATE PLAYER SET SESSION_TOKEN = '%s', LAST_ACTIVITY = TO_DATE('%s', 'YYYY-MM-DD HH24:MI:SS') WHERE PLAYER_ID = '%s'";
     

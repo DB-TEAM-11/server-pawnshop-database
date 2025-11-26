@@ -9,8 +9,9 @@ import java.sql.Statement;
 import phase4.exceptions.NotASuchRowException;
 
 public class PlayerInfo {
-    private static final String QUERY = "SELECT * FROM GAME_SESSION WHERE PLAYER_KEY = %d ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY";
+    private static final String QUERY = "SELECT P.PLAYER_ID, GS.* FROM PLAYER P JOIN GAME_SESSION GS ON P.PLAYER_KEY = GS.PLAYER_KEY WHERE P.PLAYER_KEY = %d ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY";
     
+    public String playerId;
     public int gameSessionKey;
     public int playerKey;
     public int dayCount;
@@ -24,6 +25,7 @@ public class PlayerInfo {
     public Date gameEndDate;
 
     private PlayerInfo(
+        String playerId,
         int gameSessionKey,
         int playerKey,
         int dayCount,
@@ -36,6 +38,7 @@ public class PlayerInfo {
         int gameEndDayCount,
         Date gameEndDate
     ) {
+        this.playerId = playerId;
         this.gameSessionKey = gameSessionKey;
         this.playerKey = playerKey;
         this.dayCount = dayCount;
@@ -57,17 +60,18 @@ public class PlayerInfo {
         }
 
         PlayerInfo playerInfo = new PlayerInfo(
-            queryResult.getInt(1),
+            queryResult.getString(1),
             queryResult.getInt(2),
             queryResult.getInt(3),
             queryResult.getInt(4),
             queryResult.getInt(5),
             queryResult.getInt(6),
             queryResult.getInt(7),
-            queryResult.getString(8),
+            queryResult.getInt(8),
             queryResult.getString(9),
-            queryResult.getInt(10),
-            queryResult.getDate(11)
+            queryResult.getString(10),
+            queryResult.getInt(11),
+            queryResult.getDate(12)
         );
 
         statement.close();

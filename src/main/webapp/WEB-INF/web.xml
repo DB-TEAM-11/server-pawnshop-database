@@ -75,4 +75,14 @@
     <servlet-name>Register</servlet-name>
     <url-pattern>/player/register</url-pattern>
   </servlet-mapping>
+  <servlet>
+    <description></description>
+    <display-name>currentAll</display-name>
+    <servlet-name>currentAll</servlet-name>
+    <servlet-class>phase4.servlets.display.currentAll</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>currentAll</servlet-name>
+    <url-pattern>/currentAll</url-pattern>
+  </servlet-mapping>
 </web-app>

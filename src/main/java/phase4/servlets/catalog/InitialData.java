@@ -43,7 +43,6 @@ public class InitialData extends JsonServlet {
             sendStackTrace(response, e);
             return;
         }
-        
         sendJsonResponse(response, responseData);
 	}
 }

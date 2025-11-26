@@ -9,59 +9,77 @@ import java.util.ArrayList;
 import phase4.exceptions.NotASuchRowException;
 
 public class ItemInDisplay {
-    private static final String QUERY = "SELECT D.DISPLAY_POS, I.*, IC.* FROM GAME_SESSION_ITEM_DISPLAY D, EXISTING_ITEM I, ITEM_CATALOG IC WHERE D.GAME_SESSION_KEY = ( SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = %d ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY ) AND D.ITEM_KEY = I.ITEM_KEY AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY ORDER BY D.DISPLAY_POS";
-
-    public int displayPos;
-    public int itemKey;
-    public int gameSessionKey;
-    public int itemCatalogKey;
-    public int grade;
-    public int foundGrade;
-    public int flawEa;
+    private static final String QUERY = "SELECT "
+    		+ "GSID.DISPLAY_POS, "
+    		+ "DR.ASKING_PRICE, "
+    		+ "DR.PURCHASE_PRICE, "
+    		+ "DR.APPRAISED_PRICE, "
+    		+ "DR.BOUGHT_DATE, "
+    		+ "CC.CUSTOMER_NAME, "
+    		+ "EI.FOUND_GRADE, "
+    		+ "EI.FOUND_FLAW_EA, "
+    		+ "EI.IS_AUTHENTICITY_FOUND, "
+    		+ "EI.AUTHENTICITY, "
+    		+ "EI.ITEM_STATE, "
+    		+ "EI.ITEM_KEY, "
+    		+ "EI.ITEM_CATALOG_KEY "
+    		+ "FROM GAME_SESSION_ITEM_DISPLAY GSID "
+    		+ "JOIN DEAL_RECORD DR "
+    		+ "ON GSID.GAME_SESSION_KEY = DR.GAME_SESSION_KEY "
+    		+ "JOIN CUSTOMER_CATALOG CC "
+    		+ "ON DR.SELLER_KEY = CC.CUSTOMER_KEY "
+    		+ "JOIN EXISTING_ITEM EI "
+    		+ "ON GSID.GAME_SESSION_KEY = EI.GAME_SESSION_KEY "
+    		+ "WHERE GSID.GAME_SESSION_KEY = %d";
+    
+    
+    public int displayPositionKey;
+    public int askingPrice;
+    public int purchasePrice;
+    public int appraisedPrice;
+    public int boughtDate;
+    public String sellerName;
+    public int foundGrade; 
     public int foundFlawEa;
-    public float suspiciousFlawAura;
-    public boolean authenticity;
-    public boolean isAuthenticityFound;
+    public int authenticity; // 서버에서 처리isAuthenticityFound가 Y면은 (진위 여부 판단 됨) 실제 Authenticity의 값을 그대로 주면 되고 ("Y" = 1(진품), "N" = 0(가품)) isAuthenticityFound가 N이면은(진위여부 판단 안 됨. 모르는 상태)  -1(미확정)
     public int itemState;
-    public String itemCatalogName;
-    public String imgId;
-    public int categoryKey;
-    public int basePrice;
-
+    public int itemKey;
+    public int itemCatalogKey; 
+    
     private ItemInDisplay(
-        int displayPos,
-        int itemKey,
-        int gameSessionKey,
-        int itemCatalogKey,
-        int grade,
-        int foundGrade,
-        int flawEa,
-        int foundFlawEa,
-        float suspiciousFlawAura,
-        boolean authenticity,
-        boolean isAuthenticityFound,
-        int itemState,
-        String itemCatalogName,
-        String imgId,
-        int categoryKey,
-        int basePrice
+	     int displayPositionKey,
+	     int askingPrice,
+	     int purchasePrice,
+	     int appraisedPrice,
+	     int boughtDate,
+	     String sellerName,
+	     int foundGrade,
+	     int foundFlawEa,
+	     int authenticity,
+	     int itemState,
+	     int itemKey,
+	     int itemCatalogKey
     ) {
-        this.displayPos = displayPos;
-        this.itemKey = itemKey;
-        this.gameSessionKey = gameSessionKey;
-        this.itemCatalogKey = itemCatalogKey;
-        this.grade = grade;
+        this.displayPositionKey = displayPositionKey;
+        this.askingPrice = askingPrice;
+        this.purchasePrice = purchasePrice;
+        this.appraisedPrice = appraisedPrice;
+        this.boughtDate = boughtDate;
+        this.sellerName = sellerName;
         this.foundGrade = foundGrade;
-        this.flawEa = flawEa;
         this.foundFlawEa = foundFlawEa;
-        this.suspiciousFlawAura = suspiciousFlawAura;
         this.authenticity = authenticity;
-        this.isAuthenticityFound = isAuthenticityFound;
         this.itemState = itemState;
-        this.itemCatalogName = itemCatalogName;
-        this.imgId = imgId;
-        this.categoryKey = categoryKey;
-        this.basePrice = basePrice;
+        this.itemKey = itemKey;
+        this.itemCatalogKey = itemCatalogKey;
+
+    }
+    
+    private static int parseAuthenticity(String isFound, String auth) {
+        if (isFound.equals("N")) {
+            return -1;
+        }
+        return auth.equals("Y") ? 1 : 0;
     }
 
     public static ItemInDisplay[] getItemInDisplay(Connection connection, int playerId) throws SQLException {
@@ -79,17 +97,16 @@ public class ItemInDisplay {
                 queryResult.getInt(3),
                 queryResult.getInt(4),
                 queryResult.getInt(5),
-                queryResult.getInt(6),
+                queryResult.getString(6),
                 queryResult.getInt(7),
                 queryResult.getInt(8),
-                queryResult.getFloat(9),
-                queryResult.getString(10).equals("Y"),
-                queryResult.getString(11).equals("Y"),
+                parseAuthenticity(
+                    queryResult.getString(9),    // isAuthenticityFound Y/N
+                    queryResult.getString(10)    // authenticity Y/N
+                ),
+                queryResult.getInt(11),
                 queryResult.getInt(12),
-                queryResult.getString(14),
-                queryResult.getString(15),
-                queryResult.getInt(16),
-                queryResult.getInt(17)
+                queryResult.getInt(13)
             ));
         } while (queryResult.next());
 

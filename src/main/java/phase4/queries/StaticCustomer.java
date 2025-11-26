@@ -9,26 +9,29 @@ import java.util.ArrayList;
 import phase4.exceptions.NotASuchRowException;
 
 public class StaticCustomer {
-    private static final String QUERY = "SELECT * FROM CUSTOMER_CATALOG";
+    private static final String QUERY = "SELECT "
+    		+ "CC.CUSTOMER_KEY, "
+    		+ "CC.CUSTOMER_NAME, "
+    		+ "IC.CATEGORY_NAME, "
+    		+ "CC.IMG_ID "
+    		+ "FROM CUSTOMER_CATALOG CC"
+    		+ "JOIN ITEM_CATEGORY IC "
+    		+ "ON CC.CATEGORY_NAME = IC.CATEGORY_NAME";
 
     public static StaticCustomer[] customerCatalog;
 
     public int customerKey;
     public String customerName;
-    public int categoryKey;
+    public String categoryName;
     public String imgId;
-    public float fraud;
-    public float wellCollect;
-    public float clumsy;
 
-    private StaticCustomer(int customerKey, String customerName, int categoryKey, String imgId, float fraud, float wellCollect, float clumsy) {
+
+    private StaticCustomer(int customerKey, String customerName, String categoryName, String imgId) {
         this.customerKey = customerKey;
         this.customerName = customerName;
-        this.categoryKey = categoryKey;
+        this.categoryName = categoryName;
         this.imgId = imgId;
-        this.fraud = fraud;
-        this.wellCollect = wellCollect;
-        this.clumsy = clumsy;
+
     }
 
     public static StaticCustomer[] loadAllCustomers(Connection connection) throws SQLException {
@@ -46,11 +49,8 @@ public class StaticCustomer {
             catalog.add(new StaticCustomer(
                 staticCustomers.getInt(1),
                 staticCustomers.getString(2),
-                staticCustomers.getInt(3),
-                staticCustomers.getString(4),
-                staticCustomers.getFloat(5),
-                staticCustomers.getFloat(6),
-                staticCustomers.getFloat(7)
+                staticCustomers.getString(3),
+                staticCustomers.getString(4)
             ));
         } while (staticCustomers.next());
 

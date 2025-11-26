@@ -9,7 +9,14 @@ import java.util.ArrayList;
 import phase4.exceptions.NotASuchRowException;
 
 public class StaticItem {
-    private static final String QUERY = "SELECT IC.ITEM_CATALOG_KEY, IC.ITEM_CATALOG_NAME, IC.IMG_ID, ICAT.CATEGORY_NAME FROM ITEM_CATALOG IC JOIN ITEM_CATEGORY ICAT ON IC.CATEGORY_KEY = ICAT.CATEGORY_KEY";
+    private static final String QUERY = "SELECT "
+    		+ "IC.ITEM_CATALOG_KEY, "
+    		+ "IC.ITEM_CATALOG_NAME, "
+    		+ "IC.IMG_ID, "
+    		+ "ICAT.CATEGORY_NAME "
+    		+ "FROM ITEM_CATALOG IC "
+    		+ "JOIN ITEM_CATEGORY ICAT "
+    		+ "ON IC.CATEGORY_KEY = ICAT.CATEGORY_KEY";
 
     public static StaticItem[] itemCatalog;
 

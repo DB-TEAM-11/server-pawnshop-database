@@ -19,9 +19,12 @@ import phase4.queries.PlayerKeyByToken;
 import phase4.servlets.JsonServlet;
 import phase4.utils.SQLConnector;
 
+
 @WebServlet("/game-session/new")
 public class New extends JsonServlet {
-    private class RequestData {
+	private static final long serialVersionUID = 1L;
+
+	private class RequestData {
         String nickname;
         String shopName;
     }

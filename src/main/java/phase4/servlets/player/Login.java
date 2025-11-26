@@ -1,7 +1,6 @@
 package phase4.servlets.player;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.regex.Pattern;
@@ -19,9 +18,12 @@ import phase4.queries.SessionTokenSetter;
 import phase4.servlets.JsonServlet;
 import phase4.utils.SQLConnector;
 
+
 @WebServlet("/player/login")
 public class Login extends JsonServlet {
-    private class RequestData {
+	private static final long serialVersionUID = 1L;
+
+	private class RequestData {
         String playerId;
         String password;
         

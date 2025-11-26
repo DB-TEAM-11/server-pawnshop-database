@@ -1,7 +1,6 @@
 package phase4.servlets.player;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
@@ -20,9 +19,12 @@ import phase4.servlets.JsonServlet;
 import phase4.utils.PasswordHasher;
 import phase4.utils.SQLConnector;
 
+
 @WebServlet("/player/register")
 public class Register extends JsonServlet {
-    private class RequestData {
+	private static final long serialVersionUID = 1L;
+
+	private class RequestData {
         String playerId;
         String password;
         

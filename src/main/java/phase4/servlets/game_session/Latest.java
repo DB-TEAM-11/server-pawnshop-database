@@ -3,28 +3,22 @@ package phase4.servlets.game_session;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
-import com.google.gson.JsonSyntaxException;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import phase4.exceptions.NotASuchRowException;
-import phase4.queries.GameSessionCreator;
 import phase4.queries.PlayerInfo;
 import phase4.queries.PlayerKeyByToken;
 import phase4.servlets.JsonServlet;
 import phase4.utils.SQLConnector;
 
+
 @WebServlet("/game-session/latest")
 public class Latest extends JsonServlet {
-    private class RequestData {
-        String nickname;
-        String shopName;
-    }
+	private static final long serialVersionUID = 1L;
     
     private class ResponseData {
         int dayCount;
@@ -35,8 +29,6 @@ public class Latest extends JsonServlet {
         String nickname;
         String shopName;
     }
-    
-    private static final Pattern NAME_PATTERN = Pattern.compile("[a-zA-Z]{1,30}");
     
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

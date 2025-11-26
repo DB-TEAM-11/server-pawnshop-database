@@ -15,7 +15,9 @@ import phase4.queries.PlayerKeyByToken;
 import phase4.utils.SQLConnector;
 
 public class JsonServlet extends HttpServlet {
-    private class ErrorResponseData {
+	private static final long serialVersionUID = 1L;
+
+	private class ErrorResponseData {
         String code;
         String message;
     }

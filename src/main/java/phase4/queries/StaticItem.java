@@ -9,36 +9,20 @@ import java.util.ArrayList;
 import phase4.exceptions.NotASuchRowException;
 
 public class StaticItem {
-    private static final String QUERY = "SELECT * FROM ITEM_CATALOG";
+    private static final String QUERY = "SELECT IC.ITEM_CATALOG_KEY, IC.ITEM_CATALOG_NAME, IC.IMG_ID, ICAT.CATEGORY_NAME FROM ITEM_CATALOG IC JOIN ITEM_CATEGORY ICAT ON IC.CATEGORY_KEY = ICAT.CATEGORY_KEY";
 
     public static StaticItem[] itemCatalog;
 
-    private int key;
-    private String name;
-    private int imageId;
-    private int categoryName;
+    public int key;
+    public String name;
+    public int imageId;
+    public String categoryName;
 
-    private StaticItem(int key, String name, int imageId, int categoryName) {
+    private StaticItem(int key, String name, int imageId, String categoryName) {
         this.key = key;
         this.name = name;
         this.imageId = imageId;
         this.categoryName = categoryName;
-    }
-
-    public int getKey() {
-        return key;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public int getImageId() {
-        return imageId;
-    }
-
-    public int getCategoryName() {
-        return categoryName;
     }
 
     public static StaticItem[] loadAllItems(Connection connection) throws SQLException {
@@ -57,7 +41,7 @@ public class StaticItem {
                 staticItems.getInt(1),
                 staticItems.getString(2),
                 staticItems.getInt(3),
-                staticItems.getInt(4)
+                staticItems.getString(4)
             ));
         } while (staticItems.next());
 

@@ -2,11 +2,17 @@ package phase4.servlets;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 import com.google.gson.Gson;
 
 import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import phase4.exceptions.NotASuchRowException;
+import phase4.queries.PlayerKeyByToken;
+import phase4.utils.SQLConnector;
 
 public class JsonServlet extends HttpServlet {
     private class ErrorResponseData {
@@ -16,21 +22,21 @@ public class JsonServlet extends HttpServlet {
     
     protected Gson gson = new Gson();
     
-    public void sendJsonResponse(HttpServletResponse response, Object data) throws IOException {
+    protected void sendJsonResponse(HttpServletResponse response, Object data) throws IOException {
         sendJsonResponse(response, 200, data);
     }
     
-    public void sendJsonResponse(HttpServletResponse response, int status, Object data) throws IOException {
+    protected void sendJsonResponse(HttpServletResponse response, int status, Object data) throws IOException {
         response.setContentType("application/json");
         response.setStatus(status);
         response.getWriter().append(gson.toJson(data)).close();
     }
     
-    public void sendErrorResponse(HttpServletResponse response, String code, String message) throws IOException {
+    protected void sendErrorResponse(HttpServletResponse response, String code, String message) throws IOException {
         sendErrorResponse(response, 400, code, message);
     }
     
-    public void sendErrorResponse(HttpServletResponse response, int status, String code, String message) throws IOException {
+    protected void sendErrorResponse(HttpServletResponse response, int status, String code, String message) throws IOException {
         ErrorResponseData data = new ErrorResponseData();
         data.code = code;
         data.message = message;
@@ -40,7 +46,7 @@ public class JsonServlet extends HttpServlet {
         response.getWriter().append(gson.toJson(data)).close();
     }
     
-    public void sendStackTrace(HttpServletResponse response, String exceptionClassName, Exception e) throws IOException {
+    protected void sendStackTrace(HttpServletResponse response, String exceptionClassName, Exception e) throws IOException {
         response.setContentType("text/plain");
         response.setStatus(500);
         PrintWriter writer = response.getWriter();
@@ -50,22 +56,51 @@ public class JsonServlet extends HttpServlet {
         writer.close();
     }
     
-    public void sendEmptyJsonResponse(HttpServletResponse response) throws IOException {
+    protected void sendEmptyJsonResponse(HttpServletResponse response) throws IOException {
         sendEmptyJsonResponse(response, 200);
     }
     
-    public void sendEmptyJsonResponse(HttpServletResponse response, int status) throws IOException {
+    protected void sendEmptyJsonResponse(HttpServletResponse response, int status) throws IOException {
         response.setContentType("application/json");
         response.setStatus(status);
         response.getWriter().append("{}").close();
     }
     
-    public void sendEmptyResponse(HttpServletResponse response) throws IOException {
+    protected void sendEmptyResponse(HttpServletResponse response) throws IOException {
         sendEmptyResponse(response, 200);
     }
     
-    public void sendEmptyResponse(HttpServletResponse response, int status) throws IOException {
+    protected void sendEmptyResponse(HttpServletResponse response, int status) throws IOException {
         response.setContentType("application/json");
         response.setStatus(status);
+    }
+
+    protected int authenticateUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String authorization = request.getHeader("Authorization");
+        if (authorization == null) {
+            sendErrorResponse(response, 401, "no_token", "No session token");
+            return 0;
+        }
+        if (authorization.length() != 70 || !authorization.startsWith("Token ")) {
+            sendErrorResponse(response, 401, "malformed_token", "Got a malformed session token");
+            return 0;
+        }
+        
+        String sessionToken = authorization.substring(6);
+        
+        int playerKey;
+        try (Connection connection = SQLConnector.connect()) {
+            try {
+                playerKey = PlayerKeyByToken.getPlayerKey(connection, sessionToken);
+            } catch (NotASuchRowException e) {
+                sendErrorResponse(response, 401, "invalid_token", "Given session token is invalid.");
+                return 0;
+            }
+        } catch (SQLException e) {
+            sendStackTrace(response, "SQLException", e);
+            return 0;
+        }
+
+        return playerKey;
     }
 }

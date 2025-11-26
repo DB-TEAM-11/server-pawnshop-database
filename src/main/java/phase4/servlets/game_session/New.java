@@ -22,9 +22,9 @@ import phase4.utils.SQLConnector;
 
 @WebServlet("/game-session/new")
 public class New extends JsonServlet {
-	private static final long serialVersionUID = 1L;
-
-	private class RequestData {
+    private static final long serialVersionUID = 1L;
+    
+    private class RequestData {
         String nickname;
         String shopName;
     }
@@ -43,53 +43,38 @@ public class New extends JsonServlet {
     
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String authorization = request.getHeader("Authorization");
-        if (authorization == null) {
-            sendErrorResponse(response, 401, "no_token", "No session token");
+        int playerKey = authenticateUser(request, response);
+        if (playerKey <= 0) {
             return;
         }
-        if (authorization.length() != 70 || !authorization.startsWith("Token ")) {
-            sendErrorResponse(response, 401, "malformed_token", "Got a malformed session token");
+
+        RequestData requestData;
+        try {
+            requestData = gson.fromJson(request.getReader().lines().collect(Collectors.joining("\n")), RequestData.class);
+        } catch (JsonSyntaxException e) {
+            sendErrorResponse(response, "invalid_data", "Received malformed data");
             return;
         }
         
-        String sessionToken = authorization.substring(6);
+        if (requestData.nickname == null) {
+            sendErrorResponse(response, "no_nickname", "No nickname supplied.");
+            return;
+        }
+        if (requestData.shopName == null) {
+            sendErrorResponse(response, "no_shopname", "No shopname supplied.");
+            return;
+        }
+        if (!NAME_PATTERN.matcher(requestData.nickname).matches()) {
+            sendErrorResponse(response, "invalid_nickname", "Given nickname is invalid.");
+            return;
+        }
+        if (!NAME_PATTERN.matcher(requestData.shopName).matches()) {
+            sendErrorResponse(response, "invalid_shopname", "Given shopname is invalid.");
+            return;
+        }
         
         PlayerInfo playerInfo;
         try (Connection connection = SQLConnector.connect()) {
-            int playerKey;
-            try {
-                playerKey = PlayerKeyByToken.getPlayerKey(connection, sessionToken);
-            } catch (NotASuchRowException e) {
-                sendErrorResponse(response, 401, "invalid_token", "Given session token is invalid.");
-                return;
-            }
-            
-            RequestData requestData;
-            try {
-                requestData = gson.fromJson(request.getReader().lines().collect(Collectors.joining("\n")), RequestData.class);
-            } catch (JsonSyntaxException e) {
-                sendErrorResponse(response, "invalid_data", "Received malformed data");
-                return;
-            }
-            
-            if (requestData.nickname == null) {
-                sendErrorResponse(response, "no_nickname", "No nickname supplied.");
-                return;
-            }
-            if (requestData.shopName == null) {
-                sendErrorResponse(response, "no_shopname", "No shopname supplied.");
-                return;
-            }
-            if (!NAME_PATTERN.matcher(requestData.nickname).matches()) {
-                sendErrorResponse(response, "invalid_nickname", "Given nickname is invalid.");
-                return;
-            }
-            if (!NAME_PATTERN.matcher(requestData.shopName).matches()) {
-                sendErrorResponse(response, "invalid_shopname", "Given shopname is invalid.");
-                return;
-            }
-            
             try {
                 playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
                 if (playerInfo.gameEndDayCount <= 0) {
@@ -98,9 +83,7 @@ public class New extends JsonServlet {
                 }
             } catch (NotASuchRowException e) {
             }
-            
             GameSessionCreator.createGameSession(connection, playerKey, requestData.nickname, requestData.shopName);
-            
             playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
         } catch (SQLException e) {
             sendStackTrace(response, e);

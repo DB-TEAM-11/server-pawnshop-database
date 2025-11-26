@@ -32,28 +32,13 @@ public class Latest extends JsonServlet {
     
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String authorization = request.getHeader("Authorization");
-        if (authorization == null) {
-            sendErrorResponse(response, 401, "no_token", "No session token");
+        int playerKey = authenticateUser(request, response);
+        if (playerKey <= 0) {
             return;
         }
-        if (authorization.length() != 70 || !authorization.startsWith("Token ")) {
-            sendErrorResponse(response, 401, "malformed_token", "Got a malformed session token");
-            return;
-        }
-        
-        String sessionToken = authorization.substring(6);
         
         PlayerInfo playerInfo;
         try (Connection connection = SQLConnector.connect()) {
-            int playerKey;
-            try {
-                playerKey = PlayerKeyByToken.getPlayerKey(connection, sessionToken);
-            } catch (NotASuchRowException e) {
-                sendErrorResponse(response, 401, "invalid_token", "Given session token is invalid.");
-                return;
-            }
-            
             try {
                 playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
             } catch (NotASuchRowException e) {

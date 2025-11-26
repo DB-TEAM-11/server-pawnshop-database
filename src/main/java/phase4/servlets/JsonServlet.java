@@ -48,11 +48,11 @@ public class JsonServlet extends HttpServlet {
         response.getWriter().append(gson.toJson(data)).close();
     }
     
-    protected void sendStackTrace(HttpServletResponse response, String exceptionClassName, Exception e) throws IOException {
+    protected void sendStackTrace(HttpServletResponse response, Exception e) throws IOException {
         response.setContentType("text/plain");
         response.setStatus(500);
         PrintWriter writer = response.getWriter();
-        writer.println("Unexpected" + exceptionClassName + "occured. Traceback:");
+        writer.println("Unexpected exception" + e.getClass().getName() + " | Traceback:");
         writer.println("----------------------------------------");
         e.printStackTrace(writer);
         writer.close();
@@ -99,7 +99,7 @@ public class JsonServlet extends HttpServlet {
                 return 0;
             }
         } catch (SQLException e) {
-            sendStackTrace(response, "SQLException", e);
+            sendStackTrace(response, e);
             return 0;
         }
 

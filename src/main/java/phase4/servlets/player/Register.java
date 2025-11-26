@@ -68,7 +68,7 @@ public class Register extends JsonServlet {
             sendErrorResponse(response, "already_exists", "The username already exists.");
             return;
         } catch (SQLException e) {
-            sendStackTrace(response, "SQLException", e);
+            sendStackTrace(response, e);
             return;
         }
         

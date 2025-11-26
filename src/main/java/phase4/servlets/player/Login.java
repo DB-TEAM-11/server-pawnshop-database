@@ -78,7 +78,7 @@ public class Login extends JsonServlet {
             sendErrorResponse(response, 401, "no_such_user", "The specified user is not exists.");
             return;
         } catch (SQLException e) {
-            sendStackTrace(response, "SQLException", e);
+            sendStackTrace(response, e);
             return;
         }
         

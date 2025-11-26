@@ -103,7 +103,7 @@ public class New extends JsonServlet {
             
             playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
         } catch (SQLException e) {
-            sendStackTrace(response, "SQLException", e);
+            sendStackTrace(response, e);
             return;
         }
         

@@ -61,7 +61,7 @@ public class Latest extends JsonServlet {
                 return;
             }
         } catch (SQLException e) {
-            sendStackTrace(response, "SQLException", e);
+            sendStackTrace(response, e);
             return;
         }
         

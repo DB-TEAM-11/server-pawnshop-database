@@ -15,13 +15,24 @@ import phase4.utils.PasswordHasher;
 public class SessionTokenSetter {
     private static final String QUERY_GET_HASHEDPW = "SELECT P.HASHED_PW FROM PLAYER P WHERE P.PLAYER_ID = '%s'";
     private static final String UPDATE_SESSION_TOKEN_QUERY = "UPDATE PLAYER SET SESSION_TOKEN = '%s', LAST_ACTIVITY = TO_DATE('%s', 'YYYY-MM-DD HH24:MI:SS') WHERE PLAYER_ID = '%s'";
+    private static final String UPDATE_SESSION_TOKEN_BY_PK_QUERY = "UPDATE PLAYER SET SESSION_TOKEN = '%s', LAST_ACTIVITY = TO_DATE('%s', 'YYYY-MM-DD HH24:MI:SS') WHERE PLAYER_KEY = '%d'";
     
     public static String setNewSessionToken(Connection connection, String username, String password) throws SQLException {
         String hashedPassword = getHashedPassword(connection, username);
         if (!verifyPassword(hashedPassword, password)) {
             throw new IllegalArgumentException("Invalid password");
         }
-        return setNewSessionToken(connection, username);
+        return generateAndSetNewToken(connection, username);
+    }
+
+    public static void removeSessionToken(Connection connection, int playerKey) throws SQLException {
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String datetime = now.format(formatter);
+
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate(String.format(UPDATE_SESSION_TOKEN_BY_PK_QUERY, null, datetime, playerKey));
+        }
     }
     
     private static String getHashedPassword(Connection connection, String username) throws SQLException {
@@ -50,7 +61,7 @@ public class SessionTokenSetter {
         return passwordPart.equals(inputPasswordHashed);
     }
     
-    private static String setNewSessionToken(Connection connection, String username) throws SQLException {
+    private static String generateAndSetNewToken(Connection connection, String username) throws SQLException {
         Statement statement = connection.createStatement();
         
         LocalDateTime now = LocalDateTime.now();

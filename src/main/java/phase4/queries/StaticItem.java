@@ -22,10 +22,10 @@ public class StaticItem {
 
     public int key;
     public String name;
-    public int imageId;
+    public String imageId;
     public String categoryName;
 
-    private StaticItem(int key, String name, int imageId, String categoryName) {
+    private StaticItem(int key, String name, String imageId, String categoryName) {
         this.key = key;
         this.name = name;
         this.imageId = imageId;
@@ -47,7 +47,7 @@ public class StaticItem {
             catalog.add(new StaticItem(
                 staticItems.getInt(1),
                 staticItems.getString(2),
-                staticItems.getInt(3),
+                staticItems.getString(3),
                 staticItems.getString(4)
             ));
         } while (staticItems.next());

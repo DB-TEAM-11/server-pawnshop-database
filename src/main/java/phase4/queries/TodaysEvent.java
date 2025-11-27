@@ -9,40 +9,42 @@ import java.util.ArrayList;
 import phase4.exceptions.NotASuchRowException;
 
 public class TodaysEvent { // 기존 쿼리
-    private static final String QUERY = "SELECT * FROM EXISTING_NEWS N, NEWS_CATALOG NC WHERE N.GAME_SESSION_KEY = ( SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = %d ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY ) AND N.NCAT_KEY = NC.NCT_KEY ORDER BY NC.NCT_KEY";
+    private static final String QUERY = "SELECT "
+    		+ "NC.NEW_DESCRIPTION, "
+    		+ "NC.AFFECTED_PRICE, "
+    		+ "NC.PLUS_MINUS, "
+    		+ "IC.CATEGORY_NAME, "
+    		+ "EN.AMOUNT, "
+    		+ "FROM NEWS_CATALOG NC "
+    		+ "JOIN EXISTING_NEWS EN "
+    		+ "ON NC.NCT_KEY = EN.NCAT_KEY "
+    		+ "JOIN ITEM_CATEGORY IC "
+    		+ "ON NC.CATEGORY_KEY = IC.CATEGORY_KEY "
+    		+ "WHERE EN.GAME_SESSION_KEY = %d";
     
-    public int gameSessionKey;
-    public int ncatKey;
-    public int amount;
-    public int nctKey;
     public String newsDescription;
     public int affectedPrice;
-    public int categoryKey;
     public int plusMinus;
+    public String categoryName;
+    public int amount;
+
 
     private TodaysEvent(
-        int gameSessionKey,
-        int ncatKey,
-        int amount,
-        int nctKey,
         String newsDescription,
         int affectedPrice,
-        int categoryKey,
-        int plusMinus
+        String categoryName,
+        int amount
     ) {
-        this.gameSessionKey = gameSessionKey;
-        this.ncatKey = ncatKey;
-        this.amount = amount;
-        this.nctKey = nctKey;
         this.newsDescription = newsDescription;
         this.affectedPrice = affectedPrice;
-        this.categoryKey = categoryKey;
-        this.plusMinus = plusMinus;
-    }
+        this.categoryName = categoryName;
+        this.amount = amount;
 
-    public static TodaysEvent[] getTodaysEvent(Connection connection, int playerKey) throws SQLException {
+    }
+    
+    public static TodaysEvent[] getTodaysEvent(Connection connection, int gameSessionKey) throws SQLException {
         Statement statement = connection.createStatement();
-        ResultSet queryResult = statement.executeQuery(String.format(QUERY, playerKey));
+        ResultSet queryResult = statement.executeQuery(String.format(QUERY, gameSessionKey));
         if (!queryResult.next()) {
             throw new NotASuchRowException();
         }
@@ -50,14 +52,10 @@ public class TodaysEvent { // 기존 쿼리
         ArrayList<TodaysEvent> todaysEvent = new ArrayList<TodaysEvent>();
         do {
             todaysEvent.add(new TodaysEvent(
-                queryResult.getInt(1),
+                queryResult.getString(1),
                 queryResult.getInt(2),
-                queryResult.getInt(3),
-                queryResult.getInt(4),
-                queryResult.getString(5),
-                queryResult.getInt(6),
-                queryResult.getInt(7),
-                queryResult.getInt(8)
+                queryResult.getString(4),
+                queryResult.getInt(3) * queryResult.getInt(5)
             ));
         } while (queryResult.next());
 

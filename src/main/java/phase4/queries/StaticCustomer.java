@@ -14,9 +14,9 @@ public class StaticCustomer {
     		+ "CC.CUSTOMER_NAME, "
     		+ "IC.CATEGORY_NAME, "
     		+ "CC.IMG_ID "
-    		+ "FROM CUSTOMER_CATALOG CC"
+    		+ "FROM CUSTOMER_CATALOG CC "
     		+ "JOIN ITEM_CATEGORY IC "
-    		+ "ON CC.CATEGORY_NAME = IC.CATEGORY_NAME";
+    		+ "ON CC.CATEGORY_KEY = IC.CATEGORY_KEY";
 
     public static StaticCustomer[] customerCatalog;
 

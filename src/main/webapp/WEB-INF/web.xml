@@ -1,3 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="https://jakarta.ee/xml/ns/jakartaee" xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd" version="6.0">
+  <servlet>
+    <description></description>
+    <display-name>current</display-name>
+    <servlet-name>current</servlet-name>
+    <servlet-class>phase4.servlets.news.current</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>current</servlet-name>
+    <url-pattern>/current</url-pattern>
+  </servlet-mapping>
 </web-app>

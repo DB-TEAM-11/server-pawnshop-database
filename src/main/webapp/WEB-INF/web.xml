@@ -10,4 +10,14 @@
     <servlet-name>current</servlet-name>
     <url-pattern>/current</url-pattern>
   </servlet-mapping>
+  <servlet>
+    <description></description>
+    <display-name>Reveal</display-name>
+    <servlet-name>Reveal</servlet-name>
+    <servlet-class>phase4.servlets.customer.Reveal</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>Reveal</servlet-name>
+    <url-pattern>/Reveal</url-pattern>
+  </servlet-mapping>
 </web-app>

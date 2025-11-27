@@ -17,7 +17,7 @@ public class CustomerInfo {
     public float fraud;
     public float wellCollect;
     public float clumsy;
-
+    
     private CustomerInfo(
         int customerKey,
         String customerName,

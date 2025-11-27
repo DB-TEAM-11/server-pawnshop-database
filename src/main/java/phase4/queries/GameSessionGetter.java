@@ -8,8 +8,21 @@ import java.sql.Statement;
 import phase4.exceptions.NotASuchRowException;
 
 public class GameSessionGetter {
-    private static final String QUERY = "SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s') ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY";
-    private static final String QUERY_BY_PLAYER_KEY = "SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = %d";
+    private static final String QUERY = "SELECT "
+    		+ "GAME_SESSION_KEY "
+    		+ "FROM GAME_SESSION "
+    		+ "WHERE PLAYER_KEY = ("
+    		+ "SELECT PLAYER_KEY "
+    		+ "FROM PLAYER "
+    		+ "WHERE SESSION_TOKEN = '%s'"
+    		+ ") ORDER BY GAME_SESSION_KEY DESC "
+    		+ "FETCH FIRST ROW ONLY";
+    private static final String QUERY_BY_PLAYER_KEY = "SELECT "
+    		+ "GAME_SESSION_KEY "
+    		+ "FROM GAME_SESSION "
+    		+ "WHERE PLAYER_KEY = %d "
+    		+ "ORDER BY GAME_SESSION_KEY "
+    		+ "DESC FETCH FIRST ROW ONLY";
 
     public static int getGameSessionBySessionToken(Connection connection, String sessionToken) throws SQLException {
         Statement statement = connection.createStatement();

@@ -1,26 +1,27 @@
-package phase4.servlets.display;
+package phase4.servlets.news;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import phase4.queries.ItemInDisplay;
-import phase4.servlets.JsonServlet;
-import phase4.utils.SQLConnector;
 import phase4.exceptions.NotASuchRowException;
 import phase4.queries.GameSessionGetter;
+import phase4.queries.TodaysEvent;
+import phase4.servlets.JsonServlet;
+import phase4.utils.SQLConnector;
 
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-@WebServlet("/display/currentAll")
-public class currentAll extends JsonServlet {
+@WebServlet("/news/current")
+public class Current extends JsonServlet {
 	private static final long serialVersionUID = 1L;
-		
+	
 	private class ResponseData {
-		ItemInDisplay[] displays;
-	}   
+		TodaysEvent[] todayEvents;
+	}
+       
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         ResponseData responseData = new ResponseData();
@@ -28,7 +29,6 @@ public class currentAll extends JsonServlet {
         if (playerKey <= 0) {
             return;
         }
-        
         try (Connection connection = SQLConnector.connect()) {
         	int gameSessionKey;
         	try {
@@ -39,7 +39,7 @@ public class currentAll extends JsonServlet {
                 return;
         	}
         	try {
-        		responseData.displays = ItemInDisplay.getItemInDisplay(connection, gameSessionKey);
+        		responseData.todayEvents = TodaysEvent.getTodaysEvent(connection, gameSessionKey);
         	} catch (NotASuchRowException e) {
         		sendErrorResponse(response, 404, "no display data", "no display data in this game session");
                 return;
@@ -50,4 +50,5 @@ public class currentAll extends JsonServlet {
         }
         sendJsonResponse(response, responseData);
 	}
+
 }

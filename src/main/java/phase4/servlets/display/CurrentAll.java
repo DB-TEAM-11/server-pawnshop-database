@@ -1,27 +1,26 @@
-package phase4.servlets.news;
+package phase4.servlets.display;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import phase4.exceptions.NotASuchRowException;
-import phase4.queries.GameSessionGetter;
-import phase4.queries.TodaysEvent;
+import phase4.queries.ItemInDisplay;
 import phase4.servlets.JsonServlet;
 import phase4.utils.SQLConnector;
+import phase4.exceptions.NotASuchRowException;
+import phase4.queries.GameSessionGetter;
 
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-@WebServlet("/news/current")
-public class current extends JsonServlet {
+@WebServlet("/display/currentAll")
+public class CurrentAll extends JsonServlet {
 	private static final long serialVersionUID = 1L;
-	
+		
 	private class ResponseData {
-		TodaysEvent[] todayEvents;
-	}
-       
+		ItemInDisplay[] displays;
+	}   
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         ResponseData responseData = new ResponseData();
@@ -29,6 +28,7 @@ public class current extends JsonServlet {
         if (playerKey <= 0) {
             return;
         }
+        
         try (Connection connection = SQLConnector.connect()) {
         	int gameSessionKey;
         	try {
@@ -39,7 +39,7 @@ public class current extends JsonServlet {
                 return;
         	}
         	try {
-        		responseData.todayEvents = TodaysEvent.getTodaysEvent(connection, gameSessionKey);
+        		responseData.displays = ItemInDisplay.getItemInDisplay(connection, gameSessionKey);
         	} catch (NotASuchRowException e) {
         		sendErrorResponse(response, 404, "no display data", "no display data in this game session");
                 return;
@@ -50,5 +50,4 @@ public class current extends JsonServlet {
         }
         sendJsonResponse(response, responseData);
 	}
-
 }

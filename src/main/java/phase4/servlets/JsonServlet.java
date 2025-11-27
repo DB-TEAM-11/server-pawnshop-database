@@ -19,7 +19,7 @@ public class JsonServlet extends HttpServlet {
 
 	private class ErrorResponseData {
         String code;
-        String message;
+        String error;
     }
     
     protected Gson gson = new Gson();
@@ -34,14 +34,14 @@ public class JsonServlet extends HttpServlet {
         response.getWriter().append(gson.toJson(data)).close();
     }
     
-    protected void sendErrorResponse(HttpServletResponse response, String code, String message) throws IOException {
-        sendErrorResponse(response, 400, code, message);
+    protected void sendErrorResponse(HttpServletResponse response, String code, String error) throws IOException {
+        sendErrorResponse(response, 400, code, error);
     }
     
-    protected void sendErrorResponse(HttpServletResponse response, int status, String code, String message) throws IOException {
+    protected void sendErrorResponse(HttpServletResponse response, int status, String code, String error) throws IOException {
         ErrorResponseData data = new ErrorResponseData();
         data.code = code;
-        data.message = message;
+        data.error = error;
         
         response.setContentType("application/json");
         response.setStatus(status);

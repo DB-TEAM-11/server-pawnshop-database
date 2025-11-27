@@ -14,27 +14,23 @@ import jakarta.servlet.http.HttpServletResponse;
 import phase4.constants.ItemState;
 import phase4.exceptions.NotASuchRowException;
 import phase4.queries.CustomerInfo;
-import phase4.queries.DealRecordUpdater;
 import phase4.queries.DisplayedItem;
-import phase4.queries.MoneyUpdater;
-import phase4.queries.PlayerInfo;
+import phase4.queries.ExistingItemUpdater;
 import phase4.servlets.JsonServlet;
 import phase4.utils.SQLConnector;
 
 
-@WebServlet("/item/sellComplete")
-public class SellComplete extends JsonServlet {
+@WebServlet("/item/sellStart")
+public class SellStart extends JsonServlet {
     private static final long serialVersionUID = 1L;
     
     private class RequestData {
-        int itemKey;
         int customerKey;
     }
     
     private class ResponseData {
-        int earnedAmount;
-        int leftMoney;
-        int displayedPositionKey;
+        int itemKey;
+        int sellingPrice;
     }
     
     @Override
@@ -51,66 +47,47 @@ public class SellComplete extends JsonServlet {
             sendErrorResponse(response, "invalid_data", "Received malformed data");
             return;
         }
-        if (requestData.itemKey == 0) {
-            sendErrorResponse(response, "no_item_key", "No given item key, or item key is 0.");
-            return;
-        }
         if (requestData.customerKey == 0) {
             sendErrorResponse(response, "no_customer_key", "No given customer key, ir customer key is 0.");
             return;
         }
         
-        PlayerInfo playerInfo;
         DisplayedItem itemInfo;
         CustomerInfo customerInfo;
-        int soldPrice;
         try (Connection connection = SQLConnector.connect()) {
-            try {
-                playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
-            } catch (NotASuchRowException e) {
-                sendErrorResponse(response, "no_game_session", "No game session exists.");
-                return;
-            }
-            try {
-                itemInfo = DisplayedItem.getDisplayedItem(connection, playerKey, requestData.itemKey);
-            } catch (NotASuchRowException e) {
-                sendErrorResponse(response, "no_item", "Not a such item.");
-                return;
-            }
             try {
                 customerInfo = CustomerInfo.getCustomerInfo(connection, requestData.customerKey);
             } catch (NotASuchRowException e) {
                 sendErrorResponse(response, "no_customer", "Not a such customer.");
                 return;
             }
-            
+
+            itemInfo = DisplayedItem.getPreferableItem(connection, playerKey, requestData.customerKey);
+            if (itemInfo == null) {
+                sendErrorResponse(response, "no_matched_item", "Item category does not match customer preference.");
+                return;
+            }
             if (itemInfo.categoryKey != customerInfo.categoryKey) {
                 sendErrorResponse(response, "category_mismatch", "Item category does not match customer preference.");
                 return;
             }
-            if (itemInfo.itemState != ItemState.SELLING.value() || itemInfo.itemState != ItemState.RECORVERED_SELLING.value()) {
-                sendErrorResponse(response, "not_selling", "Given item is not selling currently.");
+            
+            if (itemInfo.itemState == ItemState.DISPLAYING.value()) {
+                ExistingItemUpdater.updateItemState(connection, itemInfo.itemKey, ItemState.SELLING);
+            } else if (itemInfo.itemState == ItemState.RECORVERED.value()) {
+                ExistingItemUpdater.updateItemState(connection, itemInfo.itemKey, ItemState.RECORVERED_SELLING);
+            } else {
+                sendErrorResponse(response, 500, "not_selling", "The selected item is not selling currently.");
                 return;
             }
-            
-            soldPrice = (int)(itemInfo.appraisedPrice * 0.8);
-            
-            if (playerInfo.money < soldPrice) {
-                sendErrorResponse(response, "not_enough_money", "not enough money to complete the deal.");
-            }
-            
-            DealRecordUpdater.updateAsSold(connection, requestData.itemKey, soldPrice, requestData.customerKey);
-            DisplayedItem.deleteDisplayedItemEntry(connection, requestData.itemKey);
-            MoneyUpdater.addMoney(connection, playerKey, -soldPrice);
         } catch (SQLException e) {
             sendStackTrace(response, e);
             return;
         }
         
         ResponseData data = new ResponseData();
-        data.earnedAmount = soldPrice - itemInfo.purchasePrice;
-        data.leftMoney = playerInfo.money - soldPrice;
-        data.displayedPositionKey = itemInfo.displayPos;
+        data.itemKey = itemInfo.itemKey;
+        data.sellingPrice = (int)(itemInfo.appraisedPrice * 0.8);
         
         sendJsonResponse(response, data);
     }

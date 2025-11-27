@@ -56,7 +56,7 @@ public class SellCancel extends JsonServlet {
         CustomerInfo customerInfo;
         try (Connection connection = SQLConnector.connect()) {
             try {
-                itemInfo = DisplayedItem.getDisplayedItem(connection, requestData.itemKey);
+                itemInfo = DisplayedItem.getDisplayedItem(connection, playerKey, requestData.itemKey);
             } catch (NotASuchRowException e) {
                 sendErrorResponse(response, "no_item", "Not a such item.");
                 return;

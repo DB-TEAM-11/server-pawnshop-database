@@ -33,9 +33,8 @@ public class MoneyUpdater {
             var queryResult = statement.executeQuery();
             if (queryResult.next()) {
                 return queryResult.getInt(1);
-            } else {
-                throw new NotASuchRowException();
             }
+            throw new NotASuchRowException();
         }
     }
 }

@@ -27,9 +27,8 @@ public class PawnshopDebt {
             try (ResultSet queryResult = statement.executeQuery()) {
                 if (!queryResult.next()) {
                     throw new NotASuchRowException();
-                } else {
-                    shopDebt = queryResult.getInt(1);
                 }
+                shopDebt = queryResult.getInt(1);
             }
         }
         return shopDebt;

@@ -68,11 +68,11 @@ public class JsonServlet extends HttpServlet {
         response.getWriter().append("{}").close();
     }
     
-    protected void sendEmptyResponse(HttpServletResponse response) throws IOException {
+    protected void sendEmptyResponse(HttpServletResponse response) {
         sendEmptyResponse(response, 200);
     }
     
-    protected void sendEmptyResponse(HttpServletResponse response, int status) throws IOException {
+    protected void sendEmptyResponse(HttpServletResponse response, int status) {
         response.setContentType("application/json");
         response.setStatus(status);
     }

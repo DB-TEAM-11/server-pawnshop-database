@@ -27,9 +27,8 @@ public class PersonalDebt {
             try (ResultSet queryResult = statement.executeQuery()) {
                 if (!queryResult.next()) {
                     throw new NotASuchRowException();
-                } else {
-                    personalDebt = queryResult.getInt(1);
                 }
+                personalDebt = queryResult.getInt(1);
             }
         }
         return personalDebt;

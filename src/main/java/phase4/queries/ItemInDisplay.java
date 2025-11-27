@@ -82,9 +82,9 @@ public class ItemInDisplay {
         return auth.equals("Y") ? 1 : 0;
     }
 
-    public static ItemInDisplay[] getItemInDisplay(Connection connection, int playerId) throws SQLException {
+    public static ItemInDisplay[] getItemInDisplay(Connection connection, int gameSessionKey) throws SQLException {
         Statement statement = connection.createStatement();
-        ResultSet queryResult = statement.executeQuery(String.format(QUERY, playerId));
+        ResultSet queryResult = statement.executeQuery(String.format(QUERY, gameSessionKey));
         if (!queryResult.next()) {
             throw new NotASuchRowException();
         }
@@ -92,21 +92,21 @@ public class ItemInDisplay {
         ArrayList<ItemInDisplay> itemInDisplay = new ArrayList<ItemInDisplay>();
         do {
             itemInDisplay.add(new ItemInDisplay(
-                queryResult.getInt(1),
-                queryResult.getInt(2),
-                queryResult.getInt(3),
-                queryResult.getInt(4),
-                queryResult.getInt(5),
-                queryResult.getString(6),
-                queryResult.getInt(7),
-                queryResult.getInt(8),
-                parseAuthenticity(
+                queryResult.getInt(1), // displayPositionKey
+                queryResult.getInt(2), // askingPrice
+                queryResult.getInt(3), // purchasePrice
+                queryResult.getInt(4), // appraisedPrice
+                queryResult.getInt(5), //boughtDate
+                queryResult.getString(6),// sellerName
+                queryResult.getInt(7), // foundFlawEa
+                queryResult.getInt(8), // authenticity
+                parseAuthenticity( // authenticity
                     queryResult.getString(9),    // isAuthenticityFound Y/N
                     queryResult.getString(10)    // authenticity Y/N
                 ),
-                queryResult.getInt(11),
-                queryResult.getInt(12),
-                queryResult.getInt(13)
+                queryResult.getInt(11), //itemState
+                queryResult.getInt(12), //itemKey
+                queryResult.getInt(13) //itemCatalogKey
             ));
         } while (queryResult.next());
 

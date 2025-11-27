@@ -9,10 +9,27 @@ import phase4.exceptions.NotASuchRowException;
 
 public class GameSessionGetter {
     private static final String QUERY = "SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = '%s') ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY";
-    
+    private static final String QUERY_BY_PLAYER_KEY = "SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = %d";
+
     public static int getGameSessionBySessionToken(Connection connection, String sessionToken) throws SQLException {
         Statement statement = connection.createStatement();
         ResultSet queryResult = statement.executeQuery(String.format(QUERY, sessionToken));
+        
+        if (!queryResult.next()) {
+            throw new NotASuchRowException();
+        }
+        
+        int gameSessionKey = queryResult.getInt(1);
+        
+        statement.close();
+        queryResult.close();
+        
+        return gameSessionKey;
+    }
+    
+    public static int getGameSessionByPlayerKey (Connection connection, int playerKey) throws SQLException {
+        Statement statement = connection.createStatement();
+        ResultSet queryResult = statement.executeQuery(String.format(QUERY, playerKey));
         
         if (!queryResult.next()) {
             throw new NotASuchRowException();

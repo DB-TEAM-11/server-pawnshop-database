@@ -6,7 +6,9 @@ public enum ItemState {
     RECOVERING(2),
     IN_AUCTION(3),
     SOLD(4),
-    RECORVERED(5);
+    RECORVERED(5),
+    SELLING(6),
+    RECORVERED_SELLING(7);
 
     private final int value;
 
@@ -32,6 +34,10 @@ public enum ItemState {
                 return SOLD;
             case 5:
                 return RECORVERED;
+            case 6:
+                return SELLING;
+            case 7:
+                return RECORVERED_SELLING;
             default:
                 throw new IllegalArgumentException("Invalid value");
         }

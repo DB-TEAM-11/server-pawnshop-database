@@ -1,9 +1,9 @@
 package phase4.queries;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 
 import phase4.exceptions.NotASuchRowException;
@@ -30,7 +30,7 @@ public class ItemInDisplay {
     		+ "ON DR.SELLER_KEY = CC.CUSTOMER_KEY "
     		+ "JOIN EXISTING_ITEM EI "
     		+ "ON GSID.GAME_SESSION_KEY = EI.GAME_SESSION_KEY "
-    		+ "WHERE GSID.GAME_SESSION_KEY = %d";
+    		+ "WHERE GSID.GAME_SESSION_KEY = ?";
     
     
     public int displayPositionKey;
@@ -83,36 +83,34 @@ public class ItemInDisplay {
     }
 
     public static ItemInDisplay[] getItemInDisplay(Connection connection, int gameSessionKey) throws SQLException {
-        Statement statement = connection.createStatement();
-        ResultSet queryResult = statement.executeQuery(String.format(QUERY, gameSessionKey));
-        if (!queryResult.next()) {
-            throw new NotASuchRowException();
+        try (PreparedStatement statement = connection.prepareStatement(QUERY)) {
+            statement.setInt(1, gameSessionKey);
+            try (ResultSet queryResult = statement.executeQuery()) {
+                if (!queryResult.next()) {
+                    throw new NotASuchRowException();
+                }
+                ArrayList<ItemInDisplay> itemInDisplay = new ArrayList<ItemInDisplay>();
+                do {
+                    itemInDisplay.add(new ItemInDisplay(
+                        queryResult.getInt(1), // displayPositionKey
+                        queryResult.getInt(2), // askingPrice
+                        queryResult.getInt(3), // purchasePrice
+                        queryResult.getInt(4), // appraisedPrice
+                        queryResult.getInt(5), //boughtDate
+                        queryResult.getString(6),// sellerName
+                        queryResult.getInt(7), // foundFlawEa
+                        queryResult.getInt(8), // authenticity
+                        parseAuthenticity( // authenticity
+                            queryResult.getString(9),    // isAuthenticityFound Y/N
+                            queryResult.getString(10)    // authenticity Y/N
+                        ),
+                        queryResult.getInt(11), //itemState
+                        queryResult.getInt(12), //itemKey
+                        queryResult.getInt(13) //itemCatalogKey
+                    ));
+                } while (queryResult.next());
+                return itemInDisplay.toArray(new ItemInDisplay[0]);
+            }
         }
-
-        ArrayList<ItemInDisplay> itemInDisplay = new ArrayList<ItemInDisplay>();
-        do {
-            itemInDisplay.add(new ItemInDisplay(
-                queryResult.getInt(1), // displayPositionKey
-                queryResult.getInt(2), // askingPrice
-                queryResult.getInt(3), // purchasePrice
-                queryResult.getInt(4), // appraisedPrice
-                queryResult.getInt(5), //boughtDate
-                queryResult.getString(6),// sellerName
-                queryResult.getInt(7), // foundFlawEa
-                queryResult.getInt(8), // authenticity
-                parseAuthenticity( // authenticity
-                    queryResult.getString(9),    // isAuthenticityFound Y/N
-                    queryResult.getString(10)    // authenticity Y/N
-                ),
-                queryResult.getInt(11), //itemState
-                queryResult.getInt(12), //itemKey
-                queryResult.getInt(13) //itemCatalogKey
-            ));
-        } while (queryResult.next());
-
-        statement.close();
-        queryResult.close();
-
-        return itemInDisplay.toArray(new ItemInDisplay[0]);
     }
 }

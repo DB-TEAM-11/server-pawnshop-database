@@ -2,14 +2,14 @@ package phase4.queries;
 
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 import phase4.exceptions.NotASuchRowException;
 
 public class PlayerInfo {
-    private static final String QUERY = "SELECT P.PLAYER_ID, GS.* FROM PLAYER P JOIN GAME_SESSION GS ON P.PLAYER_KEY = GS.PLAYER_KEY WHERE P.PLAYER_KEY = %d ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY";
+    private static final String QUERY = "SELECT P.PLAYER_ID, GS.* FROM PLAYER P JOIN GAME_SESSION GS ON P.PLAYER_KEY = GS.PLAYER_KEY WHERE P.PLAYER_KEY = ? ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY";
     
     public String playerId;
     public int gameSessionKey;
@@ -53,30 +53,27 @@ public class PlayerInfo {
     }
 
     public static PlayerInfo getPlayerInfo(Connection connection, int playerId) throws SQLException {
-        Statement statement = connection.createStatement();
-        ResultSet queryResult = statement.executeQuery(String.format(QUERY, playerId));
-        if (!queryResult.next()) {
-            throw new NotASuchRowException();
+        try (PreparedStatement statement = connection.prepareStatement(QUERY)) {
+            statement.setInt(1, playerId);
+            try (ResultSet queryResult = statement.executeQuery()) {
+                if (!queryResult.next()) {
+                    throw new NotASuchRowException();
+                }
+                return new PlayerInfo(
+                    queryResult.getString(1),
+                    queryResult.getInt(2),
+                    queryResult.getInt(3),
+                    queryResult.getInt(4),
+                    queryResult.getInt(5),
+                    queryResult.getInt(6),
+                    queryResult.getInt(7),
+                    queryResult.getInt(8),
+                    queryResult.getString(9),
+                    queryResult.getString(10),
+                    queryResult.getInt(11),
+                    queryResult.getDate(12)
+                );
+            }
         }
-
-        PlayerInfo playerInfo = new PlayerInfo(
-            queryResult.getString(1),
-            queryResult.getInt(2),
-            queryResult.getInt(3),
-            queryResult.getInt(4),
-            queryResult.getInt(5),
-            queryResult.getInt(6),
-            queryResult.getInt(7),
-            queryResult.getInt(8),
-            queryResult.getString(9),
-            queryResult.getString(10),
-            queryResult.getInt(11),
-            queryResult.getDate(12)
-        );
-
-        statement.close();
-        queryResult.close();
-
-        return playerInfo;
     }
 }

@@ -1,15 +1,15 @@
 package phase4.queries;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 import phase4.exceptions.NotASuchRowException;
 
 public class ItemCatalog {
-    private static final String QUERY = "SELECT * FROM ITEM_CATALOG WHERE CATEGORY_KEY = %d ORDER BY DBMS_RANDOM.VALUE FETCH FIRST ROW ONLY";
-    private static final String QUERY_BY_KEY = "SELECT * FROM ITEM_CATALOG WHERE ITEM_CATALOG_KEY = %d";
+    private static final String QUERY = "SELECT * FROM ITEM_CATALOG WHERE CATEGORY_KEY = ? ORDER BY DBMS_RANDOM.VALUE FETCH FIRST ROW ONLY";
+    private static final String QUERY_BY_KEY = "SELECT * FROM ITEM_CATALOG WHERE ITEM_CATALOG_KEY = ?";
 
     public int itemCatalogKey;
     public String itemCatalogName;
@@ -32,46 +32,38 @@ public class ItemCatalog {
     }
 
     public static ItemCatalog getRandomItemByCategory(Connection connection, int categoryKey) throws SQLException {
-        Statement statement = connection.createStatement();
-        ResultSet queryResult = statement.executeQuery(String.format(QUERY, categoryKey));
-        
-        if (!queryResult.next()) {
-            throw new NotASuchRowException();
+        try (PreparedStatement statement = connection.prepareStatement(QUERY)) {
+            statement.setInt(1, categoryKey);
+            try (ResultSet queryResult = statement.executeQuery()) {
+                if (!queryResult.next()) {
+                    throw new NotASuchRowException();
+                }
+                return new ItemCatalog(
+                    queryResult.getInt(1),
+                    queryResult.getString(2),
+                    queryResult.getString(3),
+                    queryResult.getInt(4),
+                    queryResult.getInt(5)
+                );
+            }
         }
-
-        ItemCatalog itemCatalog = new ItemCatalog(
-            queryResult.getInt(1),
-            queryResult.getString(2),
-            queryResult.getString(3),
-            queryResult.getInt(4),
-            queryResult.getInt(5)
-        );
-
-        statement.close();
-        queryResult.close();
-
-        return itemCatalog;
     }
 
     public static ItemCatalog getItemByKey(Connection connection, int itemCatalogKey) throws SQLException {
-        Statement statement = connection.createStatement();
-        ResultSet queryResult = statement.executeQuery(String.format(QUERY_BY_KEY, itemCatalogKey));
-        
-        if (!queryResult.next()) {
-            throw new NotASuchRowException();
+        try (PreparedStatement statement = connection.prepareStatement(QUERY_BY_KEY)) {
+            statement.setInt(1, itemCatalogKey);
+            try (ResultSet queryResult = statement.executeQuery()) {
+                if (!queryResult.next()) {
+                    throw new NotASuchRowException();
+                }
+                return new ItemCatalog(
+                    queryResult.getInt(1),
+                    queryResult.getString(2),
+                    queryResult.getString(3),
+                    queryResult.getInt(4),
+                    queryResult.getInt(5)
+                );
+            }
         }
-
-        ItemCatalog itemCatalog = new ItemCatalog(
-            queryResult.getInt(1),
-            queryResult.getString(2),
-            queryResult.getString(3),
-            queryResult.getInt(4),
-            queryResult.getInt(5)
-        );
-
-        statement.close();
-        queryResult.close();
-
-        return itemCatalog;
     }
 }

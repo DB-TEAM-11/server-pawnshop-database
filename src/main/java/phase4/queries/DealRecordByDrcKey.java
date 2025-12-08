@@ -1,14 +1,14 @@
 package phase4.queries;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 import phase4.exceptions.NotASuchRowException;
 
 public class DealRecordByDrcKey {
-    private static final String QUERY = "SELECT I.*, DR.* FROM EXISTING_ITEM I, DEAL_RECORD DR WHERE DR.DRC_KEY = %d AND DR.ITEM_KEY = I.ITEM_KEY";
+    private static final String QUERY = "SELECT I.*, DR.* FROM EXISTING_ITEM I, DEAL_RECORD DR WHERE DR.DRC_KEY = ? AND DR.ITEM_KEY = I.ITEM_KEY";
 
     public int itemKey;
     public int gameSessionKey;
@@ -81,42 +81,39 @@ public class DealRecordByDrcKey {
     }
 
     public static DealRecordByDrcKey getDealRecordByDrcKey(Connection connection, int drcKey) throws SQLException {
-        Statement statement = connection.createStatement();
-        ResultSet queryResult = statement.executeQuery(String.format(QUERY, drcKey));
+        try (PreparedStatement statement = connection.prepareStatement(QUERY)) {
+            statement.setInt(1, drcKey);
+            try (ResultSet queryResult = statement.executeQuery()) {
+                if (!queryResult.next()) {
+                    throw new NotASuchRowException();
+                }
         
-        if (!queryResult.next()) {
-            throw new NotASuchRowException();
+                return new DealRecordByDrcKey(
+                    queryResult.getInt(1),
+                    queryResult.getInt(2),
+                    queryResult.getInt(3),
+                    queryResult.getInt(4),
+                    queryResult.getInt(5),
+                    queryResult.getInt(6),
+                    queryResult.getInt(7),
+                    queryResult.getFloat(8),
+                    queryResult.getString(9).equals("Y"),
+                    queryResult.getString(10).equals("Y"),
+                    queryResult.getInt(11),
+                    queryResult.getInt(12),
+                    queryResult.getInt(13),
+                    queryResult.getInt(14),
+                    queryResult.getInt(15),
+                    queryResult.getInt(16),
+                    queryResult.getInt(17),
+                    queryResult.getInt(18),
+                    queryResult.getInt(19),
+                    queryResult.getInt(20),
+                    queryResult.getInt(21),
+                    queryResult.getInt(22),
+                    queryResult.getInt(23)
+                );
+            }
         }
-
-        DealRecordByDrcKey dealRecord = new DealRecordByDrcKey(
-            queryResult.getInt(1),
-            queryResult.getInt(2),
-            queryResult.getInt(3),
-            queryResult.getInt(4),
-            queryResult.getInt(5),
-            queryResult.getInt(6),
-            queryResult.getInt(7),
-            queryResult.getFloat(8),
-            queryResult.getString(9).equals("Y"),
-            queryResult.getString(10).equals("Y"),
-            queryResult.getInt(11),
-            queryResult.getInt(12),
-            queryResult.getInt(13),
-            queryResult.getInt(14),
-            queryResult.getInt(15),
-            queryResult.getInt(16),
-            queryResult.getInt(17),
-            queryResult.getInt(18),
-            queryResult.getInt(19),
-            queryResult.getInt(20),
-            queryResult.getInt(21),
-            queryResult.getInt(22),
-            queryResult.getInt(23)
-        );
-
-        statement.close();
-        queryResult.close();
-
-        return dealRecord;
     }
 }

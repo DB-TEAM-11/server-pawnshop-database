@@ -17,20 +17,17 @@ public class PersonalDebt {
             statement.setInt(2, playerKey);
             statement.executeUpdate();
         }
-        return;
     }
 
     public static int getPersonalDebt(Connection connection, int playerKey) throws SQLException {
-        int personalDebt;
         try (PreparedStatement statement = connection.prepareStatement(QUERY)) {
             statement.setInt(1, playerKey);
             try (ResultSet queryResult = statement.executeQuery()) {
                 if (!queryResult.next()) {
                     throw new NotASuchRowException();
                 }
-                personalDebt = queryResult.getInt(1);
+                return queryResult.getInt(1);
             }
         }
-        return personalDebt;
     }
 }

@@ -1,32 +1,29 @@
 package phase4.queries;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 
 import phase4.exceptions.NotASuchRowException;
 
 public class RandomCustomers {
-    private static final String QUERY = "SELECT CUSTOMER_KEY FROM CUSTOMER_CATALOG ORDER BY DBMS_RANDOM.VALUE FETCH FIRST %d ROWS ONLY";
-
+    private static final String QUERY = "SELECT CUSTOMER_KEY FROM CUSTOMER_CATALOG ORDER BY DBMS_RANDOM.VALUE FETCH FIRST ? ROWS ONLY";
+    
     public static int[] getRandomCustomers(Connection connection, int count) throws SQLException {
-        Statement statement = connection.createStatement();
-        ResultSet queryResult = statement.executeQuery(String.format(QUERY, count));
-        
-        ArrayList<Integer> customerKeys = new ArrayList<Integer>();
-        while (queryResult.next()) {
-            customerKeys.add(queryResult.getInt(1));
+        try (PreparedStatement statement = connection.prepareStatement(QUERY)) {
+            statement.setInt(1, count);
+            try (ResultSet queryResult = statement.executeQuery()) {
+                if (!queryResult.next()) {
+                    throw new NotASuchRowException();
+                }
+                ArrayList<Integer> customerKeys = new ArrayList<Integer>();
+                do {
+                    customerKeys.add(queryResult.getInt(1));
+                } while (queryResult.next());
+                return customerKeys.stream().mapToInt(i -> i).toArray();
+            }
         }
-
-        statement.close();
-        queryResult.close();
-
-        if (customerKeys.isEmpty()) {
-            throw new NotASuchRowException();
-        }
-
-        return customerKeys.stream().mapToInt(i -> i).toArray();
     }
 }

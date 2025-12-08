@@ -2,9 +2,9 @@ package phase4.queries;
 
 import java.security.SecureRandom;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
@@ -13,9 +13,9 @@ import phase4.exceptions.NotASuchRowException;
 import phase4.utils.PasswordHasher;
 
 public class SessionTokenSetter {
-    private static final String QUERY_GET_HASHEDPW = "SELECT P.HASHED_PW FROM PLAYER P WHERE P.PLAYER_ID = '%s'";
-    private static final String UPDATE_SESSION_TOKEN_QUERY = "UPDATE PLAYER SET SESSION_TOKEN = '%s', LAST_ACTIVITY = TO_DATE('%s', 'YYYY-MM-DD HH24:MI:SS') WHERE PLAYER_ID = '%s'";
-    private static final String UPDATE_SESSION_TOKEN_BY_PK_QUERY = "UPDATE PLAYER SET SESSION_TOKEN = '%s', LAST_ACTIVITY = TO_DATE('%s', 'YYYY-MM-DD HH24:MI:SS') WHERE PLAYER_KEY = '%d'";
+    private static final String QUERY_GET_HASHEDPW = "SELECT P.HASHED_PW FROM PLAYER P WHERE P.PLAYER_ID = ?";
+    private static final String UPDATE_SESSION_TOKEN_QUERY = "UPDATE PLAYER SET SESSION_TOKEN = ?, LAST_ACTIVITY = TO_DATE(?, 'YYYY-MM-DD HH24:MI:SS') WHERE PLAYER_ID = ?";
+    private static final String UPDATE_SESSION_TOKEN_BY_PK_QUERY = "UPDATE PLAYER SET SESSION_TOKEN = ?, LAST_ACTIVITY = TO_DATE(?, 'YYYY-MM-DD HH24:MI:SS') WHERE PLAYER_KEY = ?";
     
     public static String setNewSessionToken(Connection connection, String username, String password) throws SQLException {
         String hashedPassword = getHashedPassword(connection, username);
@@ -30,24 +30,24 @@ public class SessionTokenSetter {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         String datetime = now.format(formatter);
 
-        try (Statement statement = connection.createStatement()) {
-            statement.executeUpdate(String.format(UPDATE_SESSION_TOKEN_BY_PK_QUERY, null, datetime, playerKey));
+        try (PreparedStatement statement = connection.prepareStatement(UPDATE_SESSION_TOKEN_BY_PK_QUERY)) { 
+            statement.setObject(1, null);
+            statement.setString(2, datetime);
+            statement.setInt(3, playerKey);
+            statement.executeUpdate();
         }
     }
     
     private static String getHashedPassword(Connection connection, String username) throws SQLException {
-        Statement statement = connection.createStatement();
-        ResultSet queryResult = statement.executeQuery(String.format(QUERY_GET_HASHEDPW, username));
-        if (!queryResult.next()) {
-            throw new NotASuchRowException();
+        try (PreparedStatement statement = connection.prepareStatement(QUERY_GET_HASHEDPW)) {
+            statement.setString(1, username);
+            try (ResultSet queryResult = statement.executeQuery()) {
+                if (!queryResult.next()) {
+                    throw new NotASuchRowException();
+                }
+                return queryResult.getString(1);
+            }
         }
-        
-        String hashedPassword = queryResult.getString(1);
-        
-        statement.close();
-        queryResult.close();
-        
-        return hashedPassword;
     }
     
     private static boolean verifyPassword(String hashedPassword, String password) {
@@ -62,8 +62,6 @@ public class SessionTokenSetter {
     }
     
     private static String generateAndSetNewToken(Connection connection, String username) throws SQLException {
-        Statement statement = connection.createStatement();
-        
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         String datetime = now.format(formatter);
@@ -77,8 +75,11 @@ public class SessionTokenSetter {
             new SecureRandom().nextBytes(tokenBytes);
             newSessionToken = Base64.getEncoder().encodeToString(tokenBytes);
             
-            try {
-                statement.executeUpdate(String.format(UPDATE_SESSION_TOKEN_QUERY, newSessionToken, datetime, username));
+            try (PreparedStatement statement = connection.prepareStatement(UPDATE_SESSION_TOKEN_QUERY)) { 
+                statement.setString(1, newSessionToken);
+                statement.setString(2, datetime);
+                statement.setString(3, username);
+                statement.executeUpdate();
                 break;
             } catch (SQLException e) {
                 if (e.getErrorCode() != 1) {
@@ -87,8 +88,6 @@ public class SessionTokenSetter {
                 }
             }
         }
-        
-        statement.close();
         
         return newSessionToken;
     }

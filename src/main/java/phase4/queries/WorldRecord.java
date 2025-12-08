@@ -27,25 +27,24 @@ public class WorldRecord {
     }
 
     public static WorldRecord[] retrieveWorldRecord(Connection connection) throws SQLException {
-        Statement statement = connection.createStatement();
-        ResultSet record = statement.executeQuery(QUERY);
-        if (!record.next()) {
-            throw new NotASuchRowException();
+        try (
+            Statement statement = connection.createStatement();
+            ResultSet queryResult = statement.executeQuery(QUERY)
+        ) {
+            if (!queryResult.next()) {
+                throw new NotASuchRowException();
+            }
+            ArrayList<WorldRecord> records = new ArrayList<WorldRecord>();
+            do {
+                records.add(new WorldRecord(
+                    queryResult.getString(1),
+                    queryResult.getString(2),
+                    queryResult.getString(3),
+                    queryResult.getInt(4),
+                    queryResult.getDate(5)
+                ));
+            } while (queryResult.next());
+            return records.toArray(new WorldRecord[0]);
         }
-
-        ArrayList<WorldRecord> records = new ArrayList<WorldRecord>();
-        do {
-            records.add(new WorldRecord(
-                record.getString(1),
-                record.getString(2),
-                record.getString(3),
-                record.getInt(4),
-                record.getDate(5)
-            ));
-        } while (record.next());
-
-        record.close();
-        statement.close();
-        return records.toArray(new WorldRecord[0]);
     }
 }

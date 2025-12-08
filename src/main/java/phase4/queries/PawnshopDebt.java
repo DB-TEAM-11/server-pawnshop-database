@@ -17,20 +17,17 @@ public class PawnshopDebt {
             statement.setInt(2, playerKey);
             statement.executeUpdate();
         }
-        return;
     }
 
     public static int getShopDebt(Connection connection, int playerKey) throws SQLException {
-        int shopDebt;
         try (PreparedStatement statement = connection.prepareStatement(QUERY)) {
             statement.setInt(1, playerKey);
             try (ResultSet queryResult = statement.executeQuery()) {
                 if (!queryResult.next()) {
                     throw new NotASuchRowException();
                 }
-                shopDebt = queryResult.getInt(1);
+                return queryResult.getInt(1);
             }
         }
-        return shopDebt;
     }
 }

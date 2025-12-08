@@ -1,15 +1,15 @@
 package phase4.queries;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 
 import phase4.exceptions.NotASuchRowException;
 
 public class PreferableItemsInDisplay {
-    private static final String QUERY = "SELECT * FROM CUSTOMER_CATALOG C, GAME_SESSION_ITEM_DISPLAY D, EXISTING_ITEM I, ITEM_CATALOG IC WHERE C.CUSTOMER_KEY = %d AND D.GAME_SESSION_KEY = ( SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = %d ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY ) AND D.ITEM_KEY = I.ITEM_KEY AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY AND IC.CATEGORY_KEY = C.CATEGORY_KEY ORDER BY D.DISPLAY_POS";
+    private static final String QUERY = "SELECT * FROM CUSTOMER_CATALOG C, GAME_SESSION_ITEM_DISPLAY D, EXISTING_ITEM I, ITEM_CATALOG IC WHERE C.CUSTOMER_KEY = ? AND D.GAME_SESSION_KEY = ( SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = ? ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY ) AND D.ITEM_KEY = I.ITEM_KEY AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY AND IC.CATEGORY_KEY = C.CATEGORY_KEY ORDER BY D.DISPLAY_POS";
 
     public int customerKey;
     public String customerName;
@@ -83,43 +83,42 @@ public class PreferableItemsInDisplay {
     }
 
     public static PreferableItemsInDisplay[] getPreferableItemsInDisplay(Connection connection, int customerId, int playerId) throws SQLException {
-        Statement statement = connection.createStatement();
-        ResultSet queryResult = statement.executeQuery(String.format(QUERY, customerId, playerId));
-        if (!queryResult.next()) {
-            throw new NotASuchRowException();
+        try (PreparedStatement statement = connection.prepareStatement(QUERY)) {
+            statement.setInt(1, customerId);
+            statement.setInt(2, playerId);
+            try (ResultSet queryResult = statement.executeQuery()) {
+                if (!queryResult.next()) {
+                    throw new NotASuchRowException();
+                }
+                ArrayList<PreferableItemsInDisplay> preferableItemsInDisplay = new ArrayList<PreferableItemsInDisplay>();
+                do {
+                    preferableItemsInDisplay.add(new PreferableItemsInDisplay(
+                        queryResult.getInt(1),
+                        queryResult.getString(2),
+                        queryResult.getInt(3),
+                        queryResult.getString(4),
+                        queryResult.getFloat(5),
+                        queryResult.getFloat(6),
+                        queryResult.getFloat(7),
+                        queryResult.getInt(8),
+                        queryResult.getInt(9),
+                        queryResult.getInt(10),
+                        queryResult.getInt(11),
+                        queryResult.getInt(14),
+                        queryResult.getInt(15),
+                        queryResult.getInt(16),
+                        queryResult.getInt(17),
+                        queryResult.getInt(18),
+                        queryResult.getFloat(19),
+                        queryResult.getString(20).equals("Y"),
+                        queryResult.getString(21).equals("Y"),
+                        queryResult.getInt(22),
+                        queryResult.getString(24),
+                        queryResult.getInt(27)
+                    ));
+                } while (queryResult.next());
+                return preferableItemsInDisplay.toArray(new PreferableItemsInDisplay[0]);
+            }
         }
-        
-        ArrayList<PreferableItemsInDisplay> preferableItemsInDisplay = new ArrayList<PreferableItemsInDisplay>();
-        do {
-            preferableItemsInDisplay.add(new PreferableItemsInDisplay(
-                queryResult.getInt(1),
-                queryResult.getString(2),
-                queryResult.getInt(3),
-                queryResult.getString(4),
-                queryResult.getFloat(5),
-                queryResult.getFloat(6),
-                queryResult.getFloat(7),
-                queryResult.getInt(8),
-                queryResult.getInt(9),
-                queryResult.getInt(10),
-                queryResult.getInt(11),
-                queryResult.getInt(14),
-                queryResult.getInt(15),
-                queryResult.getInt(16),
-                queryResult.getInt(17),
-                queryResult.getInt(18),
-                queryResult.getFloat(19),
-                queryResult.getString(20).equals("Y"),
-                queryResult.getString(21).equals("Y"),
-                queryResult.getInt(22),
-                queryResult.getString(24),
-                queryResult.getInt(27)
-            ));
-        } while (queryResult.next());
-
-        statement.close();
-        queryResult.close();
-
-        return preferableItemsInDisplay.toArray(new PreferableItemsInDisplay[0]);
     }
 }

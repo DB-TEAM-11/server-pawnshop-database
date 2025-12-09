@@ -13,6 +13,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import phase4.exceptions.NotASuchRowException;
+import phase4.queries.NotFoundItemCategory;
 import phase4.queries.PawnshopDebt;
 import phase4.queries.PersonalDebt;
 import phase4.queries.PlayerInfo;
@@ -42,6 +43,7 @@ public class Update extends JsonServlet {
         int leftDebtAmount;
         int leftMoney;
         String isGameCleared;
+        String[] notFoundCategoryList;
         WorldRecord worldRecord = new WorldRecord();
     }
 
@@ -71,7 +73,11 @@ public class Update extends JsonServlet {
         }
         
         PlayerInfo playerInfo;
+        boolean gameIsCleared;
+        String[] notFoundItemCategories = new String[0];
         try (Connection connection = SQLConnector.connect()) {
+            connection.setAutoCommit(false);
+
             switch (requestData.debtType) {
                 case "PERSONAL":
                     PersonalDebt.addToPersonalDebt(connection, playerKey, requestData.amount);
@@ -83,12 +89,19 @@ public class Update extends JsonServlet {
                     sendErrorResponse(response, "invalid_type", "Given type is invalid.");
                     break;
             }
+
             try {
                 playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
             } catch (NotASuchRowException e) {
                 sendErrorResponse(response, "no_game_session", "No game session exists.");
                 return;
             }
+            gameIsCleared = playerInfo.pawnshopDebt < 0 && playerInfo.personalDebt < 0;
+            if (gameIsCleared) {
+                notFoundItemCategories = NotFoundItemCategory.getNotFoundItemCategories(connection, playerKey);
+            }
+
+            connection.commit();
         } catch (SQLException e) {
             sendStackTrace(response, e);
             return;
@@ -105,7 +118,8 @@ public class Update extends JsonServlet {
                 break;
         }
         data.leftMoney = playerInfo.money;
-        data.isGameCleared = playerInfo.pawnshopDebt < 0 && playerInfo.personalDebt < 0 ? "Y" : "N";
+        data.isGameCleared = gameIsCleared ? "Y" : "N";
+        data.notFoundCategoryList = notFoundItemCategories;
         data.worldRecord.playerId = playerInfo.playerId;
         data.worldRecord.nickname = playerInfo.nickname;
         data.worldRecord.pawnshopName = playerInfo.shopName;

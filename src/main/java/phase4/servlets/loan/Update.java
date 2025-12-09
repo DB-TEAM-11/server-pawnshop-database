@@ -48,7 +48,7 @@ public class Update extends JsonServlet {
         WorldRecord worldRecord = new WorldRecord();
     }
 
-    private SimpleDateFormat gameEndDateFormat = new SimpleDateFormat("yyyy-MM-ddTHH:mm:ssZ");
+    private final SimpleDateFormat gameEndDateFormat = new SimpleDateFormat("yyyy-MM-ddTHH:mm:ssZ");
     
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

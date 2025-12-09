@@ -6,8 +6,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
-public class RestoringItems {
-    private static final String QUERY = "SELECT I.ITEM_KEY, IC.CATEGORY_KEY, IC.ITEM_CATALOG_NAME, I.ITEM_STATE, I.FLAW_EA, I.FOUND_FLAW_EA, I.IS_AUTHENTICITY_FOUND, I.GRADE, I.AUTHENTICITY, DR.APPRAISED_PRICE, G.DAY_COUNT, DR.LAST_ACTION_DATE FROM EXISTING_ITEM I, ITEM_CATALOG IC, DEAL_RECORD DR, GAME_SESSION G WHERE I.ITEM_STATE = 2 AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY AND I.ITEM_KEY = DR.ITEM_KEY AND DR.GAME_SESSION_KEY = G.GAME_SESSION_KEY AND G.PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?) AND G.GAME_SESSION_KEY = (SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = (SELECT PLAYER_KEY FROM PLAYER WHERE SESSION_TOKEN = ?) ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY) AND G.DAY_COUNT - DR.LAST_ACTION_DATE >= 1";
+public class RestoredItem {
+    private static final String QUERY = "SELECT I.ITEM_KEY, IC.CATEGORY_KEY, IC.ITEM_CATALOG_NAME, I.ITEM_STATE, I.FLAW_EA, I.FOUND_FLAW_EA, I.IS_AUTHENTICITY_FOUND, I.GRADE, I.AUTHENTICITY, DR.APPRAISED_PRICE, G.DAY_COUNT, DR.LAST_ACTION_DATE FROM EXISTING_ITEM I, ITEM_CATALOG IC, DEAL_RECORD DR, GAME_SESSION G WHERE I.ITEM_STATE = 2 AND I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY AND I.ITEM_KEY = DR.ITEM_KEY AND DR.GAME_SESSION_KEY = G.GAME_SESSION_KEY AND G.GAME_SESSION_KEY = (SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = ? ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY) AND G.DAY_COUNT - DR.LAST_ACTION_DATE >= 1";
 
     public int itemKey;
     public int itemCategory;
@@ -22,7 +22,7 @@ public class RestoringItems {
     public int dayCount;
     public int lastActionDate;
 
-    private RestoringItems(
+    private RestoredItem(
         int itemKey,
         int itemCategory,
         String itemName,
@@ -50,14 +50,13 @@ public class RestoringItems {
         this.lastActionDate = lastActionDate;
     }
 
-    public static RestoringItems[] getRestoringItems(Connection connection, String sessionToken) throws SQLException {
+    public static RestoredItem[] getRestoredItem(Connection connection, int playerKey) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(QUERY)) {
-            statement.setString(1, sessionToken);
-            statement.setString(2, sessionToken);
+            statement.setInt(1, playerKey);
             try (ResultSet queryResult = statement.executeQuery()) {
-                ArrayList<RestoringItems> restoringItems = new ArrayList<RestoringItems>();
+                ArrayList<RestoredItem> restoringItems = new ArrayList<RestoredItem>();
                 while (queryResult.next()) {
-                    restoringItems.add(new RestoringItems(
+                    restoringItems.add(new RestoredItem(
                         queryResult.getInt(1),
                         queryResult.getInt(2),
                         queryResult.getString(3),
@@ -72,7 +71,7 @@ public class RestoringItems {
                         queryResult.getInt(12)
                     ));
                 }
-                return restoringItems.toArray(new RestoringItems[0]);
+                return restoringItems.toArray(new RestoredItem[0]);
             }
         }
     }

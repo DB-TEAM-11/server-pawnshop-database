@@ -16,6 +16,7 @@ import phase4.exceptions.NotASuchRowException;
 import phase4.queries.CustomerInfo;
 import phase4.queries.DealRecordUpdater;
 import phase4.queries.DisplayedItem;
+import phase4.queries.ExistingItemUpdater;
 import phase4.queries.MoneyUpdater;
 import phase4.queries.PlayerInfo;
 import phase4.servlets.JsonServlet;
@@ -32,7 +33,7 @@ public class SellComplete extends JsonServlet {
     }
     
     private class ResponseData {
-        int earnedAmount;
+        String earnedAmount;
         int leftMoney;
         int displayedPositionKey;
     }
@@ -65,6 +66,8 @@ public class SellComplete extends JsonServlet {
         CustomerInfo customerInfo;
         int soldPrice;
         try (Connection connection = SQLConnector.connect()) {
+            connection.setAutoCommit(false);
+
             try {
                 playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
             } catch (NotASuchRowException e) {
@@ -84,6 +87,10 @@ public class SellComplete extends JsonServlet {
                 return;
             }
             
+            if (itemInfo.gameSessionKey != playerInfo.gameSessionKey) {
+                sendErrorResponse(response, "no_item", "Not a such item.");
+                return;
+            }
             if (itemInfo.categoryKey != customerInfo.categoryKey) {
                 sendErrorResponse(response, "category_mismatch", "Item category does not match customer preference.");
                 return;
@@ -95,21 +102,21 @@ public class SellComplete extends JsonServlet {
             
             soldPrice = (int)(itemInfo.appraisedPrice * 0.8);
             
-            if (playerInfo.money < soldPrice) {
-                sendErrorResponse(response, "not_enough_money", "not enough money to complete the deal.");
-            }
-            
-            DealRecordUpdater.updateAsSold(connection, requestData.itemKey, soldPrice, requestData.customerKey);
             DisplayedItem.deleteDisplayedItemEntry(connection, requestData.itemKey);
-            MoneyUpdater.addMoney(connection, playerKey, -soldPrice);
+            ExistingItemUpdater.updateItemState(connection, itemInfo.itemKey, ItemState.SOLD);
+            DealRecordUpdater.updateSoldInfo(connection, requestData.itemKey, soldPrice, requestData.customerKey);
+            MoneyUpdater.addMoney(connection, playerKey, soldPrice);
+            connection.commit();
         } catch (SQLException e) {
             sendStackTrace(response, e);
             return;
         }
         
+        int earnedAmount = soldPrice - itemInfo.purchasePrice;
+
         ResponseData data = new ResponseData();
-        data.earnedAmount = soldPrice - itemInfo.purchasePrice;
-        data.leftMoney = playerInfo.money - soldPrice;
+        data.earnedAmount = (earnedAmount > 0 ? "+" : "") + Integer.toString(earnedAmount);
+        data.leftMoney = playerInfo.money + soldPrice;
         data.displayedPositionKey = itemInfo.displayPos;
         
         sendJsonResponse(response, data);

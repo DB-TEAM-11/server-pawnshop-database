@@ -71,7 +71,7 @@ public class DealCancel extends JsonServlet {
     private final SimpleDateFormat gameEndDateFormat = new SimpleDateFormat("yyyy-MM-ddTHH:mm:ssZ");
     
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         int playerKey = authenticateUser(request, response);
         if (playerKey <= 0) {
             return;

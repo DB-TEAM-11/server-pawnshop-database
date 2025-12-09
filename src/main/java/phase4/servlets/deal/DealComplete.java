@@ -92,7 +92,7 @@ public class DealComplete extends JsonServlet {
     private final double[] multiplierByGrade = new double[]{1, 1.2, 1.5, 1.7};
     
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         int playerKey = authenticateUser(request, response);
         if (playerKey <= 0) {
             return;
@@ -116,7 +116,7 @@ public class DealComplete extends JsonServlet {
         
         PlayerInfo playerInfo;
         DisplayedItem itemInfo;
-        double eventAndAuthenticityMultiplier = 1;
+        int eventPricePercent = 0;
         int purchasePrice;
         ResponseData.DailyFinalize dailyFinalize = null;
         String[] notFoundItemCategories = null;
@@ -144,20 +144,18 @@ public class DealComplete extends JsonServlet {
             // Process purchase
             for (TodaysEvent event: TodaysEvent.getTodaysEvent(connection, playerInfo.gameSessionKey)) {
                 if (event.affectedPrice != AffectedPrice.PURCHASE.value()) {
-                    eventAndAuthenticityMultiplier += event.amount / 100;
+                    eventPricePercent += event.amount;
                 }
             }
-
-            if (!itemInfo.authenticity && itemInfo.isAuthenticityFound) {
-                eventAndAuthenticityMultiplier /= 2;
-            }
-
             purchasePrice = (int)(
                 itemInfo.askingPrice
                 * (1 - itemInfo.foundFlawEa * 0.05)
                 * multiplierByGrade[itemInfo.grade]
-                * eventAndAuthenticityMultiplier
+                * (eventPricePercent * 0.01)
             );
+            if (!itemInfo.authenticity && itemInfo.isAuthenticityFound) {
+                purchasePrice /= 2;
+            }
 
             if (purchasePrice > playerInfo.money) {
                 sendErrorResponse(response, "not_enough_money", "Money is not enough to purchase.");

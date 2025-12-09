@@ -8,7 +8,7 @@ import java.sql.SQLException;
 import phase4.exceptions.NotASuchRowException;
 
 public class CustomerProperty {
-    private static final String QUERY = "SELECT (10 * CLUMSY) FLAW_BASE, (15 + (65 * WELL_COLLECT)) LEGENDARY_P, (20 + PROBABILITY_BASE) UNIQUE_P, (30 + PROBABILITY_BASE) RARE_P, (35 + PROBABILITY_BASE) NORMAL_P, FAKE_P, (1 - FAKE_P) GENIUE_P FROM ( SELECT CC.*, (65 * (1 - WELL_COLLECT) / 3) PROBABILITY_BASE, (10 + 90 * FRAUD) FAKE_P FROM CUSTOMER_CATALOG CC WHERE CUSTOMER_KEY = ? )";
+    private static final String QUERY = "SELECT (10 * CLUMSY) FLAW_BASE, (10 + (50 * WELL_COLLECT)) LEGENDARY_P, (25 + (2 * WELL_COLLECT)) UNIQUE_P, (30 - (22 * WELL_COLLECT)) RARE_P, (35 - (30 * WELL_COLLECT)) NORMAL_P, FAKE_P, (1 - FAKE_P) GENIUE_P FROM ( SELECT CC.*, (10 + 90 * FRAUD) FAKE_P FROM CUSTOMER_CATALOG CC WHERE CUSTOMER_KEY = ? )";
 
     public float flawBase;
     public float legendaryProbability;

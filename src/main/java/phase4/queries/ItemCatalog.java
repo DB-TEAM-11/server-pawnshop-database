@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import phase4.exceptions.NotASuchRowException;
 
 public class ItemCatalog {
+    private static final String QUERY_RANDOM_ITEM = "SELECT * FROM ITEM_CATALOG ORDER BY DBMS_RANDOM.VALUE FETCH FIRST ROW ONLY";
     private static final String QUERY = "SELECT * FROM ITEM_CATALOG WHERE CATEGORY_KEY = ? ORDER BY DBMS_RANDOM.VALUE FETCH FIRST ROW ONLY";
     private static final String QUERY_BY_KEY = "SELECT * FROM ITEM_CATALOG WHERE ITEM_CATALOG_KEY = ?";
 
@@ -29,6 +30,23 @@ public class ItemCatalog {
         this.imgId = imgId;
         this.categoryKey = categoryKey;
         this.basePrice = basePrice;
+    }
+
+    public static ItemCatalog getRandomItem(Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(QUERY_RANDOM_ITEM)) {
+            try (ResultSet queryResult = statement.executeQuery()) {
+                if (!queryResult.next()) {
+                    throw new NotASuchRowException();
+                }
+                return new ItemCatalog(
+                    queryResult.getInt(1),
+                    queryResult.getString(2),
+                    queryResult.getString(3),
+                    queryResult.getInt(4),
+                    queryResult.getInt(5)
+                );
+            }
+        }
     }
 
     public static ItemCatalog getRandomItemByCategory(Connection connection, int categoryKey) throws SQLException {

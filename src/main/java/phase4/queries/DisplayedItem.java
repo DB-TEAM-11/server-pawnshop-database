@@ -8,8 +8,8 @@ import java.sql.SQLException;
 import phase4.exceptions.NotASuchRowException;
 
 public class DisplayedItem {
-    private static final String RETRIEVE_QUERY = "SELECT D.DISPLAY_POS, I.*, IC.*, DR.PURCHASE_PRICE, DR.ASKING_PRICE, DR.APPRAISED_PRICE, DR.BOUGHT_DATE, CC.CUSTOMER_NAME, GS.PLAYER_KEY FROM GAME_SESSION_ITEM_DISPLAY D JOIN EXISTING_ITEM I ON I.ITEM_KEY = D.ITEM_KEY JOIN ITEM_CATALOG IC ON IC.ITEM_CATALOG_KEY = I.ITEM_CATALOG_KEY JOIN DEAL_RECORD DR ON DR.ITEM_KEY = I.ITEM_KEY JOIN CUSTOMER_CATALOG CC ON CC.CUSTOMER_KEY = DR.SELLER_KEY JOIN GAME_SESSION GS ON GS.GAME_SESSION_KEY = DR.GAME_SESSION_KEY WHERE D.GAME_SESSION_KEY = (SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = ? ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY) AND I.ITEM_STATE IN (1, 5) AND D.ITEM_KEY = ?";
-    private static final String PREFERABLE_ITEM_QUERY = "SELECT D.DISPLAY_POS, I.*, IC.*, DR.PURCHASE_PRICE, DR.ASKING_PRICE, DR.APPRAISED_PRICE, DR.BOUGHT_DATE, CC.CUSTOMER_NAME, GS.PLAYER_KEY FROM CUSTOMER_CATALOG CC JOIN ITEM_CATALOG IC ON IC.CATEGORY_KEY = CC.CATEGORY_KEY JOIN EXISTING_ITEM I ON I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY JOIN DEAL_RECORD DR ON DR.ITEM_KEY = I.ITEM_KEY JOIN GAME_SESSION_ITEM_DISPLAY D ON D.ITEM_KEY = I.ITEM_KEY JOIN GAME_SESSION GS ON GS.GAME_SESSION_KEY = DR.GAME_SESSION_KEY WHERE D.GAME_SESSION_KEY = (SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = ? ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY) AND I.ITEM_STATE IN (1, 5) AND CC.CUSTOMER_KEY = ? ORDER BY D.DISPLAY_POS FETCH FIRST ROW ONLY";
+    private static final String RETRIEVE_QUERY = "SELECT D.DISPLAY_POS, I.*, IC.*, DR.DRC_KEY, DR.PURCHASE_PRICE, DR.ASKING_PRICE, DR.APPRAISED_PRICE, DR.BOUGHT_DATE, CC.CUSTOMER_NAME, GS.PLAYER_KEY FROM GAME_SESSION_ITEM_DISPLAY D JOIN EXISTING_ITEM I ON I.ITEM_KEY = D.ITEM_KEY JOIN ITEM_CATALOG IC ON IC.ITEM_CATALOG_KEY = I.ITEM_CATALOG_KEY JOIN DEAL_RECORD DR ON DR.ITEM_KEY = I.ITEM_KEY JOIN CUSTOMER_CATALOG CC ON CC.CUSTOMER_KEY = DR.SELLER_KEY JOIN GAME_SESSION GS ON GS.GAME_SESSION_KEY = DR.GAME_SESSION_KEY WHERE D.GAME_SESSION_KEY = (SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = ? ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY) AND I.ITEM_STATE IN (1, 5) AND D.ITEM_KEY = ?";
+    private static final String PREFERABLE_ITEM_QUERY = "SELECT D.DISPLAY_POS, I.*, IC.*, DR.DRC_KEY, DR.PURCHASE_PRICE, DR.ASKING_PRICE, DR.APPRAISED_PRICE, DR.BOUGHT_DATE, CC.CUSTOMER_NAME, GS.PLAYER_KEY FROM CUSTOMER_CATALOG CC JOIN ITEM_CATALOG IC ON IC.CATEGORY_KEY = CC.CATEGORY_KEY JOIN EXISTING_ITEM I ON I.ITEM_CATALOG_KEY = IC.ITEM_CATALOG_KEY JOIN DEAL_RECORD DR ON DR.ITEM_KEY = I.ITEM_KEY JOIN GAME_SESSION_ITEM_DISPLAY D ON D.ITEM_KEY = I.ITEM_KEY JOIN GAME_SESSION GS ON GS.GAME_SESSION_KEY = DR.GAME_SESSION_KEY WHERE D.GAME_SESSION_KEY = (SELECT GAME_SESSION_KEY FROM GAME_SESSION WHERE PLAYER_KEY = ? ORDER BY GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY) AND I.ITEM_STATE IN (1, 5) AND CC.CUSTOMER_KEY = ? ORDER BY D.DISPLAY_POS FETCH FIRST ROW ONLY";
     private static final String DELETE_QUERY = "DELETE FROM GAME_SESSION_ITEM_DISPLAY WHERE ITEM_KEY = ?";
     
     public int displayPos;
@@ -28,6 +28,7 @@ public class DisplayedItem {
     public String imgId;
     public int categoryKey;
     public int basePrice;
+    public int dealRecordKey;
     public int purchasePrice;
     public int askingPrice;
     public int appraisedPrice;
@@ -51,6 +52,7 @@ public class DisplayedItem {
         String imgId,
         int categoryKey,
         int basePrice,
+        int dealRecordKey,
         int purchasePrice,
         int askingPrice,
         int appraisedPrice,
@@ -73,6 +75,7 @@ public class DisplayedItem {
         this.imgId = imgId;
         this.categoryKey = categoryKey;
         this.basePrice = basePrice;
+        this.dealRecordKey = dealRecordKey;
         this.purchasePrice = purchasePrice;
         this.askingPrice = askingPrice;
         this.appraisedPrice = appraisedPrice;
@@ -105,11 +108,12 @@ public class DisplayedItem {
                     queryResult.getString(15), // IMG_ID (IC.* 세번째 컬럼)
                     queryResult.getInt(16),  // CATEGORY_KEY (IC.* 네번째 컬럼)
                     queryResult.getInt(17),  // BASE_PRICE (IC.* 다섯번째 컬럼)
-                    queryResult.getInt(18),  // PURCHASE_PRICE
-                    queryResult.getInt(19),  // ASKING_PRICE
-                    queryResult.getInt(20),  // APPRAISED_PRICE
-                    queryResult.getInt(21),  // BOUGHT_DATE
-                    queryResult.getString(22) // CUSTOMER_NAME (CUS 부분)
+                    queryResult.getInt(18),  // DRC_KEY
+                    queryResult.getInt(19),  // PURCHASE_PRICE
+                    queryResult.getInt(20),  // ASKING_PRICE
+                    queryResult.getInt(21),  // APPRAISED_PRICE
+                    queryResult.getInt(22),  // BOUGHT_DATE
+                    queryResult.getString(23) // CUSTOMER_NAME (CUS 부분)
                 );
             }
         }
@@ -140,11 +144,12 @@ public class DisplayedItem {
                     queryResult.getString(15), // IMG_ID (IC.* 세번째 컬럼)
                     queryResult.getInt(16),  // CATEGORY_KEY (IC.* 네번째 컬럼)
                     queryResult.getInt(17),  // BASE_PRICE (IC.* 다섯번째 컬럼)
-                    queryResult.getInt(18),  // PURCHASE_PRICE
-                    queryResult.getInt(19),  // ASKING_PRICE
-                    queryResult.getInt(20),  // APPRAISED_PRICE
-                    queryResult.getInt(21),  // BOUGHT_DATE
-                    queryResult.getString(22) // CUSTOMER_NAME (CUS 부분)
+                    queryResult.getInt(18),  // DRC_KEY
+                    queryResult.getInt(19),  // PURCHASE_PRICE
+                    queryResult.getInt(20),  // ASKING_PRICE
+                    queryResult.getInt(21),  // APPRAISED_PRICE
+                    queryResult.getInt(22),  // BOUGHT_DATE
+                    queryResult.getString(23) // CUSTOMER_NAME (CUS 부분)
                 );
             }
         }

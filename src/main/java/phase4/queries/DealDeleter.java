@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class DeleteDeal {
+public class DealDeleter {
     private static final String DELETE_ITEM_QUERY = "DELETE FROM EXISTING_ITEM WHERE ITEM_KEY = ?";
     private static final String DELETE_DEAL_QUERY = "DELETE FROM DEAL_RECORD WHERE ITEM_KEY = ?";
 

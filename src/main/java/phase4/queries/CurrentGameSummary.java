@@ -9,7 +9,7 @@ import java.sql.SQLException;
 import phase4.exceptions.NotASuchRowException;
 
 public class CurrentGameSummary {
-    private static String QUERY = "SELECT GS.NICKNAME, GS.SHOP_NAME, GS.GAME_END_DAY_COUNT, GS.GAME_END_DATE FROM PLAYER P, GAME_SESSION GS WHERE P.SESSION_TOKEN = ? AND P.PLAYER_KEY = GS.PLAYER_KEY ORDER BY GS.GAME_SESSION_KEY DESC FETCH FIRST ROW ONLY";
+    private static String QUERY = "SELECT NICKNAME, SHOP_NAME, GAME_END_DAY_COUNT, GAME_END_DATE FROM GAME_SESSION WHERE GAME_SESSION_KEY = ?";
 
     public String nickName;
     public String shopName;
@@ -23,9 +23,9 @@ public class CurrentGameSummary {
         this.gameEndDate = gameEndDate;
     }
 
-    public static CurrentGameSummary retrieveGameSummary(Connection connection, String sessionToken) throws SQLException {
+    public static CurrentGameSummary retrieveGameSummary(Connection connection, int gameSessionKey) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(QUERY)) {
-            statement.setString(1, sessionToken);
+            statement.setInt(1, gameSessionKey);
             try (ResultSet queryResult = statement.executeQuery()) {
                 if (!queryResult.next()) {
                     throw new NotASuchRowException();

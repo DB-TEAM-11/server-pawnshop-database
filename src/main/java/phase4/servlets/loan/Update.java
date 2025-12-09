@@ -13,6 +13,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import phase4.exceptions.NotASuchRowException;
+import phase4.queries.GameSessionUpdater;
 import phase4.queries.NotFoundItemCategory;
 import phase4.queries.PawnshopDebt;
 import phase4.queries.PersonalDebt;
@@ -96,8 +97,11 @@ public class Update extends JsonServlet {
                 sendErrorResponse(response, "no_game_session", "No game session exists.");
                 return;
             }
+            
             gameIsCleared = playerInfo.pawnshopDebt < 0 && playerInfo.personalDebt < 0;
             if (gameIsCleared) {
+                GameSessionUpdater.setGameEnd(connection, playerInfo.gameSessionKey, true);
+                playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
                 notFoundItemCategories = NotFoundItemCategory.getNotFoundItemCategories(connection, playerKey);
             }
 

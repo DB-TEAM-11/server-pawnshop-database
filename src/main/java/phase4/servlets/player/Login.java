@@ -68,12 +68,23 @@ public class Login extends JsonServlet {
         ResponseData responseData = new ResponseData();
         responseData.hasGameSession = "Y";
         try (Connection connection = SQLConnector.connect()) {
-            responseData.sessionToken = SessionTokenSetter.setNewSessionToken(connection, requestData.playerId, requestData.password);
+            connection.setAutoCommit(false);
+
+            try {
+                responseData.sessionToken = SessionTokenSetter.setNewSessionToken(connection, requestData.playerId, requestData.password);
+            } catch (IllegalArgumentException e) {
+                sendErrorResponse(response, 401, "no_such_user", "The specified user is not exists.");
+            }
             try {
                 GameSessionGetter.getGameSessionBySessionToken(connection, responseData.sessionToken);
             } catch (NotASuchRowException e) {
                 responseData.hasGameSession = "N";
             }
+
+            sendJsonResponse(response, responseData);
+            response.flushBuffer();
+
+            connection.commit();
         } catch (NotASuchRowException e) {
             sendErrorResponse(response, 401, "no_such_user", "The specified user is not exists.");
             return;
@@ -81,7 +92,5 @@ public class Login extends JsonServlet {
             sendStackTrace(response, e);
             return;
         }
-        
-        sendJsonResponse(response, responseData);
     }
 }

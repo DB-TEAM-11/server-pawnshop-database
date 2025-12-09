@@ -20,4 +20,14 @@
     <servlet-name>Reveal</servlet-name>
     <url-pattern>/Reveal</url-pattern>
   </servlet-mapping>
+  <servlet>
+    <description></description>
+    <display-name>ItemHint</display-name>
+    <servlet-name>ItemHint</servlet-name>
+    <servlet-class>phase4.servlets.item.ItemHint</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>ItemHint</servlet-name>
+    <url-pattern>/ItemHint</url-pattern>
+  </servlet-mapping>
 </web-app>

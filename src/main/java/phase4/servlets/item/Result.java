@@ -108,7 +108,7 @@ public class Result extends JsonServlet {
                 if (!item.isAuthenticityFound) {
                     ExistingItemUpdater.updateAuthenticityFound(connection, item.itemKey);
                 }
-                ExistingItemUpdater.removeAllFlaws(connection, item.itemKey);
+                ExistingItemUpdater.removeFlaws(connection, item.itemKey, item.flawEa - item.foundFlawEa);
                 ExistingItemUpdater.updateItemState(connection, item.itemKey, ItemState.RECORVERED);
                 actionResults.add(data.new ActionResults(
                     item.displayPos, item.itemCatalogKey, ItemState.RECORVERED, -item.foundFlawEa * 10, item.appraisedPrice

@@ -16,6 +16,7 @@ import phase4.exceptions.NotASuchRowException;
 import phase4.queries.CustomerInfo;
 import phase4.queries.DisplayedItem;
 import phase4.queries.ExistingItemUpdater;
+import phase4.queries.PlayerInfo;
 import phase4.servlets.JsonServlet;
 import phase4.utils.SQLConnector;
 
@@ -52,9 +53,16 @@ public class SellCancel extends JsonServlet {
             return;
         }
         
+        PlayerInfo playerInfo;
         DisplayedItem itemInfo;
         CustomerInfo customerInfo;
         try (Connection connection = SQLConnector.connect()) {
+            try {
+                playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
+            } catch (NotASuchRowException e) {
+                sendErrorResponse(response, "no_game_session", "No game session exists.");
+                return;
+            }
             try {
                 itemInfo = DisplayedItem.getDisplayedItem(connection, playerKey, requestData.itemKey);
             } catch (NotASuchRowException e) {
@@ -68,6 +76,10 @@ public class SellCancel extends JsonServlet {
                 return;
             }
             
+            if (itemInfo.gameSessionKey != playerInfo.gameSessionKey) {
+                sendErrorResponse(response, "no_item", "Not a such item.");
+                return;
+            }
             if (itemInfo.categoryKey != customerInfo.categoryKey) {
                 sendErrorResponse(response, "category_mismatch", "Item category does not match customer preference.");
                 return;

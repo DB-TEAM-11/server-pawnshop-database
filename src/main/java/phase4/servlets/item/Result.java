@@ -76,7 +76,7 @@ public class Result extends JsonServlet {
         PlayerInfo playerInfo;
         int leftMoney, netChange = 0;
         ArrayList<ResponseData.ActionResults> actionResults = new ArrayList<>();
-        String[] notFoundItemCategories = new String[0];
+        String[] notFoundItemCategories = null;
         int priceAfterRecover;
         try (Connection connection = SQLConnector.connect()) {
             connection.setAutoCommit(false);

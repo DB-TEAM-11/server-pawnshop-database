@@ -15,8 +15,8 @@ public class TodaysEvent { // 기존 쿼리
     public int affectedPrice;
     public int plusMinus;
     public String categoryName;
-    public int amount;
     public int categoryKey;
+    public int amount;
 
     private TodaysEvent(
         String newsDescription,
@@ -28,6 +28,7 @@ public class TodaysEvent { // 기존 쿼리
         this.newsDescription = newsDescription;
         this.affectedPrice = affectedPrice;
         this.categoryName = categoryName;
+        this.categoryKey = categoryKey;
         this.amount = amount;
         this.categoryKey = categoryKey;
     }

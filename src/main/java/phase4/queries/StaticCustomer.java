@@ -15,14 +15,14 @@ public class StaticCustomer {
 
     public int customerKey;
     public String customerName;
-    public String categoryName;
+    public String favoriteCategoryName;
     public String imgId;
 
 
-    private StaticCustomer(int customerKey, String customerName, String categoryName, String imgId) {
+    private StaticCustomer(int customerKey, String customerName, String favoriteCategoryName, String imgId) {
         this.customerKey = customerKey;
         this.customerName = customerName;
-        this.categoryName = categoryName;
+        this.favoriteCategoryName = favoriteCategoryName;
         this.imgId = imgId;
     }
 

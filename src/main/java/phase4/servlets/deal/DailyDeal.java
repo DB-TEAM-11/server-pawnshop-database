@@ -69,10 +69,10 @@ public class DailyDeal extends JsonServlet {
             }
             
             for (TodaysEvent event: TodaysEvent.getTodaysEvent(connection, playerInfo.gameSessionKey)) {
-                if (event.affectedPrice != AffectedPrice.ASKING.value()) {
+                if (event.affectedPrice == AffectedPrice.ASKING.value()) {
                     askingPricePercent += event.amount;
                 }
-                if (event.affectedPrice != AffectedPrice.APPRAISED.value()) {
+                if (event.affectedPrice == AffectedPrice.APPRAISED.value()) {
                     appraisedPricePercent += event.amount;
                 }
             }

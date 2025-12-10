@@ -10,6 +10,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import phase4.constants.AffectedPrice;
 import phase4.constants.Grade;
 import phase4.constants.ItemState;
 import phase4.exceptions.NotASuchRowException;
@@ -22,6 +23,7 @@ import phase4.queries.MoneyUpdater;
 import phase4.queries.NotFoundItemCategory;
 import phase4.queries.PlayerInfo;
 import phase4.queries.RestoredItem;
+import phase4.queries.TodaysEvent;
 import phase4.servlets.JsonServlet;
 import phase4.utils.SQLConnector;
 
@@ -78,6 +80,7 @@ public class Result extends JsonServlet {
         int leftMoney, netChange = 0;
         ArrayList<ResponseData.ActionResults> actionResults = new ArrayList<>();
         String[] notFoundItemCategories = null;
+        int appraisedPricePercent = 100;
         int appraisedPriceAfterRecover;
         int flawsAfterRecover;
         try (Connection connection = SQLConnector.connect()) {
@@ -106,12 +109,18 @@ public class Result extends JsonServlet {
             for (RestoredItem item: restoredItems) {
                 netChange -= item.foundFlawEa * 10;
                 flawsAfterRecover = item.flawEa - item.foundFlawEa;
+
+                for (TodaysEvent event: TodaysEvent.getTodaysEvent(connection, playerInfo.gameSessionKey)) {
+                    if (event.affectedPrice == AffectedPrice.APPRAISED.value()) {
+                        appraisedPricePercent += event.amount;
+                    }
+                }
                 
                 appraisedPriceAfterRecover = item.appraisedPrice + (int)(
                     item.askingPrice
                     * (flawsAfterRecover * 0.05)
                     * (Grade.priceMultiplier[item.grade])
-                    // * ()  // TODO: Add news parameters
+                    * (appraisedPricePercent * 0.01)
                 );
                 if (!item.authenticity) {
                     if (item.isAuthenticityFound) {

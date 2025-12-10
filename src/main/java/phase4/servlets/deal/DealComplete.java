@@ -116,7 +116,7 @@ public class DealComplete extends JsonServlet {
         
         PlayerInfo playerInfo;
         DisplayedItem itemInfo;
-        int eventPricePercent = 0;
+        int eventPricePercent = 100;
         int purchasePrice;
         ResponseData.DailyFinalize dailyFinalize = null;
         String[] notFoundItemCategories = null;
@@ -143,7 +143,7 @@ public class DealComplete extends JsonServlet {
 
             // Process purchase
             for (TodaysEvent event: TodaysEvent.getTodaysEvent(connection, playerInfo.gameSessionKey)) {
-                if (event.affectedPrice != AffectedPrice.PURCHASE.value()) {
+                if (event.affectedPrice == AffectedPrice.PURCHASE.value()) {
                     eventPricePercent += event.amount;
                 }
             }

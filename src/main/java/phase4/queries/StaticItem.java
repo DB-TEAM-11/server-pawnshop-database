@@ -13,15 +13,15 @@ public class StaticItem {
 
     public static StaticItem[] itemCatalog;
 
-    public int key;
-    public String name;
-    public String imageId;
+    public int itemCatalogKey;
+    public String itemCatalogName;
+    public String imgId;
     public String categoryName;
 
-    private StaticItem(int key, String name, String imageId, String categoryName) {
-        this.key = key;
-        this.name = name;
-        this.imageId = imageId;
+    private StaticItem(int itemCatalogKey, String itemCatalogName, String imgId, String categoryName) {
+        this.itemCatalogKey = itemCatalogKey;
+        this.itemCatalogName = itemCatalogName;
+        this.imgId = imgId;
         this.categoryName = categoryName;
     }
 

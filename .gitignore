@@ -24,7 +24,7 @@ bin/
 *.rar
 
 # But, Keep Oracle JDBC Drivers !!
-!/src/main/webapp/WEB-INF/lib/*.jar
+!/src/main/webapp/WEB-INF/lib/**
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*

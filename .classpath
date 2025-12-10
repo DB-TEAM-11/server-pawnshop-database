@@ -1,27 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-    <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-11"/>
-    <classpathentry kind="src" path="src/main/java"/>
-    <classpathentry kind="con" path="org.eclipse.jst.server.core.container/org.eclipse.jst.server.tomcat.runtimeTarget/Apache Tomcat v10.1">
-        <attributes>
-            <attribute name="owner.project.facets" value="jst.web"/>
-        </attributes>
-    </classpathentry>
-    <classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.web.container"/>
-    <classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
-    <classpathentry kind="output" path="build/classes"/>
-    <classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/ojdbc10.jar"/>
-    <classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/orai18n.jar"/>
-    <classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/gson/gson-2.13.1.jar"/>
-    <classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/gson/gson-2.13.1-javadoc.jar"/>
-    <classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/gson/gson-2.13.1-sources.jar"/>
-    <!-- For VSCode -->
-    <classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/tomcat/annotations-api.jar"/>
-    <classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/tomcat/ecj-4.27.jar"/>
-    <classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/tomcat/tomcat-dbcp.jar"/>
-    <classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/tomcat/tomcat-embed-core.jar"/>
-    <classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/tomcat/tomcat-embed-el.jar"/>
-    <classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/tomcat/tomcat-embed-jasper.jar"/>
-    <classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/tomcat/tomcat-embed-programmatic.jar"/>
-    <classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/tomcat/tomcat-embed-websocket.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-11"/>
+	<classpathentry kind="src" path="src/main/java"/>
+	<classpathentry kind="con" path="org.eclipse.jst.server.core.container/org.eclipse.jst.server.tomcat.runtimeTarget/Apache Tomcat v10.1">
+		<attributes>
+			<attribute name="owner.project.facets" value="jst.web"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.web.container"/>
+	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
+	<classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/ojdbc10.jar"/>
+	<classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/orai18n.jar"/>
+	<classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/gson-2.13.1.jar"/>
+	<classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/gson-2.13.1-javadoc.jar"/>
+	<classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/gson-2.13.1-sources.jar"/>
+	<classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/annotations-api.jar"/>
+	<classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/ecj-4.27.jar"/>
+	<classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/tomcat-dbcp.jar"/>
+	<classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/tomcat-embed-core.jar"/>
+	<classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/tomcat-embed-el.jar"/>
+	<classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/tomcat-embed-jasper.jar"/>
+	<classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/tomcat-embed-programmatic.jar"/>
+	<classpathentry kind="lib" path="src/main/webapp/WEB-INF/lib/tomcat-embed-websocket.jar"/>
+	<classpathentry kind="output" path="build/classes"/>
 </classpath>

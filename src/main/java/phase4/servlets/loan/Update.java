@@ -49,7 +49,7 @@ public class Update extends JsonServlet {
         WorldRecord worldRecord = new WorldRecord();
     }
 
-    private final SimpleDateFormat gameEndDateFormat = new SimpleDateFormat("yyyy-MM-ddTHH:mm:ssZ");
+    private final SimpleDateFormat gameEndDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
     
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -131,7 +131,9 @@ public class Update extends JsonServlet {
         data.worldRecord.nickname = playerInfo.nickname;
         data.worldRecord.pawnshopName = playerInfo.shopName;
         data.worldRecord.gameEndDayCount = playerInfo.gameEndDayCount;
-        data.worldRecord.gameEndDate = gameEndDateFormat.format(playerInfo.gameEndDate);
+        if (playerInfo.gameEndDate != null) {
+            data.worldRecord.gameEndDate = gameEndDateFormat.format(playerInfo.gameEndDate);
+        }
         
         sendJsonResponse(response, data);
     }

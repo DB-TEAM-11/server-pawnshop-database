@@ -19,7 +19,7 @@ public class Current extends JsonServlet {
     private static final long serialVersionUID = 1L;
     
     private class ResponseData {
-        TodaysEvent[] todayEvents;
+        TodaysEvent[] newsList;
     }
        
 
@@ -33,17 +33,11 @@ public class Current extends JsonServlet {
             int gameSessionKey;
             try {
                 gameSessionKey = GameSessionGetter.getGameSessionByPlayerKey(connection, playerKey);
-            }
-            catch (NotASuchRowException e){
-                sendErrorResponse(response, 404, "this player hasn't game session", "no game session");
+            } catch (NotASuchRowException e){
+                sendErrorResponse(response, "no_game_session", "No game session exists.");
                 return;
             }
-            try {
-                responseData.todayEvents = TodaysEvent.getTodaysEvent(connection, gameSessionKey);
-            } catch (NotASuchRowException e) {
-                sendErrorResponse(response, 404, "no display data", "no display data in this game session");
-                return;
-            }       
+            responseData.newsList = TodaysEvent.getTodaysEvent(connection, gameSessionKey);
         } catch (SQLException e) {
             sendStackTrace(response, e);
             return;

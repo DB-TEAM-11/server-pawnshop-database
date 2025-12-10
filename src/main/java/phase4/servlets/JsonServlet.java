@@ -2,6 +2,7 @@ package phase4.servlets;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -51,10 +52,17 @@ public class JsonServlet extends HttpServlet {
     protected void sendStackTrace(HttpServletResponse response, Exception e) throws IOException {
         response.setContentType("text/plain");
         response.setStatus(500);
+
+        StringBuffer buffer = new StringBuffer("Unexpected exception" + e.getClass().getName() + " | Traceback:");
+        buffer.append("\n----------------------------------------\n");
+        StringWriter errorWriter = new StringWriter();
+        e.printStackTrace(new PrintWriter(errorWriter));
+        buffer.append(errorWriter.toString());
+
+        System.err.println(buffer);
+
         PrintWriter writer = response.getWriter();
-        writer.println("Unexpected exception" + e.getClass().getName() + " | Traceback:");
-        writer.println("----------------------------------------");
-        e.printStackTrace(writer);
+        writer.println(buffer);
         writer.close();
     }
     

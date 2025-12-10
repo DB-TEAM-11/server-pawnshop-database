@@ -20,10 +20,8 @@ public class InitialData extends JsonServlet {
 
     private class ResponseData {
         StaticItem[] itemCatalogs;
-        StaticCustomer[] customerCatalog;
+        StaticCustomer[] customerCatalogs;
     }
-    
-    
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         ResponseData responseData = new ResponseData();
@@ -35,7 +33,7 @@ public class InitialData extends JsonServlet {
                 sendErrorResponse(response, 401, "no item catalogs", "The item catalogs are not exists.");
             }
             try {
-                responseData.customerCatalog = StaticCustomer.loadAllCustomers(connection);
+                responseData.customerCatalogs = StaticCustomer.loadAllCustomers(connection);
             } catch (NotASuchRowException e) {
                 sendErrorResponse(response, 401, "no customer catalogs", "The customer catalogs are not exists.");
             }

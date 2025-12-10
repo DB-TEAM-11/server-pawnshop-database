@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 import com.google.gson.JsonSyntaxException;
@@ -23,6 +24,8 @@ import phase4.queries.DisplayedItem;
 import phase4.queries.ExistingItemUpdater;
 import phase4.queries.GameSessionUpdater;
 import phase4.queries.MoneyUpdater;
+import phase4.queries.NewNews;
+import phase4.queries.NewsCatalog;
 import phase4.queries.NotFoundItemCategory;
 import phase4.queries.PlayerInfo;
 import phase4.queries.TodaysEvent;
@@ -89,7 +92,7 @@ public class DealComplete extends JsonServlet {
         String[] notFoundCategoryList;
     }
 
-    private final SimpleDateFormat gameEndDateFormat = new SimpleDateFormat("yyyy-MM-ddTHH:mm:ssZ");
+    private final SimpleDateFormat gameEndDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
     
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -114,9 +117,11 @@ public class DealComplete extends JsonServlet {
             return;
         }
         
+        Random random = new Random();
+        
         PlayerInfo playerInfo;
         DisplayedItem itemInfo;
-        int eventPricePercent = 0;
+        int eventPricePercent = 100;
         int purchasePrice;
         ResponseData.DailyFinalize dailyFinalize = null;
         String[] notFoundItemCategories = null;
@@ -143,7 +148,7 @@ public class DealComplete extends JsonServlet {
 
             // Process purchase
             for (TodaysEvent event: TodaysEvent.getTodaysEvent(connection, playerInfo.gameSessionKey)) {
-                if (event.affectedPrice != AffectedPrice.PURCHASE.value()) {
+                if (event.affectedPrice == AffectedPrice.PURCHASE.value()) {
                     eventPricePercent += event.amount;
                 }
             }
@@ -215,6 +220,17 @@ public class DealComplete extends JsonServlet {
                     // Move to next day
                     GameSessionUpdater.incrementDayCount(connection, playerInfo.gameSessionKey);
                     playerInfo.dayCount++;
+                    if (playerInfo.dayCount % 7 == 0) {
+                        // Insert news
+                        int newsCount = NewsCatalog.getCount(connection);
+                        for (int i = 0; i < random.nextInt(4); i++) {
+                            new NewNews(
+                                playerInfo.gameSessionKey,
+                                random.nextInt(newsCount) + 1,
+                                random.nextInt(20) + 1
+                            ).insert(connection);
+                        }
+                    }
                 }
             }
 
@@ -247,7 +263,9 @@ public class DealComplete extends JsonServlet {
             data.worldRecord.nickname = playerInfo.nickname;
             data.worldRecord.pawnshopName = playerInfo.shopName;
             data.worldRecord.gameEndDayCount = playerInfo.gameEndDayCount;
-            data.worldRecord.gameEndDate = gameEndDateFormat.format(playerInfo.gameEndDate);
+            if (playerInfo.gameEndDate != null) {
+                data.worldRecord.gameEndDate = gameEndDateFormat.format(playerInfo.gameEndDate);
+            }
 
             data.notFoundCategoryList = notFoundItemCategories;
         } else {

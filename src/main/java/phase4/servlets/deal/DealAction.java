@@ -158,10 +158,10 @@ public class DealAction extends JsonServlet {
             performGradeAppraisal(connection, response, responseData, playerKey, drcKey, 1, 20);
             return;
             case 2:
-            performGradeAppraisal(connection, response, responseData, playerKey, drcKey, 1, 20);
+            performGradeAppraisal(connection, response, responseData, playerKey, drcKey, 1, 30);
             return;
             case 3:
-            performGradeAppraisal(connection, response, responseData, playerKey, drcKey, 1, 20);
+            performGradeAppraisal(connection, response, responseData, playerKey, drcKey, 1, 50);
             return;
             case 4:
             return;
@@ -399,7 +399,7 @@ public class DealAction extends JsonServlet {
         responseData.totalAppraisedPrice = newAppraisedPrice;
         responseData.foundGrade = 0;
         responseData.foundFlawEa = newFoundFlawEa;
-        responseData.foundAuthenticity = 0; 
+        responseData.foundAuthenticity = 0;
         
         try {
             DealRecordUpdater.updatePrices(connection, drcKey, newPurchasePrice, newAppraisedPrice);

@@ -96,23 +96,23 @@ public class DailyDeal extends JsonServlet {
                 deal = new ResponseData.Deal();
                 gradeBase = random.nextDouble();
 
-                if (gradeBase < customerProperty.normalProbability) {
+                if (gradeBase < customerProperty.normalProbability * 0.01) {
                     grade = Grade.NORMAL;
-                } else if (gradeBase < customerProperty.rareProbability + customerProperty.normalProbability) {
+                } else if (gradeBase < (customerProperty.rareProbability + customerProperty.normalProbability) * 0.01) {
                     grade = Grade.RARE;
-                } else if (gradeBase < customerProperty.uniqueProbability + customerProperty.rareProbability + customerProperty.normalProbability) {
+                } else if (gradeBase < (customerProperty.uniqueProbability + customerProperty.rareProbability + customerProperty.normalProbability) * 0.01) {
                     grade = Grade.UNIQUE;
                 } else {
                     grade = Grade.LEGENDARY;
                 }
-                flawEa = (int)(customerProperty.flawBase + 4 * random.nextDouble());
+                flawEa = (int)(customerProperty.flawBase * 0.01 + 4 * random.nextDouble());
                 suspiciousFlawAura = random.nextFloat();
-                authenticity = random.nextDouble() > customerProperty.fakeProbability;
+                authenticity = random.nextDouble() > customerProperty.fakeProbability * 0.01;
                 
                 basePrice = (int)(
                     itemCatalog.basePrice
                     * (1 - 0.02 * (flawEa))
-                    * (1 - 0.3 * customerProperty.fakeProbability)
+                    * (1 - 0.003 * customerProperty.fakeProbability)
                     * (1 / 3 + 0.1 * Grade.priceMultiplier[grade.value()])
                     * (1 + 0.25 * customer.fraud)
                     * (0.9 + 0.2 * customer.wellCollect)

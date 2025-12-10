@@ -33,16 +33,14 @@ public class CurrentAll extends JsonServlet {
             int gameSessionKey;
             try {
                 gameSessionKey = GameSessionGetter.getGameSessionByPlayerKey(connection, playerKey);
-            }
-            catch (NotASuchRowException e){
-                sendErrorResponse(response, 404, "this player hasn't game session", "no game session");
+            } catch (NotASuchRowException e){
+                sendErrorResponse(response, "no_game_session", "No game session exists.");
                 return;
             }
             try {
                 responseData.displays = ItemInDisplay.getItemInDisplay(connection, gameSessionKey);
             } catch (NotASuchRowException e) {
-                sendErrorResponse(response, 404, "no display data", "no display data in this game session");
-                return;
+                responseData.displays = new ItemInDisplay[0];
             }       
         } catch (SQLException e) {
             sendStackTrace(response, e);

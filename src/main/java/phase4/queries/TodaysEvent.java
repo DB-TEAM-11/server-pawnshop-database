@@ -30,7 +30,6 @@ public class TodaysEvent { // 기존 쿼리
         this.categoryName = categoryName;
         this.categoryKey = categoryKey;
         this.amount = amount;
-        this.categoryKey = categoryKey;
     }
     
     public static TodaysEvent[] getTodaysEvent(Connection connection, int gameSessionKey) throws SQLException {

@@ -30,4 +30,24 @@
     <servlet-name>ItemHint</servlet-name>
     <url-pattern>/ItemHint</url-pattern>
   </servlet-mapping>
+  <servlet>
+    <description>거래 중 액션</description>
+    <display-name>Actions</display-name>
+    <servlet-name>Actions</servlet-name>
+    <servlet-class>phase4.servlets.deal.Actions</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>Actions</servlet-name>
+    <url-pattern>/Actions</url-pattern>
+  </servlet-mapping>
+  <servlet>
+    <description></description>
+    <display-name>DealAction</display-name>
+    <servlet-name>DealAction</servlet-name>
+    <servlet-class>phase4.servlets.deal.DealAction</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>DealAction</servlet-name>
+    <url-pattern>/DealAction</url-pattern>
+  </servlet-mapping>
 </web-app>

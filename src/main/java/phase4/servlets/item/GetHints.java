@@ -2,14 +2,10 @@ package phase4.servlets.item;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import phase4.exceptions.NotASuchRowException;
 import phase4.queries.CustomerProperty;
-import phase4.queries.GameSessionGetter;
 import phase4.queries.MoneyUpdater;
-import phase4.queries.PlayerKeyByToken;
 import phase4.queries.SellerGetter;
 import phase4.servlets.JsonServlet;
 import phase4.utils.SQLConnector;
@@ -22,7 +18,7 @@ import java.util.stream.Collectors;
 
 import com.google.gson.JsonSyntaxException;
 
-
+@WebServlet("/item/getHints")
 public class GetHints extends JsonServlet {
 	private static final long serialVersionUID = 1L;
 	

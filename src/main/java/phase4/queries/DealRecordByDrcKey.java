@@ -45,10 +45,8 @@ public class DealRecordByDrcKey {
         boolean isAuthenticityFound,
         int itemState,
         int drcKey,
-        int gameSessionKeyFromDR,
         int sellerKey,
         int buyerKey,
-        int itemKeyFromDR,
         int askingPrice,
         int purchasePrice,
         int appraisedPrice,
@@ -89,29 +87,27 @@ public class DealRecordByDrcKey {
                 }
         
                 return new DealRecordByDrcKey(
-                    queryResult.getInt(1),
-                    queryResult.getInt(2),
-                    queryResult.getInt(3),
-                    queryResult.getInt(4),
-                    queryResult.getInt(5),
-                    queryResult.getInt(6),
-                    queryResult.getInt(7),
-                    queryResult.getFloat(8),
-                    queryResult.getString(9).equals("Y"),
-                    queryResult.getString(10).equals("Y"),
-                    queryResult.getInt(11),
-                    queryResult.getInt(12),
-                    queryResult.getInt(13),
-                    queryResult.getInt(14),
-                    queryResult.getInt(15),
-                    queryResult.getInt(16),
-                    queryResult.getInt(17),
-                    queryResult.getInt(18),
-                    queryResult.getInt(19),
-                    queryResult.getInt(20),
-                    queryResult.getInt(21),
-                    queryResult.getInt(22),
-                    queryResult.getInt(23)
+                    queryResult.getInt(1), //  ITEM_KEY 
+                    queryResult.getInt(2), //  GAME_SESSION_KEY 
+                    queryResult.getInt(3), //  ITEM_CATALOG_KEY 
+                    queryResult.getInt(4), //  GRADE 
+                    queryResult.getInt(5), // FOUND_GRADE 
+                    queryResult.getInt(6), // FLAW_EA 
+                    queryResult.getInt(7), //  FOUND_FLAW_EA 
+                    queryResult.getFloat(8), //  SUSPICIOUS_FLAW_AURA 
+                    queryResult.getString(9).equals("Y"), //  AUTHENTICITY 
+                    queryResult.getString(10).equals("Y"), //  IS_AUTHENTICITY_FOUND 
+                    queryResult.getInt(11), //  ITEM_STATE 
+                    queryResult.getInt(12), //  DRC_KEY 
+                    queryResult.getInt(14), //  SELLER_KEY 
+                    queryResult.getInt(15), //  BUYER_KEY 
+                    queryResult.getInt(17), //  ASKING_PRICE 
+                    queryResult.getInt(18), //  PURCHASE_PRICE 
+                    queryResult.getInt(19), //  APPRAISED_PRICE 
+                    queryResult.getInt(20), //  SELLING_PRICE 
+                    queryResult.getInt(21), //  BOUGHT_DATE 
+                    queryResult.getInt(22), //  SOLD_DATE 
+                    queryResult.getInt(23) //  LAST_ACTION_DATE 
                 );
             }
         }

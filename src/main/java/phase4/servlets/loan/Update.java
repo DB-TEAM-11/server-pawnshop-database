@@ -24,7 +24,7 @@ import phase4.utils.SQLConnector;
 
 @WebServlet("/loan/update")
 public class Update extends JsonServlet {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
     
     private class RequestData {
         String debtType;

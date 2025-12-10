@@ -21,9 +21,9 @@ import phase4.utils.SQLConnector;
 
 @WebServlet("/player/login")
 public class Login extends JsonServlet {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	private class RequestData {
+    private class RequestData {
         String playerId;
         String password;
         

@@ -25,32 +25,32 @@ import com.google.gson.JsonSyntaxException;
 
 @WebServlet("/deal/action/")
 public class DealAction extends JsonServlet {
-	private static final long serialVersionUID = 1L;
-	
-	private class RequestData {
+    private static final long serialVersionUID = 1L;
+    
+    private class RequestData {
         int drcKey;
         int actionLevel;  
         String actionType;
     }
-	
-	private class ResponseData {
-		int totalPurchasePrice;
-		int totalAppraisedPrice;
-		int foundGrade;
-		int foundFlawEa;
-		int foundAuthenticity;
-		int leftMoney;
-		String changedPurchasedPriceByAction;   // 구매가 상승/하락분
-		String changedAppraisedPriceByAction;   // 감정가 상승/하락분
-	}
-	
+    
+    private class ResponseData {
+        int totalPurchasePrice;
+        int totalAppraisedPrice;
+        int foundGrade;
+        int foundFlawEa;
+        int foundAuthenticity;
+        int leftMoney;
+        String changedPurchasedPriceByAction;   // 구매가 상승/하락분
+        String changedAppraisedPriceByAction;   // 감정가 상승/하락분
+    }
+    
     private void showItemAuthenticationScreen(
-    		Connection connection,
-    		HttpServletResponse response,
-    		ResponseData responseData,
-    		int playerKey,
-    		int drcKey
-    		) {
+            Connection connection,
+            HttpServletResponse response,
+            ResponseData responseData,
+            int playerKey,
+            int drcKey
+            ) {
         int money;
         try {
             money = MoneyUpdater.getMoney(connection, playerKey);
@@ -59,13 +59,13 @@ public class DealAction extends JsonServlet {
             return;
         }
         if (money < 200) {
-        	try {
-				sendErrorResponse(response, "not_enough_money", "Not enough money");
-			} catch (IOException e) {
-				e.printStackTrace();
-	        	return;
-			}
-        	return;
+            try {
+                sendErrorResponse(response, "not_enough_money", "Not enough money");
+            } catch (IOException e) {
+                e.printStackTrace();
+                return;
+            }
+            return;
         }
         
         DealRecordByDrcKey dealRecord;
@@ -99,12 +99,12 @@ public class DealAction extends JsonServlet {
                 return;
             }
             double eventMultiplier;
-			try {
-				eventMultiplier = getEventMultiplier(connection, itemCatalog.categoryKey, playerKey);
-			} catch (IOException e) {
-				e.printStackTrace();
-				return;
-			}
+            try {
+                eventMultiplier = getEventMultiplier(connection, itemCatalog.categoryKey, playerKey);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return;
+            }
             
             newPurchasePrice = (int)(dealRecord.askingPrice * (1 - dealRecord.foundFlawEa * 0.05) * 0.5 * eventMultiplier);
             double gradeMultiplier = getGradeMultiplier(dealRecord.foundGrade);
@@ -113,14 +113,14 @@ public class DealAction extends JsonServlet {
             int changedPurchase = newPurchasePrice - oldPurchasePrice;
             int changedAppraise = newAppraisedPrice - oldAppraisedPrice;
             if (changedPurchase < 0) {
-            	responseData.changedAppraisedPriceByAction = "-" + changedPurchase;
+                responseData.changedAppraisedPriceByAction = "-" + changedPurchase;
             } else {
-            	responseData.changedAppraisedPriceByAction = "" + changedPurchase;
+                responseData.changedAppraisedPriceByAction = "" + changedPurchase;
             }
             if (changedAppraise < 0) {
-            	responseData.changedPurchasedPriceByAction = "-" + changedAppraise;
+                responseData.changedPurchasedPriceByAction = "-" + changedAppraise;
             } else {
-            	responseData.changedPurchasedPriceByAction = "" + changedAppraise;
+                responseData.changedPurchasedPriceByAction = "" + changedAppraise;
             }
             responseData.totalPurchasePrice = newPurchasePrice;
             responseData.totalAppraisedPrice = newAppraisedPrice;
@@ -144,15 +144,15 @@ public class DealAction extends JsonServlet {
         }
     }
    
-	
-	
+    
+    
     private void showGradeFindScreen(
-    		Connection connection, 
-    		HttpServletResponse response,
-    		ResponseData responseData,
-    		int playerKey, 
-    		int drcKey,
-    		int level) {
+            Connection connection, 
+            HttpServletResponse response,
+            ResponseData responseData,
+            int playerKey, 
+            int drcKey,
+            int level) {
         switch (level) {
             case 1:
             performGradeAppraisal(connection, response, responseData, playerKey, drcKey, 1, 20);
@@ -169,14 +169,14 @@ public class DealAction extends JsonServlet {
     }
     
     private void performGradeAppraisal(
-    		Connection connection, 
-    		HttpServletResponse response,
-    		ResponseData responseData,
-    		int playerKey, 
-    		int drcKey,
-    		int maxGrade, 
-    		int cost
-    	) {
+            Connection connection, 
+            HttpServletResponse response,
+            ResponseData responseData,
+            int playerKey, 
+            int drcKey,
+            int maxGrade, 
+            int cost
+        ) {
         int money;
         try {
             money = MoneyUpdater.getMoney(connection, playerKey);
@@ -185,13 +185,13 @@ public class DealAction extends JsonServlet {
             return;
         }
         if (money < cost) {
-        	try {
-				sendErrorResponse(response, "not_enough_money", "Not enough money");
-			} catch (IOException e) {
-				e.printStackTrace();
-	        	return;
-			}            
-        	return;
+            try {
+                sendErrorResponse(response, "not_enough_money", "Not enough money");
+            } catch (IOException e) {
+                e.printStackTrace();
+                return;
+            }            
+            return;
         }
         
         DealRecordByDrcKey dealRecord;
@@ -216,12 +216,12 @@ public class DealAction extends JsonServlet {
             return;
         }
         double eventMultiplier;
-		try {
-			eventMultiplier = getEventMultiplier(connection, itemCatalog.categoryKey, playerKey);
-		} catch (IOException e) {
-			e.printStackTrace();
-			return;
-		}
+        try {
+            eventMultiplier = getEventMultiplier(connection, itemCatalog.categoryKey, playerKey);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
         
         double gradeMultiplier = getGradeMultiplier(resultGrade);
         int newAppraisedPrice = (int)(dealRecord.askingPrice * (1 - dealRecord.foundFlawEa * 0.05) * gradeMultiplier * eventMultiplier);
@@ -233,9 +233,9 @@ public class DealAction extends JsonServlet {
         int oldAppraisedPrice = dealRecord.appraisedPrice;
         int changedAppraise = newAppraisedPrice - oldAppraisedPrice;
         if (changedAppraise < 0) {
-        	responseData.changedPurchasedPriceByAction = "-" + changedAppraise;
+            responseData.changedPurchasedPriceByAction = "-" + changedAppraise;
         } else {
-        	responseData.changedPurchasedPriceByAction = "" + changedAppraise;
+            responseData.changedPurchasedPriceByAction = "" + changedAppraise;
         }
         responseData.changedPurchasedPriceByAction = "0";
         responseData.totalPurchasePrice = dealRecord.purchasePrice;
@@ -283,12 +283,12 @@ public class DealAction extends JsonServlet {
 
     
     private void showFlawFind(
-    		Connection connection, 
-    		HttpServletResponse response,
-    		ResponseData responseData,
-    		int playerKey, 
-    		int drcKey,
-    		int level) {
+            Connection connection, 
+            HttpServletResponse response,
+            ResponseData responseData,
+            int playerKey, 
+            int drcKey,
+            int level) {
         switch (level) {
             case 1:
             performFlawFind(connection, response, responseData, playerKey, drcKey, 1, 20);
@@ -306,14 +306,14 @@ public class DealAction extends JsonServlet {
 
     
     private void performFlawFind(
-    		Connection connection,
-    		HttpServletResponse response,
-    		ResponseData responseData,
-    		int playerKey,
-    		int drcKey,
-    		int maxFind, 
-    		int cost
-    	) {
+            Connection connection,
+            HttpServletResponse response,
+            ResponseData responseData,
+            int playerKey,
+            int drcKey,
+            int maxFind, 
+            int cost
+        ) {
         int money;
         try {
             money = MoneyUpdater.getMoney(connection, playerKey);
@@ -322,18 +322,18 @@ public class DealAction extends JsonServlet {
             return;
         }
         if (money < cost) {
-        	try {
-				sendErrorResponse(response, "not_enough_money", "Not enough money");
-			} catch (IOException e) {
-				e.printStackTrace();
-	        	return;
-			}
-        	return;
+            try {
+                sendErrorResponse(response, "not_enough_money", "Not enough money");
+            } catch (IOException e) {
+                e.printStackTrace();
+                return;
+            }
+            return;
         }
         
         DealRecordByDrcKey dealRecord;
         try {
-        	dealRecord = DealRecordByDrcKey.getDealRecordByDrcKey(connection, drcKey);
+            dealRecord = DealRecordByDrcKey.getDealRecordByDrcKey(connection, drcKey);
         } catch (SQLException e) {
             e.printStackTrace();
             return;
@@ -349,7 +349,7 @@ public class DealAction extends JsonServlet {
             ExistingItemUpdater.addToFoundFlaw(connection, dealRecord.itemKey, maxPossibleFlaws);
         } catch (SQLException e) {
             e.printStackTrace();
-        	return;
+            return;
         }
         
         // 이벤트 수치 적용
@@ -358,15 +358,15 @@ public class DealAction extends JsonServlet {
             itemCatalog = ItemCatalog.getItemByKey(connection, dealRecord.itemCatalogKey);
         } catch (SQLException e) {
             e.printStackTrace();
-        	return;
+            return;
         }
         double eventMultiplier;
-		try {
-			eventMultiplier = getEventMultiplier(connection, itemCatalog.categoryKey, playerKey);
-		} catch (IOException e) {
-			e.printStackTrace();
-        	return;
-		}
+        try {
+            eventMultiplier = getEventMultiplier(connection, itemCatalog.categoryKey, playerKey);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
         
         int newPurchasePrice = (int)(dealRecord.askingPrice * (1 - newFoundFlawEa * 0.05) * eventMultiplier);
         
@@ -387,12 +387,12 @@ public class DealAction extends JsonServlet {
         int changedPurchase = newPurchasePrice - oldPurchasePrice;
         int changedAppraise = newAppraisedPrice - oldAppraisedPrice;
         if (changedPurchase < 0) {
-        	responseData.changedAppraisedPriceByAction = "-" + changedPurchase;
+            responseData.changedAppraisedPriceByAction = "-" + changedPurchase;
         } else {
-        	responseData.changedAppraisedPriceByAction = "" + changedPurchase;
+            responseData.changedAppraisedPriceByAction = "" + changedPurchase;
         }
         if (changedAppraise < 0) {
-        	responseData.changedPurchasedPriceByAction = "-" + changedAppraise;
+            responseData.changedPurchasedPriceByAction = "-" + changedAppraise;
         } else {
         responseData.totalPurchasePrice = newPurchasePrice;
         responseData.totalAppraisedPrice = newAppraisedPrice;
@@ -405,7 +405,7 @@ public class DealAction extends JsonServlet {
             MoneyUpdater.subtractMoney(connection, playerKey, cost);
         } catch (SQLException e) {
             e.printStackTrace();
-        	return;
+            return;
         }
         }  
     }
@@ -421,10 +421,10 @@ public class DealAction extends JsonServlet {
     }
     
     private double getEventMultiplier(
-    		Connection connection,
-    		int itemCategoryKey, 
-    		int playerKey
-    		) throws IOException {
+            Connection connection,
+            int itemCategoryKey, 
+            int playerKey
+            ) throws IOException {
         TodaysEvent[] events;
         try {
             events = TodaysEvent.getTodaysEvent(connection, playerKey);
@@ -448,41 +448,41 @@ public class DealAction extends JsonServlet {
     }
     
 
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		RequestData requestData;
-		int playerKey = authenticateUser(request, response);
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        RequestData requestData;
+        int playerKey = authenticateUser(request, response);
         
-		try {
+        try {
             requestData = gson.fromJson(request.getReader().lines().collect(Collectors.joining("\n")), RequestData.class);
         } catch (JsonSyntaxException e) {
             sendErrorResponse(response, "invalid_data", "Received malformed data");
             return;
         }
          
-		ResponseData responseData = new ResponseData();
+        ResponseData responseData = new ResponseData();
 
         try (Connection connection = SQLConnector.connect()) {
-        	switch(requestData.actionType) {
-        	case "FINDFLAW": {
-        		showFlawFind(connection, response, responseData, playerKey, requestData.drcKey, requestData.actionLevel);
-        		break;
-        	}
-        	case "AUTHCHECK": {
-        		showItemAuthenticationScreen(connection, response, responseData, playerKey, requestData.drcKey);
-        		break;
-        	}
-        	case "APPRAISE": {
-        		showGradeFindScreen(connection, response, responseData, playerKey, requestData.drcKey, requestData.actionLevel);
-        		break;
-        	}
+            switch(requestData.actionType) {
+            case "FINDFLAW": {
+                showFlawFind(connection, response, responseData, playerKey, requestData.drcKey, requestData.actionLevel);
+                break;
+            }
+            case "AUTHCHECK": {
+                showItemAuthenticationScreen(connection, response, responseData, playerKey, requestData.drcKey);
+                break;
+            }
+            case "APPRAISE": {
+                showGradeFindScreen(connection, response, responseData, playerKey, requestData.drcKey, requestData.actionLevel);
+                break;
+            }
         }
         } catch (SQLException eSql) {
-        	sendStackTrace(response, eSql);
+            sendStackTrace(response, eSql);
             return;
         }
         
         
         sendJsonResponse(response, responseData);
-	}
+    }
 
 }

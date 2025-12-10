@@ -15,7 +15,7 @@ import phase4.utils.SQLConnector;
 
 @WebServlet("/worldRecords")
 public class WorldRecords extends JsonServlet {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
     private class ResponseData {
         WorldRecord[] worldRecords;

@@ -22,9 +22,9 @@ import phase4.utils.SQLConnector;
 
 @WebServlet("/player/register")
 public class Register extends JsonServlet {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	private class RequestData {
+    private class RequestData {
         String playerId;
         String password;
         

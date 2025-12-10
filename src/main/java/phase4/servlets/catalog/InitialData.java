@@ -16,26 +16,26 @@ import phase4.utils.SQLConnector;
 
 @WebServlet("/catalog/initialData")
 public class InitialData extends JsonServlet {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	private class ResponseData {
-		StaticItem[] itemCatalogs;
-		StaticCustomer[] customerCatalog;
-	}
-	
-	
+    private class ResponseData {
+        StaticItem[] itemCatalogs;
+        StaticCustomer[] customerCatalog;
+    }
+    
+    
 
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         ResponseData responseData = new ResponseData();
         
         try (Connection connection = SQLConnector.connect()) {
-        	try {
-        		responseData.itemCatalogs = StaticItem.loadAllItems(connection);
+            try {
+                responseData.itemCatalogs = StaticItem.loadAllItems(connection);
             } catch (NotASuchRowException e) {
                 sendErrorResponse(response, 401, "no item catalogs", "The item catalogs are not exists.");
             }
-        	try {
-        		responseData.customerCatalog = StaticCustomer.loadAllCustomers(connection);
+            try {
+                responseData.customerCatalog = StaticCustomer.loadAllCustomers(connection);
             } catch (NotASuchRowException e) {
                 sendErrorResponse(response, 401, "no customer catalogs", "The customer catalogs are not exists.");
             }
@@ -44,5 +44,5 @@ public class InitialData extends JsonServlet {
             return;
         }
         sendJsonResponse(response, responseData);
-	}
+    }
 }

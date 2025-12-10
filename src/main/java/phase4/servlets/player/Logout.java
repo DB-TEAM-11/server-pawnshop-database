@@ -17,7 +17,7 @@ import phase4.utils.SQLConnector;
 
 @WebServlet("/player/logout")
 public class Logout extends JsonServlet {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
     
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

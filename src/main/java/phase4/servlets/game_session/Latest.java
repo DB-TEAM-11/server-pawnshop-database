@@ -17,7 +17,7 @@ import phase4.utils.SQLConnector;
 
 @WebServlet("/game-session/latest")
 public class Latest extends JsonServlet {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
     
     private class ResponseData {
         int dayCount;

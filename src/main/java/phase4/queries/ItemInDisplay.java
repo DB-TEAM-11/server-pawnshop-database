@@ -10,27 +10,27 @@ import phase4.exceptions.NotASuchRowException;
 
 public class ItemInDisplay {
     private static final String QUERY = "SELECT "
-    		+ "GSID.DISPLAY_POS, "
-    		+ "DR.ASKING_PRICE, "
-    		+ "DR.PURCHASE_PRICE, "
-    		+ "DR.APPRAISED_PRICE, "
-    		+ "DR.BOUGHT_DATE, "
-    		+ "CC.CUSTOMER_NAME, "
-    		+ "EI.FOUND_GRADE, "
-    		+ "EI.FOUND_FLAW_EA, "
-    		+ "EI.IS_AUTHENTICITY_FOUND, "
-    		+ "EI.AUTHENTICITY, "
-    		+ "EI.ITEM_STATE, "
-    		+ "EI.ITEM_KEY, "
-    		+ "EI.ITEM_CATALOG_KEY "
-    		+ "FROM GAME_SESSION_ITEM_DISPLAY GSID "
-    		+ "JOIN DEAL_RECORD DR "
-    		+ "ON GSID.GAME_SESSION_KEY = DR.GAME_SESSION_KEY "
-    		+ "JOIN CUSTOMER_CATALOG CC "
-    		+ "ON DR.SELLER_KEY = CC.CUSTOMER_KEY "
-    		+ "JOIN EXISTING_ITEM EI "
-    		+ "ON GSID.GAME_SESSION_KEY = EI.GAME_SESSION_KEY "
-    		+ "WHERE GSID.GAME_SESSION_KEY = ?";
+            + "GSID.DISPLAY_POS, "
+            + "DR.ASKING_PRICE, "
+            + "DR.PURCHASE_PRICE, "
+            + "DR.APPRAISED_PRICE, "
+            + "DR.BOUGHT_DATE, "
+            + "CC.CUSTOMER_NAME, "
+            + "EI.FOUND_GRADE, "
+            + "EI.FOUND_FLAW_EA, "
+            + "EI.IS_AUTHENTICITY_FOUND, "
+            + "EI.AUTHENTICITY, "
+            + "EI.ITEM_STATE, "
+            + "EI.ITEM_KEY, "
+            + "EI.ITEM_CATALOG_KEY "
+            + "FROM GAME_SESSION_ITEM_DISPLAY GSID "
+            + "JOIN DEAL_RECORD DR "
+            + "ON GSID.GAME_SESSION_KEY = DR.GAME_SESSION_KEY "
+            + "JOIN CUSTOMER_CATALOG CC "
+            + "ON DR.SELLER_KEY = CC.CUSTOMER_KEY "
+            + "JOIN EXISTING_ITEM EI "
+            + "ON GSID.GAME_SESSION_KEY = EI.GAME_SESSION_KEY "
+            + "WHERE GSID.GAME_SESSION_KEY = ?";
     
     
     public int displayPositionKey;
@@ -47,18 +47,18 @@ public class ItemInDisplay {
     public int itemCatalogKey; 
     
     private ItemInDisplay(
-	     int displayPositionKey,
-	     int askingPrice,
-	     int purchasePrice,
-	     int appraisedPrice,
-	     int boughtDate,
-	     String sellerName,
-	     int foundGrade,
-	     int foundFlawEa,
-	     int authenticity,
-	     int itemState,
-	     int itemKey,
-	     int itemCatalogKey
+         int displayPositionKey,
+         int askingPrice,
+         int purchasePrice,
+         int appraisedPrice,
+         int boughtDate,
+         String sellerName,
+         int foundGrade,
+         int foundFlawEa,
+         int authenticity,
+         int itemState,
+         int itemKey,
+         int itemCatalogKey
     ) {
         this.displayPositionKey = displayPositionKey;
         this.askingPrice = askingPrice;

@@ -23,7 +23,7 @@ import org.apache.coyote.CloseNowException;
 
 import com.google.gson.JsonSyntaxException;
 
-@WebServlet("/deal/action/")
+@WebServlet("/deal/action")
 public class DealAction extends JsonServlet {
     private static final long serialVersionUID = 1L;
     

@@ -12,8 +12,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import phase4.constants.AffectedPrice;
 import phase4.constants.Grade;
+import phase4.constants.ItemState;
 import phase4.exceptions.NotASuchRowException;
+import phase4.queries.CustomerHiddenDiscovered;
+import phase4.queries.CustomerInfo;
 import phase4.queries.CustomerProperty;
+import phase4.queries.DealRecordByItemState;
+import phase4.queries.DisplayManagement;
+import phase4.queries.ExistingItem;
 import phase4.queries.InsertDealRecord;
 import phase4.queries.InsertExistingItem;
 import phase4.queries.ItemCatalog;
@@ -59,7 +65,7 @@ public class DailyDeal extends JsonServlet {
         ArrayList<ResponseData.Deal> deals = new ArrayList<>();
         
         PlayerInfo playerInfo;
-        int askingPricePercent = 100, appraisedPricePercent = 100;
+        int askingPricePercent = 100, purchasePricePercent = 100, appraisedPricePercent = 100;
         try (Connection connection = SQLConnector.connect()) {
             try {
                 playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
@@ -67,88 +73,163 @@ public class DailyDeal extends JsonServlet {
                 sendErrorResponse(response, "no_game_session", "No game session exists.");
                 return;
             }
-            
-            for (TodaysEvent event: TodaysEvent.getTodaysEvent(connection, playerInfo.gameSessionKey)) {
-                if (event.affectedPrice == AffectedPrice.ASKING.value()) {
-                    askingPricePercent += event.amount;
-                }
-                if (event.affectedPrice == AffectedPrice.APPRAISED.value()) {
-                    appraisedPricePercent += event.amount;
-                }
+
+            DealRecordByItemState[] dealRecords;
+            try {
+                dealRecords = DealRecordByItemState.getDealRecordByItemState(connection, playerKey, ItemState.CREATED);
+            } catch (NotASuchRowException e) {
+                dealRecords = null;
             }
 
-            ItemCatalog itemCatalog;
-            RandomCustomerWithDetail customer;
-            CustomerProperty customerProperty;
             ResponseData.Deal deal;
-            double gradeBase;
-
-            Grade grade;
-            int flawEa;
-            float suspiciousFlawAura;
-            boolean authenticity;
-            int basePrice, askingPrice, appraisedPrice;
-            int itemKey, dealRecordKey;
-            for (int i = 0; i < 3; i++) {
-                itemCatalog = ItemCatalog.getRandomItem(connection);
-                customer = RandomCustomerWithDetail.getRandomCustomersWithDetails(connection, 1)[0];
-                customerProperty = CustomerProperty.getCustomerProperty(connection, customer.customerKey);
-                deal = new ResponseData.Deal();
-                gradeBase = random.nextDouble();
-
-                if (gradeBase < customerProperty.normalProbability * 0.01) {
-                    grade = Grade.NORMAL;
-                } else if (gradeBase < (customerProperty.rareProbability + customerProperty.normalProbability) * 0.01) {
-                    grade = Grade.RARE;
-                } else if (gradeBase < (customerProperty.uniqueProbability + customerProperty.rareProbability + customerProperty.normalProbability) * 0.01) {
-                    grade = Grade.UNIQUE;
-                } else {
-                    grade = Grade.LEGENDARY;
-                }
-                flawEa = (int)(customerProperty.flawBase * 0.01 + 4 * random.nextDouble());
-                suspiciousFlawAura = random.nextFloat();
-                authenticity = random.nextDouble() > customerProperty.fakeProbability * 0.01;
+            ExistingItem item;
+            int customerHiddenRevailedFlag;
+            if (dealRecords != null) {
+                CustomerInfo customer;
                 
-                basePrice = (int)(
-                    itemCatalog.basePrice
-                    * (1 - 0.02 * (flawEa))
-                    * (1 - 0.003 * customerProperty.fakeProbability)
-                    * (1 / 3 + 0.1 * Grade.priceMultiplier[grade.value()])
-                    * (1 + 0.25 * customer.fraud)
-                    * (0.9 + 0.2 * customer.wellCollect)
-                );
-                askingPrice = (int)(basePrice * (askingPricePercent / 100.0));
-                appraisedPrice = (int)(
-                    askingPrice
-                    * (1 - flawEa * 0.05)
-                    * Grade.priceMultiplier[grade.value()]
-                    * (appraisedPricePercent / 100.0)
-                );
+                for (DealRecordByItemState dealRecord : dealRecords) {
+                    deal = new ResponseData.Deal();
+                    item = ExistingItem.getCreatedItem(connection, dealRecord.itemKey);
+    
+                    deal.drcKey = dealRecord.drcKey;
+                    deal.askingPrice = dealRecord.askingPrice;
+                    deal.purchasePrice = dealRecord.purchasePrice;
+                    deal.appraisedPrice = dealRecord.appraisedPrice;
+                    deal.itemKey = dealRecord.itemKey;
+                    deal.itemCatalogKey = item.itemCatalogKey;
+                    deal.foundGrade = item.grade;
+                    deal.foundFlawEa = item.foundFlawEa;
+                    deal.foundAuthenticity = item.isAuthenticityFound ? (item.authenticity ? 1 : 0) : -1;
+                    deal.customerKey = dealRecord.sellerKey;
 
-                itemKey = InsertExistingItem.insertItem(
-                    connection, playerInfo.gameSessionKey, itemCatalog.itemCatalogKey,
-                    grade.value(), flawEa, suspiciousFlawAura, authenticity ? 'Y' : 'N'
-                );
-                dealRecordKey = InsertDealRecord.insertDealRecord(
-                    connection, playerInfo.gameSessionKey, customer.customerKey,
-                    itemKey, askingPrice, 0, appraisedPrice
-                );
-
-                deal.drcKey = dealRecordKey;
-                deal.askingPrice = askingPrice;
-                deal.purchasePrice = 0;
-                deal.appraisedPrice = appraisedPrice;
-                deal.itemKey = itemKey;
-                deal.itemCatalogKey = itemCatalog.itemCatalogKey;
-                deal.foundGrade = -1;
-                deal.foundFlawEa = -1;
-                deal.foundAuthenticity = -1;
-                deal.customerKey = customer.customerKey;
-                deal.revealedFraud = -1;
-                deal.revealedWellCollect = -1;
-                deal.revealedClumsy = -1;
-
-                deals.add(deal);
+                    try {
+                        customerHiddenRevailedFlag = CustomerHiddenDiscovered.getHintRevealedFlag(connection, playerInfo.gameSessionKey, dealRecord.sellerKey);
+                    } catch (NotASuchRowException e) {
+                        customerHiddenRevailedFlag = 0;
+                    }
+                    customer = CustomerInfo.getCustomerInfo(connection, dealRecord.sellerKey);
+                    if ((customerHiddenRevailedFlag & 4) == 4) {
+                        deal.revealedFraud = customer.fraud;
+                    } else {
+                        deal.revealedFraud = -1;
+                    }
+                    if ((customerHiddenRevailedFlag & 2) == 2) {
+                        deal.revealedWellCollect = customer.wellCollect;
+                    } else {
+                        deal.revealedWellCollect = -1;
+                    }
+                    if ((customerHiddenRevailedFlag & 1) == 1) {
+                        deal.revealedClumsy = customer.clumsy;
+                    } else {
+                        deal.revealedClumsy = -1;
+                    }
+    
+                    deals.add(deal);
+                }
+            } else {
+                for (TodaysEvent event: TodaysEvent.getTodaysEvent(connection, playerInfo.gameSessionKey)) {
+                    if (event.affectedPrice == AffectedPrice.ASKING.value()) {
+                        askingPricePercent += event.amount;
+                    }
+                    if (event.affectedPrice == AffectedPrice.PURCHASE.value()) {
+                        purchasePricePercent += event.amount;
+                    }
+                    if (event.affectedPrice == AffectedPrice.APPRAISED.value()) {
+                        appraisedPricePercent += event.amount;
+                    }
+                }
+    
+                ItemCatalog itemCatalog;
+                RandomCustomerWithDetail customer;
+                CustomerProperty customerProperty;
+                double gradeBase;
+    
+                Grade grade;
+                int flawEa;
+                float suspiciousFlawAura;
+                boolean authenticity;
+                int basePrice, askingPrice, appraisedPrice;
+                int itemKey, dealRecordKey;
+                for (int i = 0; i < 3; i++) {
+                    itemCatalog = ItemCatalog.getRandomItem(connection);
+                    customer = RandomCustomerWithDetail.getRandomCustomersWithDetails(connection, 1)[0];
+                    customerProperty = CustomerProperty.getCustomerProperty(connection, customer.customerKey);
+                    deal = new ResponseData.Deal();
+                    gradeBase = random.nextDouble();
+    
+                    if (gradeBase < customerProperty.normalProbability * 0.01) {
+                        grade = Grade.NORMAL;
+                    } else if (gradeBase < (customerProperty.rareProbability + customerProperty.normalProbability) * 0.01) {
+                        grade = Grade.RARE;
+                    } else if (gradeBase < (customerProperty.uniqueProbability + customerProperty.rareProbability + customerProperty.normalProbability) * 0.01) {
+                        grade = Grade.UNIQUE;
+                    } else {
+                        grade = Grade.LEGENDARY;
+                    }
+                    flawEa = (int)(customerProperty.flawBase * 0.01 + 4 * random.nextDouble());
+                    suspiciousFlawAura = random.nextFloat();
+                    authenticity = random.nextDouble() > customerProperty.fakeProbability * 0.01;
+                    
+                    basePrice = (int)(
+                        itemCatalog.basePrice
+                        * (1 - 0.02 * (flawEa))
+                        * (1 - 0.003 * customerProperty.fakeProbability)
+                        * (1 / 3 + 0.1 * Grade.priceMultiplier[grade.value()])
+                        * (1 + 0.25 * customer.fraud)
+                        * (0.9 + 0.2 * customer.wellCollect)
+                    );
+                    askingPrice = (int)(basePrice * (askingPricePercent / 100.0));
+                    appraisedPrice = (int)(
+                        askingPrice
+                        * (1 - flawEa * 0.05)
+                        * Grade.priceMultiplier[grade.value()]
+                        * (appraisedPricePercent / 100.0)
+                    );
+    
+                    itemKey = InsertExistingItem.insertItem(
+                        connection, playerInfo.gameSessionKey, itemCatalog.itemCatalogKey,
+                        grade.value(), flawEa, suspiciousFlawAura, authenticity ? 'Y' : 'N'
+                    );
+                    dealRecordKey = InsertDealRecord.insertDealRecord(
+                        connection, playerInfo.gameSessionKey, customer.customerKey,
+                        itemKey, askingPrice, (int)(askingPrice * (purchasePricePercent * 0.01)), appraisedPrice
+                    );
+                    item = ExistingItem.getCreatedItem(connection, itemKey);
+    
+                    deal.drcKey = dealRecordKey;
+                    deal.askingPrice = askingPrice;
+                    deal.purchasePrice = (int)(askingPrice * (purchasePricePercent * 0.01));
+                    deal.appraisedPrice = appraisedPrice;
+                    deal.itemKey = itemKey;
+                    deal.itemCatalogKey = itemCatalog.itemCatalogKey;
+                    deal.foundGrade = -1;
+                    deal.foundFlawEa = -1;
+                    deal.foundAuthenticity = -1;
+                    deal.customerKey = customer.customerKey;
+                    
+                    try {
+                        customerHiddenRevailedFlag = CustomerHiddenDiscovered.getHintRevealedFlag(connection, playerInfo.gameSessionKey, customer.customerKey);
+                    } catch (NotASuchRowException e) {
+                        customerHiddenRevailedFlag = 0;
+                    }
+                    if ((customerHiddenRevailedFlag & 4) == 4) {
+                        deal.revealedFraud = customer.fraud;
+                    } else {
+                        deal.revealedFraud = -1;
+                    }
+                    if ((customerHiddenRevailedFlag & 2) == 2) {
+                        deal.revealedWellCollect = customer.wellCollect;
+                    } else {
+                        deal.revealedWellCollect = -1;
+                    }
+                    if ((customerHiddenRevailedFlag & 1) == 1) {
+                        deal.revealedClumsy = customer.clumsy;
+                    } else {
+                        deal.revealedClumsy = -1;
+                    }
+    
+                    deals.add(deal);
+                }
             }
         } catch (SQLException e) {
             sendStackTrace(response, e);

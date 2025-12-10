@@ -14,8 +14,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import phase4.constants.ItemState;
 import phase4.exceptions.NotASuchRowException;
 import phase4.queries.CustomerInfo;
-import phase4.queries.DisplayedItem;
+import phase4.queries.ExistingItem;
 import phase4.queries.ExistingItemUpdater;
+import phase4.queries.PlayerInfo;
 import phase4.servlets.JsonServlet;
 import phase4.utils.SQLConnector;
 
@@ -52,9 +53,16 @@ public class SellStart extends JsonServlet {
             return;
         }
         
-        DisplayedItem itemInfo;
+        PlayerInfo playerInfo;
+        ExistingItem itemInfo;
         CustomerInfo customerInfo;
         try (Connection connection = SQLConnector.connect()) {
+            try {
+                playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
+            } catch (NotASuchRowException e) {
+                sendErrorResponse(response, "no_game_session", "No game session exists.");
+                return;
+            }
             try {
                 customerInfo = CustomerInfo.getCustomerInfo(connection, requestData.customerKey);
             } catch (NotASuchRowException e) {
@@ -62,7 +70,7 @@ public class SellStart extends JsonServlet {
                 return;
             }
 
-            itemInfo = DisplayedItem.getPreferableItem(connection, playerKey, requestData.customerKey);
+            itemInfo = ExistingItem.getPreferableItem(connection, requestData.customerKey);
             if (itemInfo == null) {
                 sendErrorResponse(response, "no_matched_item", "Item category does not match customer preference.");
                 return;

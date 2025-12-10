@@ -15,7 +15,7 @@ import phase4.constants.ItemState;
 import phase4.exceptions.NotASuchRowException;
 import phase4.queries.CustomerInfo;
 import phase4.queries.DealRecordUpdater;
-import phase4.queries.DisplayedItem;
+import phase4.queries.ExistingItem;
 import phase4.queries.ExistingItemUpdater;
 import phase4.queries.MoneyUpdater;
 import phase4.queries.PlayerInfo;
@@ -62,7 +62,7 @@ public class SellComplete extends JsonServlet {
         }
         
         PlayerInfo playerInfo;
-        DisplayedItem itemInfo;
+        ExistingItem itemInfo;
         CustomerInfo customerInfo;
         int soldPrice;
         try (Connection connection = SQLConnector.connect()) {
@@ -75,9 +75,12 @@ public class SellComplete extends JsonServlet {
                 return;
             }
             try {
-                itemInfo = DisplayedItem.getDisplayedItem(connection, playerKey, requestData.itemKey);
+                itemInfo = ExistingItem.getDisplayedItem(connection, requestData.itemKey);
+                if (itemInfo.gameSessionKey != playerInfo.gameSessionKey) {
+                    sendErrorResponse(response, "not_a_such_item", "Not a such item.");
+                }
             } catch (NotASuchRowException e) {
-                sendErrorResponse(response, "no_item", "Not a such item.");
+                sendErrorResponse(response, "not_a_such_item", "Not a such item.");
                 return;
             }
             try {
@@ -88,7 +91,7 @@ public class SellComplete extends JsonServlet {
             }
             
             if (itemInfo.gameSessionKey != playerInfo.gameSessionKey) {
-                sendErrorResponse(response, "no_item", "Not a such item.");
+                sendErrorResponse(response, "not_a_such_item", "Not a such item.");
                 return;
             }
             if (itemInfo.categoryKey != customerInfo.categoryKey) {
@@ -102,7 +105,7 @@ public class SellComplete extends JsonServlet {
             
             soldPrice = (int)(itemInfo.appraisedPrice * 0.8);
             
-            DisplayedItem.deleteDisplayedItemEntry(connection, requestData.itemKey);
+            ExistingItem.deleteDisplayedItemEntry(connection, requestData.itemKey);
             ExistingItemUpdater.updateItemState(connection, itemInfo.itemKey, ItemState.SOLD);
             DealRecordUpdater.updateSoldInfo(connection, requestData.itemKey, soldPrice, requestData.customerKey);
             MoneyUpdater.addMoney(connection, playerKey, soldPrice);

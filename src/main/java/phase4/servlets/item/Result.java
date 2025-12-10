@@ -16,7 +16,7 @@ import phase4.constants.ItemState;
 import phase4.exceptions.NotASuchRowException;
 import phase4.queries.AuctionedItem;
 import phase4.queries.DealRecordUpdater;
-import phase4.queries.DisplayedItem;
+import phase4.queries.ExistingItem;
 import phase4.queries.ExistingItemUpdater;
 import phase4.queries.GameSessionUpdater;
 import phase4.queries.MoneyUpdater;
@@ -99,7 +99,7 @@ public class Result extends JsonServlet {
             
             for (AuctionedItem item: auctionedItem) {
                 netChange += item.appraisedPrice;
-                DisplayedItem.deleteDisplayedItemEntry(connection, item.itemKey);
+                ExistingItem.deleteDisplayedItemEntry(connection, item.itemKey);
                 ExistingItemUpdater.updateItemState(connection, item.itemKey, ItemState.SOLD);
                 DealRecordUpdater.updateSoldInfo(connection, item.itemKey, item.appraisedPrice);
                 actionResults.add(data.new ActionResults(

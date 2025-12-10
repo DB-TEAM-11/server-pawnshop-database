@@ -14,7 +14,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import phase4.constants.ItemState;
 import phase4.exceptions.NotASuchRowException;
 import phase4.queries.CustomerInfo;
-import phase4.queries.DisplayedItem;
+import phase4.queries.ExistingItem;
 import phase4.queries.ExistingItemUpdater;
 import phase4.queries.PlayerInfo;
 import phase4.servlets.JsonServlet;
@@ -54,9 +54,11 @@ public class SellCancel extends JsonServlet {
         }
         
         PlayerInfo playerInfo;
-        DisplayedItem itemInfo;
+        ExistingItem itemInfo;
         CustomerInfo customerInfo;
         try (Connection connection = SQLConnector.connect()) {
+            connection.setAutoCommit(false);
+
             try {
                 playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
             } catch (NotASuchRowException e) {
@@ -64,9 +66,12 @@ public class SellCancel extends JsonServlet {
                 return;
             }
             try {
-                itemInfo = DisplayedItem.getDisplayedItem(connection, playerKey, requestData.itemKey);
+                itemInfo = ExistingItem.getDisplayedItem(connection, requestData.itemKey);
+                if (itemInfo.gameSessionKey != playerInfo.gameSessionKey) {
+                    sendErrorResponse(response, "not_a_such_item", "Not a such item.");
+                }
             } catch (NotASuchRowException e) {
-                sendErrorResponse(response, "no_item", "Not a such item.");
+                sendErrorResponse(response, "not_a_such_item", "Not a such item.");
                 return;
             }
             try {
@@ -77,7 +82,7 @@ public class SellCancel extends JsonServlet {
             }
             
             if (itemInfo.gameSessionKey != playerInfo.gameSessionKey) {
-                sendErrorResponse(response, "no_item", "Not a such item.");
+                sendErrorResponse(response, "not_a_such_item", "Not a such item.");
                 return;
             }
             if (itemInfo.categoryKey != customerInfo.categoryKey) {
@@ -93,6 +98,7 @@ public class SellCancel extends JsonServlet {
                 sendErrorResponse(response, "not_selling", "Given item is not selling currently.");
                 return;
             }
+            connection.commit();
         } catch (SQLException e) {
             sendStackTrace(response, e);
             return;

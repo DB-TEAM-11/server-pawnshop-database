@@ -18,7 +18,8 @@ import phase4.exceptions.NotASuchRowException;
 import phase4.queries.DailyCalculate;
 import phase4.queries.DealDeleter;
 import phase4.queries.DealRecordByItemState;
-import phase4.queries.DisplayedItem;
+import phase4.queries.DisplayManagement;
+import phase4.queries.ExistingItem;
 import phase4.queries.GameSessionUpdater;
 import phase4.queries.MoneyUpdater;
 import phase4.queries.NewNews;
@@ -99,7 +100,7 @@ public class DealCancel extends JsonServlet {
         Random random = new Random();
         
         PlayerInfo playerInfo;
-        DisplayedItem itemInfo;
+        ExistingItem itemInfo;
         ResponseData.DailyFinalize dailyFinalize = null;
         String[] notFoundItemCategories = null;
         try (Connection connection = SQLConnector.connect()) {
@@ -113,17 +114,25 @@ public class DealCancel extends JsonServlet {
                 return;
             }
             try {
-                itemInfo = DisplayedItem.getDisplayedItem(connection, playerKey, requestData.itemKey);
+                itemInfo = ExistingItem.getCreatedItem(connection, requestData.itemKey);
+                if (itemInfo.gameSessionKey != playerInfo.gameSessionKey) {
+                    sendErrorResponse(response, "not_a_such_item", "Not a such item.");
+                    return;
+                }
             } catch (NotASuchRowException e) {
-                sendErrorResponse(response, "no_game_session", "No game session exists.");
+                sendErrorResponse(response, "not_a_such_item", "Not a such item.");
                 return;
             }
             if (itemInfo.dealRecordKey != requestData.drcKey) {
                 sendErrorResponse(response, "deal_record_key_mismatch", "Deal record isn't match with item.");
                 return;
             }
+            if (itemInfo.itemState != ItemState.CREATED.value()) {
+                sendErrorResponse(response, "invalid_state", "Can't buy that item.");
+            }
             
             // Remove deal and item
+            DisplayManagement.removeFromDisplay(connection, requestData.itemKey);
             DealDeleter.deleteDealRecord(connection, requestData.itemKey);
             DealDeleter.deleteItem(connection, requestData.itemKey);
             connection.commit();

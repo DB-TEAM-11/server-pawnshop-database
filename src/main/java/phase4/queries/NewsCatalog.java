@@ -21,6 +21,7 @@ public class NewsCatalog {
     public static int getCount(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             ResultSet queryResult = statement.executeQuery(COUNT_QUERY);
+            queryResult.next();
             return queryResult.getInt(1);
         }
     }

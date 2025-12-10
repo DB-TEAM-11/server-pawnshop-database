@@ -52,6 +52,7 @@ public class DealRecordUpdater {
         try (PreparedStatement statement = connection.prepareStatement(UPDATE_PURCHASE_INFO_QUERY)) {
             statement.setInt(1, purchasedPrice);
             statement.setInt(2, itemKey);
+            statement.setInt(3, itemKey);
             statement.executeUpdate();
         }
     }

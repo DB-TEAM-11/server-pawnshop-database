@@ -13,7 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import phase4.constants.ItemState;
 import phase4.exceptions.NotASuchRowException;
-import phase4.queries.DisplayedItem;
+import phase4.queries.ExistingItem;
 import phase4.queries.ExistingItemUpdater;
 import phase4.queries.PlayerInfo;
 import phase4.servlets.JsonServlet;
@@ -70,7 +70,7 @@ public class Action extends JsonServlet {
         }
         
         PlayerInfo playerInfo;
-        DisplayedItem itemInfo;
+        ExistingItem itemInfo;
         try (Connection connection = SQLConnector.connect()) {
             try {
                 playerInfo = PlayerInfo.getPlayerInfo(connection, playerKey);
@@ -79,14 +79,17 @@ public class Action extends JsonServlet {
                 return;
             }
             try {
-                itemInfo = DisplayedItem.getDisplayedItem(connection, playerKey, requestData.itemKey);
+                itemInfo = ExistingItem.getDisplayedItem(connection, requestData.itemKey);
+                if (itemInfo.gameSessionKey != playerInfo.gameSessionKey) {
+                    sendErrorResponse(response, "not_a_such_item", "Not a such item.");
+                }
             } catch (NotASuchRowException e) {
-                sendErrorResponse(response, "no_item", "Not a such item.");
+                sendErrorResponse(response, "not_a_such_item", "Not a such item.");
                 return;
             }
 
             if (itemInfo.gameSessionKey != playerInfo.gameSessionKey) {
-                sendErrorResponse(response, "no_item", "Not a such item.");
+                sendErrorResponse(response, "not_a_such_item", "Not a such item.");
                 return;
             }
             if (itemInfo.itemState != ItemState.DISPLAYING.value() || itemInfo.itemState != ItemState.RECORVERED.value()) {

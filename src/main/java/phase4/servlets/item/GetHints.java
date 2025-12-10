@@ -28,7 +28,7 @@ public class GetHints extends JsonServlet {
     
     private class ResponseData {
         String hintName;
-        float hintValue;
+        String hintValue;
         int leftMoney;
     }
 
@@ -37,7 +37,7 @@ public class GetHints extends JsonServlet {
         Random random = new Random();
         int itemKey, playerKey = authenticateUser(request, response);
         int sellerKey, leftMoney = 0;;
-        float hintValue = 0;;
+        float hintValue = 0;
         String hintName = "";
         
         
@@ -83,17 +83,11 @@ public class GetHints extends JsonServlet {
             } catch (SQLException e2) {
                 sendErrorResponse(response, "not_hintValue", "Can not calculate the item's hintValue from this seller key");
                 return;
-            }                
-            try {
-                MoneyUpdater.subtractMoney(connection, playerKey, 10);
-            } catch (SQLException e2) {
-                sendErrorResponse(response, "not_selling", "Given item is not selling currently.");
-                return;
             }
             try {
                 MoneyUpdater.subtractMoney(connection, playerKey, 10);
             } catch (SQLException e2) {
-                sendErrorResponse(response, "failed update", "failed update Money.");
+                sendErrorResponse(response, "money_update_failed", "failed update Money.");
                 return;
             }
             try {
@@ -111,7 +105,7 @@ public class GetHints extends JsonServlet {
         
         ResponseData responseData = new ResponseData();
         responseData.hintName = hintName;
-        responseData.hintValue = hintValue;
+        responseData.hintValue = String.format("%.1f%%", hintValue);
         responseData.leftMoney = leftMoney;
         
         sendJsonResponse(response, responseData);

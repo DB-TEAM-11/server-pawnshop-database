@@ -20,7 +20,8 @@ import phase4.exceptions.NotASuchRowException;
 import phase4.queries.DailyCalculate;
 import phase4.queries.DealRecordByItemState;
 import phase4.queries.DealRecordUpdater;
-import phase4.queries.DisplayedItem;
+import phase4.queries.DisplayManagement;
+import phase4.queries.ExistingItem;
 import phase4.queries.ExistingItemUpdater;
 import phase4.queries.GameSessionUpdater;
 import phase4.queries.MoneyUpdater;
@@ -120,7 +121,8 @@ public class DealComplete extends JsonServlet {
         Random random = new Random();
         
         PlayerInfo playerInfo;
-        DisplayedItem itemInfo;
+        ExistingItem itemInfo;
+        int displayPosition = -1;
         int eventPricePercent = 100;
         int purchasePrice;
         ResponseData.DailyFinalize dailyFinalize = null;
@@ -136,14 +138,32 @@ public class DealComplete extends JsonServlet {
                 return;
             }
             try {
-                itemInfo = DisplayedItem.getDisplayedItem(connection, playerKey, requestData.itemKey);
+                itemInfo = ExistingItem.getCreatedItem(connection, requestData.itemKey);
+                if (itemInfo.gameSessionKey != playerInfo.gameSessionKey) {
+                    sendErrorResponse(response, "not_a_such_item", "Not a such item.");
+                    return;
+                }
             } catch (NotASuchRowException e) {
-                sendErrorResponse(response, "no_game_session", "No game session exists.");
+                sendErrorResponse(response, "not_a_such_item", "Not a such item.");
                 return;
             }
             if (itemInfo.dealRecordKey != requestData.drcKey) {
                 sendErrorResponse(response, "deal_record_key_mismatch", "Deal record isn't match with item.");
                 return;
+            }
+            if (itemInfo.itemState != ItemState.CREATED.value()) {
+                sendErrorResponse(response, "invalid_state", "Can't buy that item.");
+            }
+
+            int[] usedPoistion = DisplayManagement.getUsedDisplayPositions(connection, playerInfo.gameSessionKey);
+            for (int i = 0; i < 8; i++) {
+                if (i >= usedPoistion.length || usedPoistion[i] != i) {
+                    displayPosition = i;
+                    break;
+                }
+            }
+            if (displayPosition == -1) {
+                sendErrorResponse(response, "no_space", "No left space in display.");
             }
 
             // Process purchase
@@ -172,6 +192,7 @@ public class DealComplete extends JsonServlet {
             DealRecordUpdater.updatePurchaseInfo(connection, requestData.itemKey, purchasePrice);
             itemInfo.boughtDate = playerInfo.dayCount;
             itemInfo.purchasePrice = purchasePrice;
+            DisplayManagement.addToDisplay(connection, playerInfo.gameSessionKey, displayPosition, requestData.itemKey);
             MoneyUpdater.addMoney(connection, playerKey, -purchasePrice);
             playerInfo.money -= purchasePrice;
             
@@ -243,7 +264,8 @@ public class DealComplete extends JsonServlet {
         ResponseData data = new ResponseData();
         data.leftMoney = playerInfo.money;
 
-        data.displayedItem.displayPositionKey = itemInfo.displayPos;
+        data.displayedItem = new ResponseData.DisplayedItem();
+        data.displayedItem.displayPositionKey = displayPosition;
         data.displayedItem.askingPrice = itemInfo.askingPrice;
         data.displayedItem.purchasePrice = itemInfo.purchasePrice;
         data.displayedItem.appraisedPrice = itemInfo.appraisedPrice;
@@ -259,6 +281,7 @@ public class DealComplete extends JsonServlet {
         if (notFoundItemCategories != null) {
             data.isGameOvered = "Y";
 
+            data.worldRecord = new ResponseData.WorldRecord();
             data.worldRecord.playerId = playerInfo.playerId;
             data.worldRecord.nickname = playerInfo.nickname;
             data.worldRecord.pawnshopName = playerInfo.shopName;
@@ -277,6 +300,7 @@ public class DealComplete extends JsonServlet {
         if (dailyFinalize != null) {
             data.isDayNext = "Y";
 
+            data.dayNext = new ResponseData.NextDay();
             data.dayNext.dayCount = playerInfo.dayCount;
             data.dayNext.leftMoney = playerInfo.money;
             data.dayNext.personalDebt = playerInfo.personalDebt;

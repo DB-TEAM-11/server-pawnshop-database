@@ -247,6 +247,7 @@ public class DealAction extends JsonServlet {
         try {
             DealRecordUpdater.updatePrices(connection, drcKey, dealRecord.purchasePrice, newAppraisedPrice);
             MoneyUpdater.subtractMoney(connection, playerKey, cost);
+            responseData.leftMoney = MoneyUpdater.getMoney(connection, playerKey);
         } catch (SQLException e) {
             e.printStackTrace();
             return;
@@ -403,6 +404,7 @@ public class DealAction extends JsonServlet {
         try {
             DealRecordUpdater.updatePrices(connection, drcKey, newPurchasePrice, newAppraisedPrice);
             MoneyUpdater.subtractMoney(connection, playerKey, cost);
+            responseData.leftMoney = MoneyUpdater.getMoney(connection, playerKey);
         } catch (SQLException e) {
             e.printStackTrace();
             return;

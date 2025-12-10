@@ -34,7 +34,7 @@ public class Action extends JsonServlet {
     }
     
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         int playerKey = authenticateUser(request, response);
         if (playerKey <= 0) {
             return;

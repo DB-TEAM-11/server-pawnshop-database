@@ -89,6 +89,7 @@ public class DealAction extends JsonServlet {
         int newPurchasePrice = dealRecord.purchasePrice;
         int newAppraisedPrice = dealRecord.appraisedPrice;
         
+        
         if (!dealRecord.authenticity) {
             // 이벤트 수치 적용
             ItemCatalog itemCatalog;
@@ -113,12 +114,12 @@ public class DealAction extends JsonServlet {
             int changedPurchase = newPurchasePrice - oldPurchasePrice;
             int changedAppraise = newAppraisedPrice - oldAppraisedPrice;
             if (changedPurchase < 0) {
-                responseData.changedAppraisedPriceByAction = "-" + changedPurchase;
+                responseData.changedAppraisedPriceByAction = "" + changedPurchase;
             } else {
                 responseData.changedAppraisedPriceByAction = "" + changedPurchase;
             }
             if (changedAppraise < 0) {
-                responseData.changedPurchasedPriceByAction = "-" + changedAppraise;
+                responseData.changedPurchasedPriceByAction = "" + changedAppraise;
             } else {
                 responseData.changedPurchasedPriceByAction = "" + changedAppraise;
             }
@@ -233,7 +234,7 @@ public class DealAction extends JsonServlet {
         int oldAppraisedPrice = dealRecord.appraisedPrice;
         int changedAppraise = newAppraisedPrice - oldAppraisedPrice;
         if (changedAppraise < 0) {
-            responseData.changedPurchasedPriceByAction = "-" + changedAppraise;
+            responseData.changedPurchasedPriceByAction = "" + changedAppraise;
         } else {
             responseData.changedPurchasedPriceByAction = "" + changedAppraise;
         }
@@ -388,12 +389,12 @@ public class DealAction extends JsonServlet {
         int changedPurchase = newPurchasePrice - oldPurchasePrice;
         int changedAppraise = newAppraisedPrice - oldAppraisedPrice;
         if (changedPurchase < 0) {
-            responseData.changedAppraisedPriceByAction = "-" + changedPurchase;
+            responseData.changedAppraisedPriceByAction = "" + changedPurchase;
         } else {
             responseData.changedAppraisedPriceByAction = "" + changedPurchase;
         }
         if (changedAppraise < 0) {
-            responseData.changedPurchasedPriceByAction = "-" + changedAppraise;
+            responseData.changedPurchasedPriceByAction = "" + changedAppraise;
         } else {
         responseData.totalPurchasePrice = newPurchasePrice;
         responseData.totalAppraisedPrice = newAppraisedPrice;

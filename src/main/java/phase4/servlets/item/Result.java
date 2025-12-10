@@ -10,6 +10,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import phase4.constants.Grade;
 import phase4.constants.ItemState;
 import phase4.exceptions.NotASuchRowException;
 import phase4.queries.AuctionedItem;
@@ -77,7 +78,8 @@ public class Result extends JsonServlet {
         int leftMoney, netChange = 0;
         ArrayList<ResponseData.ActionResults> actionResults = new ArrayList<>();
         String[] notFoundItemCategories = null;
-        int priceAfterRecover;
+        int appraisedPriceAfterRecover;
+        int flawsAfterRecover;
         try (Connection connection = SQLConnector.connect()) {
             connection.setAutoCommit(false);
 
@@ -103,13 +105,29 @@ public class Result extends JsonServlet {
             }
             for (RestoredItem item: restoredItems) {
                 netChange -= item.foundFlawEa * 10;
-                priceAfterRecover = (int)(item.appraisedPrice * (1 + item.foundFlawEa * 0.05) * (item.isAuthenticityFound || item.authenticity ? 1 : 0.7));
-                DealRecordUpdater.updateAppraisedPrice(connection, item.itemKey, priceAfterRecover);
+                flawsAfterRecover = item.flawEa - item.foundFlawEa;
+                
+                appraisedPriceAfterRecover = item.appraisedPrice + (int)(
+                    item.askingPrice
+                    * (flawsAfterRecover * 0.05)
+                    * (Grade.priceMultiplier[item.grade])
+                    // * ()  // TODO: Add news parameters
+                );
+                if (!item.authenticity) {
+                    if (item.isAuthenticityFound) {
+                        appraisedPriceAfterRecover = (int)(appraisedPriceAfterRecover * 0.8 * 0.7);
+                    } else {
+                        appraisedPriceAfterRecover = (int)(appraisedPriceAfterRecover * 0.8);
+                    }
+                }
+                DealRecordUpdater.updateAppraisedPrice(connection, item.itemKey, appraisedPriceAfterRecover);
+                
                 if (!item.isAuthenticityFound) {
                     ExistingItemUpdater.updateAuthenticityFound(connection, item.itemKey);
                 }
-                ExistingItemUpdater.removeFlaws(connection, item.itemKey, item.flawEa - item.foundFlawEa);
+                ExistingItemUpdater.setFlaws(connection, item.itemKey, flawsAfterRecover);
                 ExistingItemUpdater.updateItemState(connection, item.itemKey, ItemState.RECORVERED);
+                
                 actionResults.add(data.new ActionResults(
                     item.displayPos, item.itemCatalogKey, ItemState.RECORVERED, -item.foundFlawEa * 10, item.appraisedPrice
                 ));

@@ -13,6 +13,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import phase4.constants.AffectedPrice;
+import phase4.constants.Grade;
 import phase4.constants.ItemState;
 import phase4.exceptions.NotASuchRowException;
 import phase4.queries.DailyCalculate;
@@ -89,7 +90,6 @@ public class DealComplete extends JsonServlet {
     }
 
     private final SimpleDateFormat gameEndDateFormat = new SimpleDateFormat("yyyy-MM-ddTHH:mm:ssZ");
-    private final double[] multiplierByGrade = new double[]{1, 1.2, 1.5, 1.7};
     
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -150,7 +150,7 @@ public class DealComplete extends JsonServlet {
             purchasePrice = (int)(
                 itemInfo.askingPrice
                 * (1 - itemInfo.foundFlawEa * 0.05)
-                * multiplierByGrade[itemInfo.grade]
+                * Grade.priceMultiplier[itemInfo.grade]
                 * (eventPricePercent * 0.01)
             );
             if (!itemInfo.authenticity && itemInfo.isAuthenticityFound) {

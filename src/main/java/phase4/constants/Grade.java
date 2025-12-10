@@ -8,6 +8,7 @@ public enum Grade {
     LEGENDARY(3);
 
     private final int value;
+    public static final double[] priceMultiplier = new double[]{1, 1.2, 1.5, 1.7};
 
     Grade(int value) {
         this.value = value;

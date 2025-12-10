@@ -14,7 +14,7 @@ public class ExistingItemUpdater {
     private static final String UPDATE_FOUND_GRADE_QUERY = "UPDATE EXISTING_ITEM SET FOUND_GRADE = ? WHERE ITEM_KEY = ?";
     private static final String UPDATE_ITEM_STATE_QUERY = "UPDATE EXISTING_ITEM SET ITEM_STATE = ? WHERE ITEM_KEY = ?";
 
-    public static void removeFlaws(Connection connection, int itemKey, int newFlawCount) throws SQLException {
+    public static void setFlaws(Connection connection, int itemKey, int newFlawCount) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(REMOVE_FLAW_QUERY)) {
             statement.setInt(1, newFlawCount);
             statement.setInt(2, itemKey);

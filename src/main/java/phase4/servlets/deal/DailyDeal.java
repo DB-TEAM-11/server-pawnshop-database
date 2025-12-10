@@ -48,8 +48,6 @@ public class DailyDeal extends JsonServlet {
         Deal[] dailyDeals;
     }
     
-    private final double[] multiplierByGrade = new double[]{1, 1.2, 1.5, 1.7};
-
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         int playerKey = authenticateUser(request, response);
@@ -115,7 +113,7 @@ public class DailyDeal extends JsonServlet {
                     itemCatalog.basePrice
                     * (1 - 0.02 * (flawEa))
                     * (1 - 0.3 * customerProperty.fakeProbability)
-                    * (1 / 3 + 0.1 * multiplierByGrade[grade.value()])
+                    * (1 / 3 + 0.1 * Grade.priceMultiplier[grade.value()])
                     * (1 + 0.25 * customer.fraud)
                     * (0.9 + 0.2 * customer.wellCollect)
                 );
@@ -123,7 +121,7 @@ public class DailyDeal extends JsonServlet {
                 appraisedPrice = (int)(
                     askingPrice
                     * (1 - flawEa * 0.05)
-                    * multiplierByGrade[grade.value()]
+                    * Grade.priceMultiplier[grade.value()]
                     * (appraisedPricePercent / 100.0)
                 );
 

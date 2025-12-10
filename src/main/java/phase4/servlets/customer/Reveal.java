@@ -2,12 +2,9 @@ package phase4.servlets.customer;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import phase4.exceptions.NotASuchRowException;
-import phase4.queries.GameSessionGetter;
-import phase4.queries.ItemInDisplay;
 import phase4.queries.MoneyUpdater;
 import phase4.queries.RevealCustomerInfo;
 import phase4.servlets.JsonServlet;

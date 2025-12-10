@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import phase4.exceptions.NotASuchRowException;
 import phase4.queries.GameSessionUpdater;
+import phase4.queries.MoneyUpdater;
 import phase4.queries.NotFoundItemCategory;
 import phase4.queries.PawnshopDebt;
 import phase4.queries.PersonalDebt;
@@ -82,9 +83,11 @@ public class Update extends JsonServlet {
             switch (requestData.debtType) {
                 case "PERSONAL":
                     PersonalDebt.addToPersonalDebt(connection, playerKey, requestData.amount);
+                    MoneyUpdater.addMoney(connection, playerKey, requestData.amount);
                     break;
                 case "PAWNSHOP":
                     PawnshopDebt.addToShopDebt(connection, playerKey, requestData.amount);
+                    MoneyUpdater.addMoney(connection, playerKey, requestData.amount);
                     break;
                 default:
                     sendErrorResponse(response, "invalid_type", "Given type is invalid.");
